@@ -5,7 +5,7 @@ import pathlib
 from docdata import parse_docdata
 
 from ..base import PathDataset
-from ..literal_base import NumericPathDataset
+from ..numeric import NumericPathDataset
 from ...triples import TriplesNumericLiteralsFactory
 
 __all__ = [

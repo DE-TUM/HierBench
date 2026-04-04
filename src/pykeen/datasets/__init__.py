@@ -40,13 +40,23 @@ from .freebase import FB15k, FB15k237
 from .globi import Globi
 from .hetionet import Hetionet
 from .kinships import Kinships
-from .literal_base import NumericPathDataset
+from .numeric import (
+    NumericPathDataset,
+    SingleRemoteNumericDataset,
+    TabbedNumericDataset,
+    UnpackedRemoteNumericDataset,
+)
 from .nations import Nations
 from .ogb import OGBBioKG, OGBLoader, OGBWikiKG2
 from .openbiolink import OpenBioLink, OpenBioLinkLQ
 from .pharmebinet import PharMeBINet
 from .pharmkg import PharmKG, PharmKG8k
+from .cameleon import Chameleon
+from .cora import Cora
+from .crocodile import Crocodile
 from .primekg import PrimeKG
+from .pubmed import PubMed
+from .squirrel import Squirrel
 from .umls import UMLS
 from .utils import get_dataset
 from .wd50k import WD50KT
@@ -96,6 +106,13 @@ __all__ = [
     "PharmKG8k",
     "PharmKG",
     "PrimeKG",
+    "SingleRemoteNumericDataset",
+    "UnpackedRemoteNumericDataset",
+    "Chameleon",
+    "Cora",
+    "Crocodile",
+    "PubMed",
+    "Squirrel",
     "Globi",
     "PharMeBINet",
 ]
@@ -119,6 +136,9 @@ dataset_resolver: ClassResolver[Dataset] = ClassResolver.from_subclasses(
         TabbedDataset,
         SingleTabbedDataset,
         NumericPathDataset,
+        TabbedNumericDataset,
+        SingleRemoteNumericDataset,
+        UnpackedRemoteNumericDataset,
         MTransEDataset,
         OGBLoader,
         EADataset,

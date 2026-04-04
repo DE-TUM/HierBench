@@ -119,3 +119,6 @@ wandb/*
 mlruns
 doctests/
 tox2.ini
+uv.lock
+CLAUDE.md
+test.py
