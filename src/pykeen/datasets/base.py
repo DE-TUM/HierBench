@@ -6,6 +6,7 @@ import logging
 import pathlib
 import tarfile
 import zipfile
+import statistics
 from abc import abstractmethod
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from io import BytesIO
@@ -201,6 +202,245 @@ class Dataset(ExtraReprMixin):
     def create_inverse_triples(self):
         """Return whether inverse triples are created *for the training factory*."""
         return self.training.create_inverse_triples
+
+    # ------------------------------------------------------------------
+    # Hierarchical graph properties
+    # ------------------------------------------------------------------
+
+    @property
+    def root_nodes(self) -> frozenset[int]:
+        """Top-level nodes: entities that never appear as a tail.
+
+        :returns: Frozenset of entity IDs with in-degree zero.
+        """
+        tails = set(self.training.mapped_triples[:, 2].tolist())
+        return frozenset(i for i in range(self.num_entities) if i not in tails)
+
+    @property
+    def leaf_nodes(self) -> frozenset[int]:
+        """Bottom-level nodes: entities that never appear as a head.
+
+        :returns: Frozenset of entity IDs with out-degree zero.
+        """
+        heads = set(self.training.mapped_triples[:, 0].tolist())
+        return frozenset(i for i in range(self.num_entities) if i not in heads)
+
+    @property
+    def is_dag(self) -> bool:
+        """Check whether the training graph is a Directed Acyclic Graph (DAG).
+
+        Runs an iterative depth-first search with three-colour marking.
+        No auxiliary structures are stored on ``self``.
+
+        :returns: ``True`` if no directed cycle exists, ``False`` otherwise.
+        """
+        triples = self.training.mapped_triples
+        # Build a local adjacency list (freed when this property returns)
+        adj: list[list[int]] = [[] for _ in range(self.num_entities)]
+        for h, t in zip(triples[:, 0].tolist(), triples[:, 2].tolist(), strict=False):
+            adj[h].append(t)
+
+        color = [0] * self.num_entities  # 0 white, 1 grey, 2 black
+
+        for start in range(self.num_entities):
+            if color[start] != 0:
+                continue
+            stack: list[tuple[int, int]] = [(start, 0)]  # (node, child_index)
+            color[start] = 1
+            while stack:
+                node, idx = stack[-1]
+                if idx < len(adj[node]):
+                    stack[-1] = (node, idx + 1)
+                    child = adj[node][idx]
+                    if color[child] == 1:
+                        return False  # back-edge → cycle
+                    if color[child] == 0:
+                        color[child] = 1
+                        stack.append((child, 0))
+                else:
+                    color[node] = 2
+                    stack.pop()
+        return True
+
+    def _node_depths(self) -> dict[int, int]:
+        """Compute the BFS depth of each node from any root node.
+
+        Multi-source BFS starting from all root nodes simultaneously.
+        Nodes unreachable from any root are assigned depth 0.
+
+        :returns: Mapping ``{entity_id: depth}`` where depth is the minimum
+            number of hops from any root. Not cached; recomputed on each call.
+        """
+        triples = self.training.mapped_triples
+        heads = triples[:, 0]
+        tails = triples[:, 2]
+
+        roots = self.root_nodes
+        depths: dict[int, int] = dict.fromkeys(roots, 0)
+        frontier: set[int] = set(roots)
+        current_depth = 0
+
+        while frontier:
+            current_depth += 1
+            frontier_t = torch.tensor(sorted(frontier), dtype=torch.long)
+            mask = torch.isin(heads, frontier_t)
+            children = set(tails[mask].tolist())
+            next_frontier = children - set(depths.keys())
+            for c in next_frontier:
+                depths[c] = current_depth
+            frontier = next_frontier
+
+        # Nodes unreachable from any root (e.g. isolated or in a pure cycle) → depth 0
+        for n in range(self.num_entities):
+            depths.setdefault(n, 0)
+        return depths
+
+    @property
+    def hierarchy_depth(self) -> int:
+        """Maximum depth of any node measured from the nearest root.
+
+        :returns: The largest BFS depth across all nodes. Returns 0 if the
+            graph has no edges.
+        """
+        depths = self._node_depths()
+        return max(depths.values(), default=0)
+
+    @property
+    def average_hierarchy_depth(self) -> float:
+        """Mean BFS depth across all nodes.
+
+        :returns: Average depth from roots. Returns 0.0 for an empty graph.
+        """
+        depths = self._node_depths()
+        if not depths:
+            return 0.0
+        return sum(depths.values()) / len(depths)
+
+    @property
+    def average_fan_out(self) -> float:
+        """Average number of children per node (average out-degree).
+
+        Computed as ``total_edges / num_entities``.
+
+        :returns: Mean out-degree. Returns 0.0 for a graph with no nodes.
+        """
+        if self.num_entities == 0:
+            return 0.0
+        return int(self.training.num_triples) / self.num_entities
+
+    @property
+    def max_fan_out(self) -> int:
+        """Maximum number of children any single node has.
+
+        :returns: Maximum out-degree across all entity IDs. Returns 0 for an
+            empty graph.
+        """
+        if self.num_entities == 0:
+            return 0
+        triples = self.training.mapped_triples
+        if triples.numel() == 0:
+            return 0
+        heads = triples[:, 0]
+        counts = torch.bincount(heads, minlength=self.num_entities)
+        return int(counts.max().item())
+
+    @property
+    def balance(self) -> float:
+        """Measure of how uniform the depth distribution is across all nodes.
+
+        Computed as ``1 - CoV(depths)`` where CoV = pstdev / mean (population
+        coefficient of variation), clamped to ``[0, 1]``.
+        A value of ``1.0`` means all nodes share the same depth (maximally
+        uniform). Lower values indicate a more skewed or imbalanced hierarchy.
+
+        :returns: Balance score in ``[0, 1]``.
+        """
+
+        depths = list(self._node_depths().values())
+        if len(depths) <= 1:
+            return 1.0
+        mean = statistics.mean(depths)
+        if mean == 0:
+            return 1.0
+        stdev = statistics.pstdev(depths)
+        cov = stdev / mean
+        return float(max(0.0, 1.0 - cov))
+
+    def get_ancestors(self, node_id: int) -> frozenset[int]:
+        """Return all ancestors (transitive predecessors) of the given node.
+
+        Performs a BFS backwards through parent edges using only local variables.
+
+        :param node_id: The entity ID to query.
+
+        :returns: Frozenset of entity IDs that have a directed path to
+            ``node_id``. Returns an empty frozenset for root nodes.
+        """
+        triples = self.training.mapped_triples
+        heads = triples[:, 0]
+        tails = triples[:, 2]
+
+        visited: set[int] = set()
+        frontier: set[int] = {node_id}
+
+        while frontier:
+            frontier_t = torch.tensor(sorted(frontier), dtype=torch.long)
+            mask = torch.isin(tails, frontier_t)
+            parents = set(heads[mask].tolist())
+            next_frontier = parents - visited - {node_id}
+            visited.update(next_frontier)
+            frontier = next_frontier
+
+        return frozenset(visited)
+
+    def get_descendants(self, node_id: int) -> frozenset[int]:
+        """Return all descendants (transitive successors) of the given node.
+
+        Performs a BFS forward through child edges using only local variables.
+
+        :param node_id: The entity ID to query.
+
+        :returns: Frozenset of entity IDs reachable from ``node_id`` via
+            directed edges. Returns an empty frozenset for leaf nodes.
+        """
+        triples = self.training.mapped_triples
+        heads = triples[:, 0]
+        tails = triples[:, 2]
+
+        visited: set[int] = set()
+        frontier: set[int] = {node_id}
+
+        while frontier:
+            frontier_t = torch.tensor(sorted(frontier), dtype=torch.long)
+            mask = torch.isin(heads, frontier_t)
+            children = set(tails[mask].tolist())
+            next_frontier = children - visited - {node_id}
+            visited.update(next_frontier)
+            frontier = next_frontier
+
+        return frozenset(visited)
+
+    def nearest_common_ancestor(self, node_a: int, node_b: int) -> int | None:
+        """Compute the nearest (lowest) common ancestor of two nodes.
+
+        Finds the deepest node that is an ancestor of both inputs.
+        Works on general DAGs with multiple roots.
+
+        :param node_a: First entity ID.
+        :param node_b: Second entity ID.
+
+        :returns: The entity ID of the nearest common ancestor, or ``None``
+            if no common ancestor exists (e.g. disconnected components).
+        """
+        if node_a == node_b:
+            return node_a
+        ancestors_a = self.get_ancestors(node_a) | {node_a}
+        ancestors_b = self.get_ancestors(node_b) | {node_b}
+        common = ancestors_a & ancestors_b
+        if not common:
+            return None
+        depths = self._node_depths()
+        return max(common, key=lambda n: depths.get(n, 0))
 
     @classmethod
     def docdata(cls, *parts: str) -> Any:
