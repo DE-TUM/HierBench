@@ -55,6 +55,7 @@ from .cameleon import Chameleon
 from .cora import Cora
 from .crocodile import Crocodile
 from .primekg import PrimeKG
+from .ppi import PPI
 from .pubmed import PubMed
 from .squirrel import Squirrel
 from .umls import UMLS
@@ -111,6 +112,7 @@ __all__ = [
     "Chameleon",
     "Cora",
     "Crocodile",
+    "PPI",
     "PubMed",
     "Squirrel",
     "Globi",
