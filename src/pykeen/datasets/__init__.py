@@ -52,6 +52,7 @@ from .openbiolink import OpenBioLink, OpenBioLinkLQ
 from .pharmebinet import PharMeBINet
 from .pharmkg import PharmKG, PharmKG8k
 from .cameleon import Chameleon
+from .citeseer import CiteSeer
 from .cora import Cora
 from .crocodile import Crocodile
 from .primekg import PrimeKG
@@ -110,6 +111,7 @@ __all__ = [
     "SingleRemoteNumericDataset",
     "UnpackedRemoteNumericDataset",
     "Chameleon",
+    "CiteSeer",
     "Cora",
     "Crocodile",
     "PPI",

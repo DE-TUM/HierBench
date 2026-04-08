@@ -375,3 +375,9 @@ replace = "release = \"{new_version}\""
 filename = "src/pykeen/version.py"
 search = "VERSION = \"{current_version}\""
 replace = "VERSION = \"{new_version}\""
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "unittest-templates>=0.1.1",
+]
