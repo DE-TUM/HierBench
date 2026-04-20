@@ -366,6 +366,30 @@ class Dataset(ExtraReprMixin):
         cov = stdev / mean
         return float(max(0.0, 1.0 - cov))
 
+    @property
+    def levels(self) -> int:
+        """Maximum depth of any node measured from the nearest root (alias for :attr:`hierarchy_depth`).
+
+        :returns: The largest BFS depth across all nodes. Returns 0 if the graph has no edges.
+        """
+        return self.hierarchy_depth
+
+    @property
+    def average_branch_out(self) -> float:
+        """Mean out-degree computed only over non-leaf nodes (nodes with at least one child).
+
+        :returns: Average out-degree of parent nodes. Returns 0.0 if there are no parent nodes.
+        """
+        triples = self.training.mapped_triples
+        if triples.numel() == 0:
+            return 0.0
+        heads = triples[:, 0]
+        counts = torch.bincount(heads, minlength=self.num_entities)
+        parent_counts = counts[counts > 0]
+        if parent_counts.numel() == 0:
+            return 0.0
+        return float(parent_counts.float().mean().item())
+
     def get_ancestors(self, node_id: int) -> frozenset[int]:
         """Return all ancestors (transitive predecessors) of the given node.
 
