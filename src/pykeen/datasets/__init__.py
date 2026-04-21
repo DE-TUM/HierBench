@@ -36,6 +36,7 @@ from .db100k import DB100K
 from .dbpedia import DBpedia50
 from .drkg import DRKG
 from .ea import CN3l, EADataset, MTransEDataset, OpenEA, WK3l15k, WK3l120k
+from .metadata import MetadataDataset, RemoteMetadataDataset
 from .freebase import FB15k, FB15k237
 from .globi import Globi
 from .hetionet import Hetionet
@@ -54,6 +55,7 @@ from .pharmkg import PharmKG, PharmKG8k
 from .cameleon import Chameleon
 from .citeseer import CiteSeer
 from .cora import Cora
+from .cora_original import CoraOriginal
 from .crocodile import Crocodile
 from .primekg import PrimeKG
 from .ppi import PPI
@@ -64,6 +66,7 @@ from .utils import get_dataset
 from .wd50k import WD50KT
 from .wikidata5m import Wikidata5M
 from .wordnet import WN18, WN18RR
+from .wordnet_metadata import WordNet
 from .yago import YAGO310
 
 __all__ = [
@@ -93,6 +96,7 @@ __all__ = [
     "WK3l120k",
     "WN18",
     "WN18RR",
+    "WordNet",
     "YAGO310",
     "DRKG",
     "BioKG",
@@ -108,11 +112,14 @@ __all__ = [
     "PharmKG8k",
     "PharmKG",
     "PrimeKG",
+    "MetadataDataset",
+    "RemoteMetadataDataset",
     "SingleRemoteNumericDataset",
     "UnpackedRemoteNumericDataset",
     "Chameleon",
     "CiteSeer",
     "Cora",
+    "CoraOriginal",
     "Crocodile",
     "PPI",
     "PubMed",
@@ -146,6 +153,8 @@ dataset_resolver: ClassResolver[Dataset] = ClassResolver.from_subclasses(
         MTransEDataset,
         OGBLoader,
         EADataset,
+        MetadataDataset,
+        RemoteMetadataDataset,
     },
 )
 dataset_resolver.register_entrypoint("pykeen.datasets")

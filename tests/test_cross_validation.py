@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pykeen.corss_validation.cross_validation import (
+from pykeen.cross_validation.cross_validation import (
     CrossValidationPipelineResult,
     _aggregate_fold_metrics,
     _resolve_kfold_dataset,
