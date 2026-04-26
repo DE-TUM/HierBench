@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import logging
 import pathlib
-from typing import Any, ClassVar, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any, ClassVar, TypeAlias
 
 import pandas as pd
-from typing import TypeAlias
+
+from .base import EagerDataset
 from ..constants import PYKEEN_DATASETS
 from ..triples import TriplesFactory
 from ..typing import TorchRandomHint
 from ..utils import normalize_path
-from .base import EagerDataset
 
 __all__ = [
     "MetadataDataset",
@@ -33,7 +34,6 @@ def _load_metadata_file(path: pathlib.Path) -> pd.DataFrame:
     if suffix in (".jsonl", ".json"):
         return pd.read_json(path, lines=True)
     return pd.read_csv(path, sep="\t")
-
 
 
 class MetadataDataset(EagerDataset):

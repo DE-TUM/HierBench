@@ -8,7 +8,7 @@ import logging
 import pathlib
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
-from typing import Any, MutableMapping
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -256,7 +256,7 @@ def _aggregate_fold_metrics(
         one per fold.
     :returns: A ``(means, stds)`` pair of flat metric dicts.
     """
-    all_flat: list[dict[str, float]] = [r.metric_results.to_flat_dict() for r in fold_results]
+    all_flat = [r.metric_results.to_flat_dict() for r in fold_results]
     keys = list(all_flat[0].keys())
     means: dict[str, float] = {}
     stds: dict[str, float] = {}
@@ -452,7 +452,7 @@ def cross_validation_pipeline(
             fold_seed,
         )
 
-        fold_metadata: MutableMapping[str, Any] = dict(metadata or {})
+        fold_metadata: dict[str, Any] = {**(metadata or {})}
         fold_metadata["cv_fold"] = fold_index
         fold_metadata["cv_num_folds"] = num_folds
         result = pipeline(

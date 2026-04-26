@@ -13,7 +13,6 @@ from pykeen.datasets.base import EagerDataset
 from pykeen.datasets.metadata import MetadataDataset, RemoteMetadataDataset, _load_metadata_file
 from pykeen.triples import TriplesFactory
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -39,13 +38,15 @@ def _relation_df(n: int = 2) -> pd.DataFrame:
     return pd.DataFrame({"weight": [float(i) for i in range(n)]})
 
 
-@pytest.fixture()
+@pytest.fixture
 def factory() -> TriplesFactory:
+    """Return a minimal TriplesFactory for testing."""
     return _make_factory()
 
 
-@pytest.fixture()
+@pytest.fixture
 def dataset(factory: TriplesFactory) -> MetadataDataset:
+    """Return a MetadataDataset with entity and relation metadata."""
     return MetadataDataset(
         training=factory,
         testing=factory,
@@ -61,6 +62,8 @@ def dataset(factory: TriplesFactory) -> MetadataDataset:
 
 
 class TestMetadataDatasetConstruction:
+    """Tests for MetadataDataset construction and attribute access."""
+
     def test_is_eager_dataset(self, dataset: MetadataDataset) -> None:
         assert isinstance(dataset, EagerDataset)
 
@@ -101,6 +104,8 @@ class TestMetadataDatasetConstruction:
 
 
 class TestLoadMetadataFile:
+    """Tests for _load_metadata_file format detection."""
+
     def test_tsv(self, tmp_path: pathlib.Path) -> None:
         p = tmp_path / "data.tsv"
         p.write_text("a\tb\n1\t2\n3\t4\n")
@@ -145,7 +150,9 @@ class TestLoadMetadataFile:
 class TestRemoteMetadataDataset:
     """Tests use a minimal concrete subclass with URL downloads mocked via monkeypatch."""
 
-    def _make_class(self, triples_url="http://x/triples.tsv", entity_url=None, relation_url=None, ratios=(0.6, 0.2, 0.2)):
+    def _make_class(
+        self, triples_url="http://x/triples.tsv", entity_url=None, relation_url=None, ratios=(0.6, 0.2, 0.2)
+    ):
         class _DS(RemoteMetadataDataset):
             pass
 
@@ -166,18 +173,18 @@ class TestRemoteMetadataDataset:
             downloaded.append(url)
 
         import pystow.utils as pu
+
         monkeypatch.setattr(pu, "download", fake_download)
 
-        DS = self._make_class()
-        ds = DS(cache_root=tmp_path)
+        ds_class = self._make_class()
+        ds = ds_class(cache_root=tmp_path)
         assert len(downloaded) == 1
         assert ds.training is not None
 
     def test_skips_download_when_file_exists(self, tmp_path: pathlib.Path, monkeypatch) -> None:
-        triples_path = tmp_path / "dataset.tsv"  # wrong subdir — use correct path below
         # RemoteMetadataDataset puts files in <cache_root>/<classname>/
-        DS = self._make_class()
-        subdir = tmp_path / DS.__name__.lower()
+        ds_class = self._make_class()
+        subdir = tmp_path / ds_class.__name__.lower()
         subdir.mkdir()
         existing = subdir / "dataset.tsv"
         self._write_triples(existing)
@@ -188,67 +195,68 @@ class TestRemoteMetadataDataset:
             downloaded.append(url)
 
         import pystow.utils as pu
+
         monkeypatch.setattr(pu, "download", fake_download)
-        ds = DS(cache_root=tmp_path)
+        ds = ds_class(cache_root=tmp_path)
         assert downloaded == [], "should not re-download existing file"
         assert ds.training is not None
 
     def test_no_entity_metadata_when_url_none(self, tmp_path: pathlib.Path, monkeypatch) -> None:
-        DS = self._make_class(entity_url=None)
-        subdir = tmp_path / DS.__name__.lower()
+        ds_class = self._make_class(entity_url=None)
+        subdir = tmp_path / ds_class.__name__.lower()
         subdir.mkdir()
         self._write_triples(subdir / "dataset.tsv")
 
         import pystow.utils as pu
+
         monkeypatch.setattr(pu, "download", lambda **kw: None)
-        ds = DS(cache_root=tmp_path)
+        ds = ds_class(cache_root=tmp_path)
         assert ds.entity_metadata is None
 
     def test_entity_metadata_loaded_when_url_given(self, tmp_path: pathlib.Path, monkeypatch) -> None:
-        DS = self._make_class(entity_url="http://x/entities.tsv")
-        subdir = tmp_path / DS.__name__.lower()
+        ds_class = self._make_class(entity_url="http://x/entities.tsv")
+        subdir = tmp_path / ds_class.__name__.lower()
         subdir.mkdir()
         self._write_triples(subdir / "dataset.tsv")
 
         factory = TriplesFactory.from_path(subdir / "dataset.tsv")
         n = factory.num_entities
-        (subdir / "entity_metadata.tsv").write_text(
-            "feat\n" + "\n".join(str(float(i)) for i in range(n)) + "\n"
-        )
+        (subdir / "entity_metadata.tsv").write_text("feat\n" + "\n".join(str(float(i)) for i in range(n)) + "\n")
 
         import pystow.utils as pu
+
         monkeypatch.setattr(pu, "download", lambda **kw: None)
-        ds = DS(cache_root=tmp_path)
+        ds = ds_class(cache_root=tmp_path)
         assert ds.entity_metadata is not None
         assert "feat" in ds.entity_metadata.columns
 
     def test_relation_metadata_loaded_when_url_given(self, tmp_path: pathlib.Path, monkeypatch) -> None:
-        DS = self._make_class(relation_url="http://x/relations.tsv")
-        subdir = tmp_path / DS.__name__.lower()
+        ds_class = self._make_class(relation_url="http://x/relations.tsv")
+        subdir = tmp_path / ds_class.__name__.lower()
         subdir.mkdir()
         self._write_triples(subdir / "dataset.tsv")
 
         factory = TriplesFactory.from_path(subdir / "dataset.tsv")
         r = factory.num_relations
-        (subdir / "relation_metadata.tsv").write_text(
-            "w\n" + "\n".join(str(float(i)) for i in range(r)) + "\n"
-        )
+        (subdir / "relation_metadata.tsv").write_text("w\n" + "\n".join(str(float(i)) for i in range(r)) + "\n")
 
         import pystow.utils as pu
+
         monkeypatch.setattr(pu, "download", lambda **kw: None)
-        ds = DS(cache_root=tmp_path)
+        ds = ds_class(cache_root=tmp_path)
         assert ds.relation_metadata is not None
         assert "w" in ds.relation_metadata.columns
 
     def test_split_produces_three_splits(self, tmp_path: pathlib.Path, monkeypatch) -> None:
-        DS = self._make_class()
-        subdir = tmp_path / DS.__name__.lower()
+        ds_class = self._make_class()
+        subdir = tmp_path / ds_class.__name__.lower()
         subdir.mkdir()
         self._write_triples(subdir / "dataset.tsv")
 
         import pystow.utils as pu
+
         monkeypatch.setattr(pu, "download", lambda **kw: None)
-        ds = DS(cache_root=tmp_path)
+        ds = ds_class(cache_root=tmp_path)
         assert ds.training is not None
         assert ds.testing is not None
         assert ds.validation is not None
@@ -270,19 +278,21 @@ class TestRemoteMetadataDataset:
         (subdir / "entity_metadata.npy").write_bytes(b"")  # placeholder so download is skipped
 
         import pystow.utils as pu
+
         monkeypatch.setattr(pu, "download", lambda **kw: None)
         ds = CustomDS(cache_root=tmp_path)
         assert ds.entity_metadata is not None
         assert "custom" in ds.entity_metadata.columns
 
     def test_ratios_respected(self, tmp_path: pathlib.Path, monkeypatch) -> None:
-        DS = self._make_class(ratios=(0.8, 0.1, 0.1))
-        subdir = tmp_path / DS.__name__.lower()
+        ds_class = self._make_class(ratios=(0.8, 0.1, 0.1))
+        subdir = tmp_path / ds_class.__name__.lower()
         subdir.mkdir()
         self._write_triples(subdir / "dataset.tsv")
 
         import pystow.utils as pu
+
         monkeypatch.setattr(pu, "download", lambda **kw: None)
-        ds = DS(cache_root=tmp_path)
+        ds = ds_class(cache_root=tmp_path)
         total = ds.training.num_triples + ds.testing.num_triples + ds.validation.num_triples
         assert total == len(_TRIPLES)

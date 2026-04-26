@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import logging
 import pathlib
+import statistics
 import tarfile
 import zipfile
-import statistics
 from abc import abstractmethod
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from io import BytesIO
@@ -355,7 +355,6 @@ class Dataset(ExtraReprMixin):
 
         :returns: Balance score in ``[0, 1]``.
         """
-
         depths = list(self._node_depths().values())
         if len(depths) <= 1:
             return 1.0

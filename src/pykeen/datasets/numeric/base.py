@@ -10,8 +10,6 @@ from typing import Any, ClassVar, TextIO, cast
 import pandas as pd
 from pystow.utils import download, name_from_url
 
-from pykeen.triples.triples_factory import TriplesFactory
-
 from ..base import LazyDataset
 from ...triples import TriplesNumericLiteralsFactory
 from ...typing import TorchRandomHint
@@ -234,12 +232,12 @@ class UnpackedRemoteNumericDataset(NumericPathDataset):
                 download(url, path, **download_kwargs)
 
         for key, url in self.extra_urls.items():
-            path = self.extra_paths.get(key)
-            if path is None:
-                path = self.cache_root.joinpath(name_from_url(url))
-                self.extra_paths[key] = path
-            if force or not path.is_file():
-                download(url, path, **download_kwargs)
+            extra_path = self.extra_paths.get(key)
+            if extra_path is None:
+                extra_path = self.cache_root.joinpath(name_from_url(url))
+                self.extra_paths[key] = extra_path
+            if force or not extra_path.is_file():
+                download(url, extra_path, **download_kwargs)
 
         super().__init__(
             training_path=training_path,
