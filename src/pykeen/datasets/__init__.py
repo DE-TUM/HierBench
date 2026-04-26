@@ -27,38 +27,38 @@ from .base import (  # noqa:F401
     ZipSingleDataset,
 )
 from .biokg import BioKG
+from .cameleon import Chameleon
+from .citeseer import CiteSeer
 from .ckg import CKG
 from .codex import CoDExLarge, CoDExMedium, CoDExSmall
 from .conceptnet import ConceptNet
+from .cora import Cora
+from .cora_original import CoraOriginal
 from .countries import Countries
+from .crocodile import Crocodile
 from .cskg import CSKG
 from .db100k import DB100K
 from .dbpedia import DBpedia50
 from .drkg import DRKG
 from .ea import CN3l, EADataset, MTransEDataset, OpenEA, WK3l15k, WK3l120k
-from .metadata import MetadataDataset, RemoteMetadataDataset
 from .freebase import FB15k, FB15k237
 from .globi import Globi
 from .hetionet import Hetionet
 from .kinships import Kinships
+from .metadata import MetadataDataset, RemoteMetadataDataset
+from .nations import Nations
 from .numeric import (
     NumericPathDataset,
     SingleRemoteNumericDataset,
     TabbedNumericDataset,
     UnpackedRemoteNumericDataset,
 )
-from .nations import Nations
 from .ogb import OGBBioKG, OGBLoader, OGBWikiKG2
 from .openbiolink import OpenBioLink, OpenBioLinkLQ
 from .pharmebinet import PharMeBINet
 from .pharmkg import PharmKG, PharmKG8k
-from .cameleon import Chameleon
-from .citeseer import CiteSeer
-from .cora import Cora
-from .cora_original import CoraOriginal
-from .crocodile import Crocodile
-from .primekg import PrimeKG
 from .ppi import PPI
+from .primekg import PrimeKG
 from .pubmed import PubMed
 from .squirrel import Squirrel
 from .umls import UMLS

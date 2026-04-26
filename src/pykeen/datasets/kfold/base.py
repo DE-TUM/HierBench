@@ -1,8 +1,10 @@
+"""Base classes and utilities for k-fold dataset splitting."""
+
 from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Iterator, List
+from collections.abc import Iterator
 
 import torch
 
@@ -33,17 +35,17 @@ class KFoldDataset(ABC):
                 ...
     """
 
-    _datasets: List[Dataset] | None = None
+    _datasets: list[Dataset] | None = None
 
     @abstractmethod
-    def _load_folds(self) -> List[Dataset]:
+    def _load_folds(self) -> list[Dataset]:
         """Load and return the list of k pre-defined dataset splits.
 
         :returns: A list of :class:`~pykeen.datasets.Dataset` objects, one per fold.
         """
 
     @property
-    def datasets(self) -> List[Dataset]:
+    def datasets(self) -> list[Dataset]:
         """The list of k dataset folds, lazily loaded on first access."""
         if self._datasets is None:
             logger.debug("Loading folds for %s", self.__class__.__name__)
@@ -72,15 +74,17 @@ class EagerKFoldDataset(KFoldDataset):
     Typically created via :func:`to_kfold` rather than directly.
     """
 
-    def __init__(self, datasets: List[Dataset]) -> None:
+    def __init__(self, datasets: list[Dataset]) -> None:
         """Initialize with a pre-built list of dataset folds.
 
         :param datasets: The list of k :class:`~pykeen.datasets.Dataset` objects, one per fold.
         """
         self._datasets = datasets
 
-    def _load_folds(self) -> List[Dataset]:  # noqa: D102
-        return self._datasets  # already set in __init__; lazy property will never trigger this
+    def _load_folds(self) -> list[Dataset]:  # noqa: D102
+        datasets = self._datasets
+        assert datasets is not None
+        return datasets
 
 
 def to_kfold(
@@ -129,7 +133,7 @@ def to_kfold(
     chunks = torch.chunk(all_triples, k, dim=0)
 
     factory = dataset.training  # reference factory; preserves mappings + numeric literals
-    folds: List[Dataset] = []
+    folds: list[Dataset] = []
     for i in range(k):
         test_triples = chunks[i]
         remaining = torch.cat([chunks[j] for j in range(k) if j != i], dim=0)
@@ -137,9 +141,7 @@ def to_kfold(
         test_factory = factory.clone_and_exchange_triples(test_triples)
 
         if validation_ratio > 0.0:
-            train_factory, val_factory = factory.clone_and_exchange_triples(remaining).split(
-                1.0 - validation_ratio
-            )
+            train_factory, val_factory = factory.clone_and_exchange_triples(remaining).split(1.0 - validation_ratio)
         else:
             train_factory = factory.clone_and_exchange_triples(remaining)
             val_factory = None

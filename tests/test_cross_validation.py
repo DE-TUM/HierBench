@@ -20,11 +20,11 @@ from pykeen.datasets import Nations
 from pykeen.datasets.kfold.base import EagerKFoldDataset, KFoldDataset, to_kfold
 
 # Shared minimal kwargs for every pipeline call — keeps tests fast
-_FAST_KWARGS = dict(
-    model="TransE",
-    training_kwargs={"num_epochs": 1, "use_tqdm": False},
-    evaluation_kwargs={"use_tqdm": False},
-)
+_FAST_KWARGS = {
+    "model": "TransE",
+    "training_kwargs": {"num_epochs": 1, "use_tqdm": False},
+    "evaluation_kwargs": {"use_tqdm": False},
+}
 
 
 # ---------------------------------------------------------------------------
@@ -55,38 +55,38 @@ class TestDatasetResolution(unittest.TestCase):
     def test_kfold_instance_passthrough(self):
         """A KFoldDataset instance must be returned unchanged."""
         result = _resolve_kfold_dataset(self.kfold, None, 2, 0.1, None)
-        self.assertIs(result, self.kfold)
+        assert result is self.kfold
 
     def test_kfold_subclass_instantiated(self):
         """A KFoldDataset subclass must be instantiated (no extra kwargs needed)."""
         result = _resolve_kfold_dataset(_SimpleKFoldDataset, None, 2, 0.1, None)
-        self.assertIsInstance(result, KFoldDataset)
-        self.assertEqual(result.num_folds, 2)
+        assert isinstance(result, KFoldDataset)
+        assert result.num_folds == 2
 
     def test_dataset_instance_wrapped(self):
         """A Dataset instance must be wrapped into EagerKFoldDataset."""
         result = _resolve_kfold_dataset(self.nations, None, 2, 0.1, 42)
-        self.assertIsInstance(result, EagerKFoldDataset)
-        self.assertEqual(result.num_folds, 2)
+        assert isinstance(result, EagerKFoldDataset)
+        assert result.num_folds == 2
 
     def test_dataset_class_instantiated_and_wrapped(self):
         """A Dataset subclass must be instantiated and wrapped."""
         result = _resolve_kfold_dataset(Nations, None, 3, 0.1, 42)
-        self.assertIsInstance(result, EagerKFoldDataset)
-        self.assertEqual(result.num_folds, 3)
+        assert isinstance(result, EagerKFoldDataset)
+        assert result.num_folds == 3
 
     def test_string_name_resolved_and_wrapped(self):
         """A string dataset name must be resolved via dataset_resolver and wrapped."""
         result = _resolve_kfold_dataset("nations", None, 2, 0.1, 42)
-        self.assertIsInstance(result, EagerKFoldDataset)
-        self.assertEqual(result.num_folds, 2)
+        assert isinstance(result, EagerKFoldDataset)
+        assert result.num_folds == 2
 
     def test_none_raises_value_error(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError, match="dataset"):
             _resolve_kfold_dataset(None, None, 5, 0.1, None)
 
     def test_invalid_type_raises_type_error(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             _resolve_kfold_dataset(42, None, 5, 0.1, None)  # type: ignore[arg-type]
 
 
@@ -109,48 +109,48 @@ class TestCrossValidationResult(unittest.TestCase):
         )
 
     def test_result_type(self):
-        self.assertIsInstance(self.result, CrossValidationPipelineResult)
+        assert isinstance(self.result, CrossValidationPipelineResult)
 
     def test_num_folds(self):
-        self.assertEqual(self.result.num_folds, 2)
-        self.assertEqual(len(self.result.fold_results), 2)
+        assert self.result.num_folds == 2
+        assert len(self.result.fold_results) == 2
 
     def test_metric_means_stds_same_keys(self):
-        self.assertEqual(set(self.result.metric_means), set(self.result.metric_stds))
+        assert set(self.result.metric_means) == set(self.result.metric_stds)
 
     def test_get_metric_returns_float_pair(self):
         key = next(iter(self.result.metric_means))
         mean, std = self.result.get_metric(key)
-        self.assertIsInstance(mean, float)
-        self.assertIsInstance(std, float)
-        self.assertGreaterEqual(std, 0.0)
+        assert isinstance(mean, float)
+        assert isinstance(std, float)
+        assert std >= 0.0
 
     def test_get_metric_unknown_key_raises(self):
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             self.result.get_metric("this_metric_does_not_exist")
 
     def test_to_df_shape(self):
         df = self.result.to_df()
-        self.assertEqual(len(df), 2)
-        self.assertGreater(len(df.columns), 0)
+        assert len(df) == 2
+        assert len(df.columns) > 0
 
     def test_to_df_columns_match_metric_means(self):
         df = self.result.to_df()
-        self.assertEqual(set(df.columns), set(self.result.metric_means))
+        assert set(df.columns) == set(self.result.metric_means)
 
     def test_times_positive(self):
-        self.assertGreater(self.result.total_train_seconds, 0.0)
-        self.assertGreater(self.result.total_evaluate_seconds, 0.0)
+        assert self.result.total_train_seconds > 0.0
+        assert self.result.total_evaluate_seconds > 0.0
 
     def test_version_and_git_hash_present(self):
-        self.assertIsInstance(self.result.version, str)
-        self.assertIsInstance(self.result.git_hash, str)
+        assert isinstance(self.result.version, str)
+        assert isinstance(self.result.git_hash, str)
 
     def test_get_results_keys(self):
         d = self.result._get_results()
         for key in ("num_folds", "times", "metric_means", "metric_stds", "version", "git_hash"):
-            self.assertIn(key, d)
-        self.assertEqual(d["num_folds"], 2)
+            assert key in d
+        assert d["num_folds"] == 2
 
 
 # ---------------------------------------------------------------------------
@@ -181,33 +181,33 @@ class TestSaveToDirectory(unittest.TestCase):
     def test_cv_results_json_created(self):
         self.result.save_to_directory(self.directory)
         json_path = self.directory / "cv_results.json"
-        self.assertTrue(json_path.exists())
+        assert json_path.exists()
         with json_path.open() as fh:
             data = json.load(fh)
-        self.assertEqual(data["num_folds"], 2)
-        self.assertIn("metric_means", data)
-        self.assertIn("metric_stds", data)
+        assert data["num_folds"] == 2
+        assert "metric_means" in data
+        assert "metric_stds" in data
 
     def test_fold_metrics_tsv_created(self):
         self.result.save_to_directory(self.directory)
-        self.assertTrue((self.directory / "fold_metrics.tsv").exists())
+        assert (self.directory / "fold_metrics.tsv").exists()
 
     def test_fold_subdirs_created_by_default(self):
         self.result.save_to_directory(self.directory)
         for i in range(2):
-            self.assertTrue((self.directory / f"fold-{i:03d}").is_dir())
+            assert (self.directory / f"fold-{i:03d}").is_dir()
 
     def test_save_without_fold_subdirs(self):
         self.result.save_to_directory(self.directory, save_fold_results=False)
         for i in range(2):
-            self.assertFalse((self.directory / f"fold-{i:03d}").exists())
+            assert not (self.directory / f"fold-{i:03d}").exists()
 
     def test_save_to_ftp_not_implemented(self):
-        with self.assertRaises(NotImplementedError):
+        with pytest.raises(NotImplementedError):
             self.result.save_to_ftp("some/dir", None)
 
     def test_save_to_s3_not_implemented(self):
-        with self.assertRaises(NotImplementedError):
+        with pytest.raises(NotImplementedError):
             self.result.save_to_s3("some/dir", "bucket")
 
 
@@ -221,42 +221,40 @@ class TestCrossValidationPipeline(unittest.TestCase):
 
     def test_with_dataset_class(self):
         result = cross_validation_pipeline(dataset=Nations, k=2, random_seed=0, **_FAST_KWARGS)
-        self.assertIsInstance(result, CrossValidationPipelineResult)
-        self.assertEqual(result.num_folds, 2)
+        assert isinstance(result, CrossValidationPipelineResult)
+        assert result.num_folds == 2
 
     def test_with_dataset_instance(self):
         result = cross_validation_pipeline(dataset=Nations(), k=2, random_seed=0, **_FAST_KWARGS)
-        self.assertIsInstance(result, CrossValidationPipelineResult)
-        self.assertEqual(result.num_folds, 2)
+        assert isinstance(result, CrossValidationPipelineResult)
+        assert result.num_folds == 2
 
     def test_with_string_name(self):
         result = cross_validation_pipeline(dataset="nations", k=2, random_seed=0, **_FAST_KWARGS)
-        self.assertIsInstance(result, CrossValidationPipelineResult)
+        assert isinstance(result, CrossValidationPipelineResult)
 
     def test_with_kfold_dataset_instance(self):
         kfold = to_kfold(Nations(), k=2, random_state=0)
         result = cross_validation_pipeline(dataset=kfold, random_seed=0, **_FAST_KWARGS)
-        self.assertIsInstance(result, CrossValidationPipelineResult)
-        self.assertEqual(result.num_folds, 2)
+        assert isinstance(result, CrossValidationPipelineResult)
+        assert result.num_folds == 2
 
     def test_no_dataset_raises(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError, match="dataset"):
             cross_validation_pipeline(model="TransE")
 
     def test_reproducibility_with_seeds(self):
         """Same kfold and model seeds must produce identical metric means."""
         kfold = to_kfold(Nations(), k=2, random_state=42)
-        kwargs = dict(dataset=kfold, random_seed=7, **_FAST_KWARGS)
+        kwargs = {"dataset": kfold, "random_seed": 7, **_FAST_KWARGS}
         r1 = cross_validation_pipeline(**kwargs)
         r2 = cross_validation_pipeline(**kwargs)
-        self.assertEqual(r1.metric_means, r2.metric_means)
+        assert r1.metric_means == r2.metric_means
 
     def test_no_random_seed(self):
         """Running without seeds must not raise."""
-        result = cross_validation_pipeline(
-            dataset=Nations, k=2, kfold_random_state=0, random_seed=None, **_FAST_KWARGS
-        )
-        self.assertIsInstance(result, CrossValidationPipelineResult)
+        result = cross_validation_pipeline(dataset=Nations, k=2, kfold_random_state=0, random_seed=None, **_FAST_KWARGS)
+        assert isinstance(result, CrossValidationPipelineResult)
 
     def test_custom_metadata_propagated(self):
         """User metadata keys must appear in every fold's pipeline metadata."""
@@ -268,16 +266,14 @@ class TestCrossValidationPipeline(unittest.TestCase):
             **_FAST_KWARGS,
         )
         for fold_result in result.fold_results:
-            self.assertEqual(fold_result.metadata.get("experiment"), "cv_test")
+            assert fold_result.metadata.get("experiment") == "cv_test"
 
     def test_cv_fold_metadata_injected(self):
         """cv_fold and cv_num_folds must be injected into each fold's metadata."""
-        result = cross_validation_pipeline(
-            dataset=Nations, k=2, kfold_random_state=0, **_FAST_KWARGS
-        )
+        result = cross_validation_pipeline(dataset=Nations, k=2, kfold_random_state=0, **_FAST_KWARGS)
         for i, fold_result in enumerate(result.fold_results):
-            self.assertEqual(fold_result.metadata.get("cv_fold"), i)
-            self.assertEqual(fold_result.metadata.get("cv_num_folds"), 2)
+            assert fold_result.metadata.get("cv_fold") == i
+            assert fold_result.metadata.get("cv_num_folds") == 2
 
 
 # ---------------------------------------------------------------------------
@@ -337,10 +333,10 @@ class TestCrossValidationSlow(unittest.TestCase):
             training_kwargs={"num_epochs": 3, "use_tqdm": False},
             evaluation_kwargs={"use_tqdm": False},
         )
-        self.assertEqual(result.num_folds, 3)
-        self.assertEqual(len(result.fold_results), 3)
+        assert result.num_folds == 3
+        assert len(result.fold_results) == 3
         df = result.to_df()
-        self.assertEqual(len(df), 3)
+        assert len(df) == 3
 
     def test_save_k3_to_directory(self):
         result = cross_validation_pipeline(

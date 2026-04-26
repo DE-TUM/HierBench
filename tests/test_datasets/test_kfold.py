@@ -9,8 +9,6 @@ from pykeen.datasets import Nations
 from pykeen.datasets.base import EagerDataset
 from pykeen.datasets.kfold import EagerKFoldDataset, KFoldDataset, to_kfold
 from pykeen.datasets.nations import NationsLiteral
-from pykeen.triples import TriplesFactory
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -61,7 +59,7 @@ class TestEagerKFoldDatasetStructure:
             assert fold is nations_kfold.datasets[i]
 
     def test_datasets_property(self, nations_kfold: EagerKFoldDataset) -> None:
-        """datasets property must return a list of Dataset objects."""
+        """Datasets property must return a list of Dataset objects."""
         assert isinstance(nations_kfold.datasets, list)
         assert len(nations_kfold.datasets) == 5
 
