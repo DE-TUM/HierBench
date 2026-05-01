@@ -118,7 +118,7 @@ class RemoteMetadataDataset(MetadataDataset):
         *,
         cache_root: str | pathlib.Path | None = None,
         create_inverse_triples: bool = False,
-        random_state: TorchRandomHint = None,
+        random_state: TorchRandomHint = 0,
         download_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -128,7 +128,7 @@ class RemoteMetadataDataset(MetadataDataset):
             sub-directory of :data:`pykeen.constants.PYKEEN_DATASETS` named
             after the concrete subclass.
         :param create_inverse_triples: Whether to add inverse triples to training.
-        :param random_state: Random state for the train/test/val split.
+        :param random_state: Random state for the train/test/val split. Defaults to 0.
         :param download_kwargs: Extra keyword arguments forwarded to
             :func:`pystow.utils.download`.
         :param kwargs: Forwarded to :class:`MetadataDataset`.

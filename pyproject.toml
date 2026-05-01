@@ -80,6 +80,7 @@ dependencies = [
     "torch_max_mem>=0.1.4",
     "torch-ppr>=0.0.7",
     "typing_extensions",
+    "geoopt>=0.5.1",
 ]
 
 [project.optional-dependencies]
