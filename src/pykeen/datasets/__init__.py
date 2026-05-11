@@ -39,6 +39,7 @@ from .crocodile import Crocodile
 from .cskg import CSKG
 from .db100k import DB100K
 from .dbpedia import DBpedia50
+from .doid import DOID
 from .drkg import DRKG
 from .ea import CN3l, EADataset, MTransEDataset, OpenEA, WK3l15k, WK3l120k
 from .freebase import FB15k, FB15k237
@@ -105,6 +106,7 @@ __all__ = [
     "CSKG",
     "DBpedia50",
     "DB100K",
+    "DOID",
     "OpenEA",
     "Countries",
     "WD50KT",

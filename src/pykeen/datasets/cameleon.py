@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from docdata import parse_docdata
+
 from .numeric import SingleRemoteNumericDataset
 
 __all__ = [
@@ -13,6 +15,7 @@ _DATASET_URL = _BASE_URL + "dataset.tsv"
 _LITERALS_URL = _BASE_URL + "literals.tsv"
 
 
+@parse_docdata
 class Chameleon(SingleRemoteNumericDataset):
     """The Wikipedia Chameleon page-page graph dataset.
 
@@ -22,6 +25,21 @@ class Chameleon(SingleRemoteNumericDataset):
 
     Source: https://snap.stanford.edu/data/wikipedia-article-networks.html
     (MUSAE, Rozemberczki et al., 2021)
+
+    ---
+    name: Chameleon
+    citation:
+        author: Rozemberczki
+        year: 2021
+        link: https://arxiv.org/abs/2106.11181
+        github: benedekrozemberczki/MUSAE
+    statistics:
+        entities: 2277
+        relations: 1
+        training: 24884
+        testing: 3109
+        validation: 3109
+        triples: 31102
     """
 
     def __init__(self, **kwargs) -> None:

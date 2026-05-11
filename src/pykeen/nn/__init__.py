@@ -11,6 +11,7 @@ from .combination import (
     ConcatProjectionCombination,
     GatedCombination,
 )
+from .hyperbolic import LorentzEmbedding, PoincareEmbedding
 from .message_passing import RGCNRepresentation
 from .meta import FeatureEnrichedEmbedding, MLPTransformedRepresentation
 from .modules import (
@@ -85,6 +86,8 @@ __all__ = [
     "Representation",
     # concrete
     "Embedding",
+    "PoincareEmbedding",
+    "LorentzEmbedding",
     "FeaturizedMessagePassingRepresentation",
     "LowRankRepresentation",
     "NodePieceRepresentation",
