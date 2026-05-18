@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from docdata import parse_docdata
+
 from .metadata import RemoteMetadataDataset
 
 __all__ = [
@@ -11,6 +13,7 @@ __all__ = [
 _BASE_URL = "https://syncandshare.lrz.de/dl/fiSthwLrG6VmKqbr9eVsnA/crocodile/"
 
 
+@parse_docdata
 class Crocodile(RemoteMetadataDataset):
     """The Wikipedia Crocodile page-page graph dataset.
 
@@ -19,7 +22,21 @@ class Crocodile(RemoteMetadataDataset):
     and one of 5 class labels (page traffic categories).
 
     Source: https://snap.stanford.edu/data/wikipedia-article-networks.html
-    (MUSAE, Rozemberczki et al., 2021)
+
+    ---
+    name: Crocodile
+    citation:
+        author: Rozemberczki
+        year: 2021
+        link: https://arxiv.org/abs/2106.11181
+        github: benedekrozemberczki/MUSAE
+    statistics:
+        entities: 11631
+        relations: 1
+        training: 136734
+        testing: 17092
+        validation: 17092
+        triples: 170918
     """
 
     triples_url = _BASE_URL + "dataset.tsv"
