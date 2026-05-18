@@ -190,6 +190,7 @@ import logging
 import pathlib
 import pickle
 import time
+import warnings
 from collections.abc import Collection, Iterable, Mapping, MutableMapping
 from dataclasses import dataclass, field
 from typing import (
@@ -1033,6 +1034,19 @@ def _handle_training_loop(
     )
     for key, value in optimizer_instance.defaults.items():
         optimizer_kwargs.setdefault(key, value)
+
+    import geoopt
+    if any(isinstance(p, geoopt.ManifoldParameter) for p in model_instance.parameters()) and not isinstance(
+        optimizer_instance, geoopt.optim.mixin.OptimMixin
+    ):
+        warnings.warn(
+            f"{model_instance.__class__.__name__} uses ManifoldParameter(s) but optimizer "
+            f"'{optimizer_instance.__class__.__name__}' is not Riemannian. "
+            "Consider using geoopt.optim.RiemannianAdam. "
+            "Falling back to manifold projection via post_parameter_update() after each gradient step.",
+            UserWarning,
+            stacklevel=2,
+        )
     _result_tracker.log_params(
         params={
             "optimizer": optimizer_instance.__class__.__name__,
