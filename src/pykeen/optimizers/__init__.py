@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from class_resolver.contrib.torch import optimizer_resolver
+from geoopt.optim import RiemannianAdam
 from torch.optim.adagrad import Adagrad
 from torch.optim.adam import Adam
 from torch.optim.adamax import Adamax
@@ -13,6 +14,7 @@ from torch.optim.sgd import SGD
 
 __all__ = [
     "Optimizer",
+    "RiemannianAdam",
     "optimizers_hpo_defaults",
     "optimizer_resolver",
 ]
@@ -32,6 +34,9 @@ optimizers_hpo_defaults: Mapping[type[Optimizer], Mapping[str, Any]] = {
         "lr": {"type": float, "low": 0.001, "high": 0.1, "scale": "log"},
     },
     SGD: {
+        "lr": {"type": float, "low": 0.001, "high": 0.1, "scale": "log"},
+    },
+    RiemannianAdam: {
         "lr": {"type": float, "low": 0.001, "high": 0.1, "scale": "log"},
     },
 }
