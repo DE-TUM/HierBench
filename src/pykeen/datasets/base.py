@@ -297,7 +297,11 @@ class Dataset(ExtraReprMixin):
 
     @property
     def hierarchy_depth(self) -> int:
-        """Maximum depth of any node measured from the nearest root.
+        """Maximum BFS depth of any node measured from the nearest root node.
+
+        This is **not** the graph diameter δ (longest shortest path between any
+        two vertices). It is the deepest level in a BFS tree rooted at the
+        set of source nodes (entities with in-degree zero).
 
         :returns: The largest BFS depth across all nodes. Returns 0 if the
             graph has no edges.
@@ -346,12 +350,16 @@ class Dataset(ExtraReprMixin):
 
     @property
     def balance(self) -> float:
-        """Measure of how uniform the depth distribution is across all nodes.
+        """Hierarchy shape uniformity: ``1 − CoV(BFS depths)``, clamped to ``[0, 1]``.
 
-        Computed as ``1 - CoV(depths)`` where CoV = pstdev / mean (population
-        coefficient of variation), clamped to ``[0, 1]``.
-        A value of ``1.0`` means all nodes share the same depth (maximally
-        uniform). Lower values indicate a more skewed or imbalanced hierarchy.
+        This is a **custom** hierarchy-shape metric.  It is *not* the paper's
+        coefficient of variation cv_in / cv_out (Zloch et al. 2019 §3.2), which
+        measures degree-distribution heterogeneity.  Here CoV is applied to the
+        BFS depth values of all nodes, not to degree values.
+
+        A value of ``1.0`` means all nodes share the same BFS depth (maximally
+        uniform tree-like structure). Lower values indicate a more skewed or
+        imbalanced hierarchy.
 
         :returns: Balance score in ``[0, 1]``.
         """
@@ -367,7 +375,10 @@ class Dataset(ExtraReprMixin):
 
     @property
     def levels(self) -> int:
-        """Maximum depth of any node measured from the nearest root (alias for :attr:`hierarchy_depth`).
+        """Alias for :attr:`hierarchy_depth`.
+
+        Returns the maximum BFS depth from root nodes, **not** the graph
+        diameter δ (longest shortest path between any two vertices).
 
         :returns: The largest BFS depth across all nodes. Returns 0 if the graph has no edges.
         """
@@ -375,7 +386,13 @@ class Dataset(ExtraReprMixin):
 
     @property
     def average_branch_out(self) -> float:
-        """Mean out-degree computed only over non-leaf nodes (nodes with at least one child).
+        """Mean out-degree of non-leaf nodes (nodes with at least one child).
+
+        This is **not** the paper's z_out (Zloch et al. 2019 §3.2), which is
+        the average out-degree over *all* entities (= m / n, see
+        :attr:`average_fan_out`).  Excluding leaves inflates this value and
+        makes it a hierarchy-specific branching factor rather than a standard
+        graph metric.
 
         :returns: Average out-degree of parent nodes. Returns 0.0 if there are no parent nodes.
         """
@@ -388,6 +405,158 @@ class Dataset(ExtraReprMixin):
         if parent_counts.numel() == 0:
             return 0.0
         return float(parent_counts.float().mean().item())
+
+    # ------------------------------------------------------------------
+    # Paper-aligned graph measures (Zloch et al. 2019 §3.2)
+    # ------------------------------------------------------------------
+
+    def _in_out_degrees(self) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return (in_degree, out_degree) tensors of length num_entities."""
+        triples = self.training.mapped_triples
+        n = self.num_entities
+        if triples.numel() == 0:
+            zeros = torch.zeros(n, dtype=torch.long)
+            return zeros, zeros
+        in_deg = torch.bincount(triples[:, 2], minlength=n)
+        out_deg = torch.bincount(triples[:, 0], minlength=n)
+        return in_deg, out_deg
+
+    @property
+    def density(self) -> float:
+        """Edge density p = m / n² (Zloch et al. 2019 §3.2).
+
+        Also called *fill* or *connectance*: the probability that a directed
+        edge exists between two randomly chosen vertices (loops included).
+
+        :returns: Density in ``[0, 1]``. Returns 0.0 for a graph with no nodes.
+        """
+        n = self.num_entities
+        if n == 0:
+            return 0.0
+        return self.training.num_triples / (n * n)
+
+    @property
+    def unique_edge_density(self) -> float:
+        """Unique-edge density p_u = m_u / n² (Zloch et al. 2019 §3.2).
+
+        Like :attr:`density` but parallel edges (same head–tail pair, different
+        relation) are counted only once.
+
+        :returns: Unique-edge density in ``[0, 1]``.
+        """
+        n = self.num_entities
+        if n == 0:
+            return 0.0
+        triples = self.training.mapped_triples
+        if triples.numel() == 0:
+            return 0.0
+        unique_pairs = triples[:, [0, 2]].unique(dim=0).shape[0]
+        return unique_pairs / (n * n)
+
+    @property
+    def reciprocity(self) -> float:
+        """Fraction of bidirectional edges y = m_bi / m (Zloch et al. 2019 §3.2).
+
+        m_bi = |{(u, v) ∈ E | ∃(v, u) ∈ E}|: count of individual edges (incl.
+        parallel multi-relational ones) for which a reverse (v, u) also exists.
+        Divided by m, the total number of edges (same multiset cardinality).
+        Relation labels are ignored when checking for a reverse.
+
+        :returns: Reciprocity in ``[0, 1]``. Returns 0.0 for an empty graph.
+        """
+        triples = self.training.mapped_triples
+        m = triples.shape[0]
+        if m == 0:
+            return 0.0
+        heads = triples[:, 0].tolist()
+        tails = triples[:, 2].tolist()
+        ht_set = {(int(h), int(t)) for h, t in zip(heads, tails, strict=False)}
+        m_bi = sum(1 for h, t in zip(heads, tails, strict=False) if (int(t), int(h)) in ht_set)
+        return m_bi / m
+
+    @property
+    def h_index(self) -> int:
+        """Directed h-index h_d (Zloch et al. 2019 §3.2).
+
+        The largest integer h such that at least h entities have in-degree ≥ h.
+        Adapted from Hirsch (2005): a high value indicates many "prestigious"
+        nodes (highly referenced entities).
+
+        :returns: Directed h-index ≥ 0.
+        """
+        in_deg, _ = self._in_out_degrees()
+        sorted_deg = torch.sort(in_deg, descending=True)[0]
+        h = 0
+        for i, d in enumerate(sorted_deg.tolist(), start=1):
+            if d >= i:
+                h = i
+            else:
+                break
+        return h
+
+    @property
+    def degree_variance_in(self) -> float:
+        """Population variance σ²_in of the in-degree distribution (Zloch et al. 2019 §3.2).
+
+        :returns: In-degree variance. Returns 0.0 for an empty or single-node graph.
+        """
+        in_deg, _ = self._in_out_degrees()
+        return float(in_deg.float().var(correction=0).item())
+
+    @property
+    def degree_variance_out(self) -> float:
+        """Population variance σ²_out of the out-degree distribution (Zloch et al. 2019 §3.2).
+
+        :returns: Out-degree variance. Returns 0.0 for an empty or single-node graph.
+        """
+        _, out_deg = self._in_out_degrees()
+        return float(out_deg.float().var(correction=0).item())
+
+    @property
+    def degree_std_in(self) -> float:
+        """Population standard deviation σ_in of the in-degree distribution (Zloch et al. 2019 §3.2).
+
+        :returns: In-degree standard deviation ≥ 0.
+        """
+        return self.degree_variance_in**0.5
+
+    @property
+    def degree_std_out(self) -> float:
+        """Population standard deviation σ_out of the out-degree distribution (Zloch et al. 2019 §3.2).
+
+        :returns: Out-degree standard deviation ≥ 0.
+        """
+        return self.degree_variance_out**0.5
+
+    @property
+    def coefficient_of_variation_in(self) -> float:
+        """Coefficient of variation cv_in = (σ_in / z_in) × 100 (Zloch et al. 2019 §3.2).
+
+        A high value means high prominence of some vertices (heterogeneous
+        in-degree, i.e. a few nodes are referenced much more than others).
+
+        :returns: cv_in in percent. Returns 0.0 when mean in-degree is zero.
+        """
+        in_deg, _ = self._in_out_degrees()
+        z_in = float(in_deg.float().mean().item())
+        if z_in == 0.0:
+            return 0.0
+        return (self.degree_std_in / z_in) * 100.0
+
+    @property
+    def coefficient_of_variation_out(self) -> float:
+        """Coefficient of variation cv_out = (σ_out / z_out) × 100 (Zloch et al. 2019 §3.2).
+
+        A low value means constant influence of vertices (homogeneous
+        out-degree distribution).
+
+        :returns: cv_out in percent. Returns 0.0 when mean out-degree is zero.
+        """
+        _, out_deg = self._in_out_degrees()
+        z_out = float(out_deg.float().mean().item())
+        if z_out == 0.0:
+            return 0.0
+        return (self.degree_std_out / z_out) * 100.0
 
     def get_ancestors(self, node_id: int) -> frozenset[int]:
         """Return all ancestors (transitive predecessors) of the given node.
