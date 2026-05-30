@@ -50,7 +50,6 @@ from .metadata import MetadataDataset, RemoteMetadataDataset
 from .nations import Nations
 from .numeric import (
     NumericPathDataset,
-    SingleRemoteNumericDataset,
     TabbedNumericDataset,
     UnpackedRemoteNumericDataset,
 )
@@ -116,7 +115,6 @@ __all__ = [
     "PrimeKG",
     "MetadataDataset",
     "RemoteMetadataDataset",
-    "SingleRemoteNumericDataset",
     "UnpackedRemoteNumericDataset",
     "Chameleon",
     "CiteSeer",
@@ -150,7 +148,6 @@ dataset_resolver: ClassResolver[Dataset] = ClassResolver.from_subclasses(
         SingleTabbedDataset,
         NumericPathDataset,
         TabbedNumericDataset,
-        SingleRemoteNumericDataset,
         UnpackedRemoteNumericDataset,
         MTransEDataset,
         OGBLoader,

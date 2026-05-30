@@ -4,23 +4,21 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .numeric import SingleRemoteNumericDataset
+from .metadata import RemoteMetadataDataset
 
 __all__ = [
     "Chameleon",
 ]
 
 _BASE_URL = "https://syncandshare.lrz.de/dl/fi6LqgLVY3P3AEtC24Yzpq/chameleon/"
-_DATASET_URL = _BASE_URL + "dataset.tsv"
-_LITERALS_URL = _BASE_URL + "literals.tsv"
 
 
 @parse_docdata
-class Chameleon(SingleRemoteNumericDataset):
+class Chameleon(RemoteMetadataDataset):
     """The Wikipedia Chameleon page-page graph dataset.
 
     Nodes are Wikipedia pages about chameleons; edges connect pages that share
-    mutual links. Each node has a literal feature vector derived from the page's nouns
+    mutual links. Each node has a feature vector derived from the page's nouns
     and one of 5 class labels (page traffic categories).
 
     Source: https://snap.stanford.edu/data/wikipedia-article-networks.html
@@ -42,16 +40,5 @@ class Chameleon(SingleRemoteNumericDataset):
         triples: 31102
     """
 
-    def __init__(self, **kwargs) -> None:
-        """Initialize the Chameleon dataset.
-
-        :param kwargs: Additional keyword arguments forwarded to
-            :class:`~pykeen.datasets.numeric.SingleRemoteNumericDataset`.
-        """
-        kwargs.setdefault("read_csv_kwargs", {})
-        kwargs["read_csv_kwargs"].setdefault("dtype", str)
-        super().__init__(
-            url=_DATASET_URL,
-            literals_url=_LITERALS_URL,
-            **kwargs,
-        )
+    triples_url = _BASE_URL + "dataset.tsv"
+    entity_metadata_url = _BASE_URL + "metadata.tsv"
