@@ -1,0 +1,49 @@
+name: Sync Fork
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add pykeen https://github.com/pykeen/pykeen.git
+
+      - name: Fetch upstream
+        run: git fetch pykeen master
+
+      - name: Create sync branch
+        run: |
+          BRANCH="sync/upstream-$(date +%Y-%m-%d)"
+          git checkout -b "$BRANCH"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Merge upstream into sync branch
+        run: git merge pykeen/master --no-edit
+
+      - name: Push sync branch
+        run: git push origin "$BRANCH"
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: sync with upstream pykeen/pykeen ($(date +%Y-%m-%d))" \
+            --body "Automated sync with [pykeen/pykeen](https://github.com/pykeen/pykeen) master branch. Review and merge when CI is green."
