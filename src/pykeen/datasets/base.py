@@ -11,6 +11,7 @@ from collections.abc import Collection, Iterable, Mapping, Sequence
 from io import BytesIO
 from typing import Any, ClassVar, cast
 
+import networkx as nx
 import click
 import docdata
 import pandas as pd
@@ -489,6 +490,25 @@ class Dataset(ExtraReprMixin):
         """Return a single triples factory with all triples."""
         training, *rest = self._tup()
         return training.merge(*rest)
+
+    @property
+    def full_graph(self) -> CoreTriplesFactory:
+        """Return a single triples factory combining training, testing, and validation triples."""
+        return self.merged()
+
+    def to_networkx(self) -> nx.MultiDiGraph:
+        """Return a directed multigraph over all triples (train + test + validation).
+
+        Nodes are integer entity IDs; each edge carries a ``relation`` attribute
+        with the integer relation ID.
+        """
+        graph = nx.MultiDiGraph()
+        graph.add_nodes_from(range(self.num_entities))
+        graph.add_edges_from(
+            (h, t, {"relation": r})
+            for h, r, t in self.full_graph.mapped_triples.tolist()
+        )
+        return graph
 
 
 class EagerDataset(Dataset):

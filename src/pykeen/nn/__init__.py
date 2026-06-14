@@ -11,7 +11,7 @@ from .combination import (
     ConcatProjectionCombination,
     GatedCombination,
 )
-from .hyperbolic import LorentzEmbedding, PoincareEmbedding
+from .hyperbolic import HyperbolicConesEmbedding, LorentzEmbedding, PoincareEmbedding
 from .message_passing import RGCNRepresentation
 from .meta import FeatureEnrichedEmbedding, MLPTransformedRepresentation
 from .modules import (
@@ -27,6 +27,7 @@ from .modules import (
     ERMLPEInteraction,
     ERMLPInteraction,
     HolEInteraction,
+    HyperbolicConesInteraction,
     Interaction,
     KG2EInteraction,
     LineaREInteraction,
@@ -35,6 +36,7 @@ from .modules import (
     MuREInteraction,
     NTNInteraction,
     PairREInteraction,
+    PoincareEInteraction,
     ProjEInteraction,
     QuatEInteraction,
     RESCALInteraction,
@@ -86,8 +88,9 @@ __all__ = [
     "Representation",
     # concrete
     "Embedding",
-    "PoincareEmbedding",
+    "HyperbolicConesEmbedding",
     "LorentzEmbedding",
+    "PoincareEmbedding",
     "FeaturizedMessagePassingRepresentation",
     "LowRankRepresentation",
     "NodePieceRepresentation",
@@ -134,12 +137,14 @@ __all__ = [
     "ERMLPEInteraction",
     "ERMLPInteraction",
     "HolEInteraction",
+    "HyperbolicConesInteraction",
     "KG2EInteraction",
     "LineaREInteraction",
     "MultiLinearTuckerInteraction",
     "MuREInteraction",
     "NTNInteraction",
     "PairREInteraction",
+    "PoincareEInteraction",
     "ProjEInteraction",
     "QuatEInteraction",
     "RESCALInteraction",

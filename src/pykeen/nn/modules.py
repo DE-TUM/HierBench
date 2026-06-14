@@ -12,6 +12,7 @@ from collections.abc import Collection, Iterable, Mapping, Sequence
 from operator import itemgetter
 from typing import Any, ClassVar, Generic, cast, overload
 
+import geoopt
 import more_itertools
 import numpy
 import torch
@@ -87,12 +88,14 @@ __all__ = [
     "ERMLPEInteraction",
     "ERMLPInteraction",
     "HolEInteraction",
+    "HyperbolicConesInteraction",
     "KG2EInteraction",
     "LineaREInteraction",
     "MultiLinearTuckerInteraction",
     "MuREInteraction",
     "NTNInteraction",
     "PairREInteraction",
+    "PoincareEInteraction",
     "ProjEInteraction",
     "QuatEInteraction",
     "RESCALInteraction",
@@ -2048,6 +2051,149 @@ class UMInteraction(NormBasedInteraction[FloatTensor, tuple[()], FloatTensor]):
             The scores.
         """
         return negative_norm(h - t, p=self.p, power_norm=self.power_norm)
+
+
+@parse_docdata
+class PoincareEInteraction(Interaction[FloatTensor, tuple[()], FloatTensor]):
+    r"""Poincaré Embeddings interaction for hierarchical link prediction.
+
+    Scores a pair ``(h, t)`` using the negative Poincaré distance on the ball of
+    curvature ``c``:
+
+    .. math::
+
+        -d_{\mathcal{B}_c}(\mathbf{h}, \mathbf{t})
+
+    Entities near the ball's center represent general concepts (ancestors); entities near the
+    boundary represent specific concepts (leaves). The score is asymmetric in the sense that
+    Poincaré distance reflects hierarchical depth.
+
+    ---
+    name: Poincare Embedding
+    citation:
+        author: Nickel
+        year: 2017
+        link: https://arxiv.org/abs/1705.08039
+    """
+
+    relation_shape: Sequence[str] = ()
+
+    def __init__(self, curvature: float = 1.0, trainable_curvature: bool = False) -> None:
+        """Initialise the interaction.
+
+        :param curvature:
+            The curvature ``c`` of the Poincaré ball. Positive float.
+        :param trainable_curvature:
+            Whether to learn the curvature during training.
+        """
+        super().__init__()
+        curvature_tensor = torch.as_tensor(curvature, dtype=torch.float)
+        if trainable_curvature:
+            self.curvature = nn.Parameter(curvature_tensor)
+        else:
+            self.register_buffer("curvature", curvature_tensor)
+        self.manifold = geoopt.PoincareBall(c=self.curvature)
+
+    def forward(self, h: FloatTensor, r: tuple[()], t: FloatTensor) -> FloatTensor:
+        """Evaluate the interaction function.
+
+        :param h: shape: ``(*batch_dims, d)``
+            The head representations on the Poincaré ball.
+        :param r:
+            No relation representations.
+        :param t: shape: ``(*batch_dims, d)``
+            The tail representations on the Poincaré ball.
+
+        :return: shape: ``batch_dims``
+            The scores.
+        """
+        return -self.manifold.dist(h, t)
+
+
+@parse_docdata
+class HyperbolicConesInteraction(Interaction[FloatTensor, tuple[()], FloatTensor]):
+    r"""Hyperbolic Entailment Cones interaction from [ganea2018]_.
+
+    Scores a pair ``(h, t)`` — where ``h`` is the parent (ancestor) and ``t`` is the child
+    (descendant) — using a cone membership energy on the Poincaré ball:
+
+    .. math::
+
+        \text{score}(h, t) = -\max\!\bigl(0,\; \Xi(h, t) - \psi(h)\bigr)
+
+    where:
+
+    - :math:`\psi(h) = \arcsin\!\bigl(K\,(1 - \|h\|^2) / \|h\|\bigr)` is the cone
+      opening half-angle at parent ``h`` (Eq. 26),
+    - :math:`\Xi(h, t)` is the exterior angle of ``t`` w.r.t. ``h``'s cone axis (Eq. 28):
+
+    .. math::
+
+        \Xi(h, t) = \arccos\!\left(
+            \frac{\langle h,t\rangle(1+\|h\|^2) - \|h\|^2(1+\|t\|^2)}
+                 {\|h\| \cdot \|h-t\| \cdot \sqrt{1+\|h\|^2\|t\|^2 - 2\langle h,t\rangle}}
+        \right)
+
+    A score of 0 means ``t`` lies inside ``h``'s entailment cone.
+    Pair with :class:`~pykeen.nn.hyperbolic.HyperbolicConesEmbedding` to enforce the
+    inner-radius constraint on entity embeddings.
+
+    .. warning::
+
+        This model uses manifold parameters. For correct Riemannian gradient updates use
+        a Riemannian optimiser such as :class:`geoopt.optim.RiemannianAdam`.
+
+    ---
+    name: Hyperbolic Entailment Cones
+    citation:
+        author: Ganea
+        year: 2018
+        link: https://arxiv.org/abs/1804.01882
+        github: dalab/hyperbolic_cones
+    """
+
+    relation_shape: Sequence[str] = ()
+
+    def __init__(self, k: float = 0.1) -> None:
+        """Initialise the interaction.
+
+        :param k:
+            Cone width parameter (K in the paper). Controls the opening angle ψ and the
+            inner radius. Larger k → wider cones. Must satisfy k > 0. Typical value: 0.1.
+        """
+        super().__init__()
+        self.k = k
+
+    def forward(self, h: FloatTensor, r: tuple[()], t: FloatTensor) -> FloatTensor:
+        """Evaluate the interaction function.
+
+        :param h: shape: ``(*batch_dims, d)``
+            The parent (ancestor) entity representations on the Poincaré ball.
+        :param r:
+            No relation representations.
+        :param t: shape: ``(*batch_dims, d)``
+            The child (descendant) entity representations on the Poincaré ball.
+
+        :return: shape: ``batch_dims``
+            The scores (negative cone energy; higher is better).
+        """
+        eps = 1e-5
+        h_norm_sq = (h * h).sum(dim=-1)
+        t_norm_sq = (t * t).sum(dim=-1)
+        h_norm = h_norm_sq.sqrt().clamp(min=eps)
+        dot_ht = (h * t).sum(dim=-1)
+        diff_norm = (h - t).norm(dim=-1).clamp(min=eps)
+
+        cone_sin = (self.k * (1.0 - h_norm_sq) / h_norm).clamp(-1.0 + eps, 1.0 - eps)
+        cone_angle = cone_sin.arcsin()
+
+        g = (1.0 + h_norm_sq * t_norm_sq - 2.0 * dot_ht).clamp(min=eps)
+        cos_child = (dot_ht * (1.0 + h_norm_sq) - h_norm_sq * (1.0 + t_norm_sq)) / (
+            h_norm * diff_norm * g.sqrt()
+        )
+        child_angle = cos_child.clamp(-1.0 + eps, 1.0 - eps).arccos()
+
+        return -torch.relu(child_angle - cone_angle)
 
 
 @parse_docdata

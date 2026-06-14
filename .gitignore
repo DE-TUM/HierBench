@@ -122,3 +122,4 @@ tox2.ini
 uv.lock
 CLAUDE.md
 test.py
+notebooks/

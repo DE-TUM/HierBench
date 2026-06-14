@@ -8,9 +8,11 @@ from .api import (
     replicate_pipeline_from_config,
     replicate_pipeline_from_path,
 )
+from .hierarchy import ancestor_descendant_pipeline
 from .plot_utils import plot, plot_early_stopping, plot_er, plot_losses
 
 __all__ = [
+    "ancestor_descendant_pipeline",
     "PipelineResult",
     "pipeline_from_path",
     "pipeline_from_config",

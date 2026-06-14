@@ -413,3 +413,176 @@ def test_loading_training_triples_factory(tf_cls: type[CoreTriplesFactory]):
     with tempfile.TemporaryDirectory() as directory:
         result.save_to_directory(directory)
         tf_cls.from_path_binary(pathlib.Path(directory, "training_triples"))
+
+
+def _make_chain_dataset() -> EagerDataset:
+    """Return a tiny 4-node chain dataset: 0→1→2→3.
+
+    Multi-hop ancestors: 0 is a 2-hop ancestor of 2, and a 3-hop ancestor of 3;
+    1 is a 2-hop ancestor of 3.
+    """
+    from pykeen.triples import CoreTriplesFactory
+
+    # train: direct edges 0→1, 1→2, 2→3
+    train_triples = torch.tensor([[0, 0, 1], [1, 0, 2], [2, 0, 3]], dtype=torch.long)
+    train = CoreTriplesFactory(mapped_triples=train_triples, num_entities=4, num_relations=1)
+    # validation/test: use the same factory as placeholder; pipeline overrides testing anyway
+    return EagerDataset(training=train, testing=train, validation=train)
+
+
+def _make_diamond_dataset() -> EagerDataset:
+    """Return a 4-node diamond dataset with a direct shortcut edge 0→3.
+
+    Edges: 0→1, 0→2, 1→3, 2→3, 0→3.
+    All five edges are direct edges and always in training; TC-only pairs form the holdout.
+    """
+    train_triples = torch.tensor(
+        [[0, 0, 1], [0, 0, 2], [1, 0, 3], [2, 0, 3], [0, 0, 3]],
+        dtype=torch.long,
+    )
+    train = CoreTriplesFactory(mapped_triples=train_triples, num_entities=4, num_relations=1)
+    return EagerDataset(training=train, testing=train, validation=train)
+
+
+def _make_balanced_tree_dataset() -> EagerDataset:
+    """Return a depth-3 complete binary tree (15 nodes, no shortcuts).
+
+    Node ``i`` has children ``2i+1`` and ``2i+2`` for ``i`` in 0..6; nodes 7..14 are leaves.
+    Because the graph is a tree, the hop distance of any ancestor-descendant pair equals its
+    unique shortest-path length, which makes per-hop sampling balance verifiable.
+    """
+    rows = [[i, 0, child] for i in range(7) for child in (2 * i + 1, 2 * i + 2)]
+    train_triples = torch.tensor(rows, dtype=torch.long)
+    train = CoreTriplesFactory(mapped_triples=train_triples, num_entities=15, num_relations=1)
+    return EagerDataset(training=train, testing=train, validation=train)
+
+
+class TestAncestorDescendantPipeline(unittest.TestCase):
+    """Tests for the ancestor-descendant benchmark pipeline."""
+
+    def test_pipeline_runs(self):
+        """Pipeline completes and returns a valid MRR score on a small chain dataset."""
+        from pykeen.pipeline.hierarchy import ancestor_descendant_pipeline
+
+        dataset = _make_chain_dataset()
+        result = ancestor_descendant_pipeline(dataset, epochs=1)
+        assert result.metric_results is not None
+        mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+        assert 0.0 <= mrr <= 1.0
+
+    def test_sampled_pairs_are_valid_multihop(self):
+        """Every sampled val/test pair is a reachable, non-direct ancestor-descendant pair."""
+        import networkx as nx
+
+        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+
+        dataset = _make_chain_dataset()
+        direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+        graph = nx.DiGraph()
+        graph.add_nodes_from(range(dataset.num_entities))
+        graph.add_edges_from(direct)
+
+        _train, val, test = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=10, seed=0)
+        eval_pairs = {(h, t) for h, _, t in (val.mapped_triples.tolist() + test.mapped_triples.tolist())}
+        # On a 4-node chain the only multi-hop pairs that exist are these three.
+        assert eval_pairs <= {(0, 2), (0, 3), (1, 3)}
+        for h, t in eval_pairs:
+            assert h != t
+            assert (h, t) not in direct
+            assert nx.has_path(graph, h, t)
+
+    def test_poincare_scores_are_non_positive(self):
+        """Poincaré interaction scores are always ≤ 0 (negative Poincaré distance).
+
+        Self-pairs score exactly 0; all other pairs score strictly below 0.
+        """
+        from pykeen.nn.modules import PoincareEInteraction
+
+        interaction = PoincareEInteraction(curvature=1.0)
+        # Embeddings strictly inside the unit ball
+        embeddings = torch.tensor(
+            [[0.0, 0.0], [0.1, 0.1], [0.3, -0.2], [-0.5, 0.4]],
+            dtype=torch.float32,
+        )
+
+        def score(h_idx: int, t_idx: int) -> float:
+            """Score a single (head, tail) pair using Poincaré interaction."""
+            return interaction.forward(embeddings[h_idx].unsqueeze(0), (), embeddings[t_idx].unsqueeze(0)).item()
+
+        # Self-pairs: distance to itself is 0 → score = 0
+        for i in range(len(embeddings)):
+            assert score(i, i) == pytest.approx(0.0, abs=1e-5), f"Self-score for entity {i} should be 0"
+
+        # Cross-pairs: all other scores must be strictly negative
+        for i in range(len(embeddings)):
+            for j in range(len(embeddings)):
+                if i != j:
+                    assert score(i, j) < 0.0, f"score({i}, {j}) should be negative"
+
+    def test_train_is_exactly_direct_edges(self):
+        """Training contains exactly the direct graph edges, regardless of the pair budget."""
+        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+
+        dataset = _make_diamond_dataset()
+        direct_edges = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+
+        for num_pairs in (0, 4, 50):
+            train, _val, _test = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=num_pairs, seed=42)
+            train_pairs = {(h, t) for h, _, t in train.mapped_triples.tolist()}
+            assert train_pairs == direct_edges, f"train != direct edges at num_pairs={num_pairs}"
+
+    def test_hierarchy_splits_no_leakage(self):
+        """No sampled eval pair appears in training, and validation/test are disjoint."""
+        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+
+        dataset = _make_balanced_tree_dataset()
+        train, val, test = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=12, seed=42)
+        train_pairs = {(h, t) for h, _, t in train.mapped_triples.tolist()}
+        val_pairs = {(h, t) for h, _, t in val.mapped_triples.tolist()}
+        test_pairs = {(h, t) for h, _, t in test.mapped_triples.tolist()}
+        assert train_pairs.isdisjoint(val_pairs | test_pairs)
+        assert val_pairs.isdisjoint(test_pairs)
+
+    def test_hop_balance(self):
+        """Sampled pairs match the requested hop distances and are balanced across hops."""
+        from collections import Counter
+
+        import networkx as nx
+
+        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+
+        dataset = _make_balanced_tree_dataset()
+        graph = nx.DiGraph()
+        graph.add_nodes_from(range(dataset.num_entities))
+        graph.add_edges_from((h, t) for h, _, t in dataset.training.mapped_triples.tolist())
+
+        # The tree supplies 12 two-hop and 8 three-hop pairs, so a budget of 12 (6 per hop)
+        # is fully satisfiable and must come out exactly balanced.
+        _train, val, test = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=12, seed=42)
+        eval_pairs = [(h, t) for h, _, t in (val.mapped_triples.tolist() + test.mapped_triples.tolist())]
+        hop_counts = Counter(nx.shortest_path_length(graph, h, t) for h, t in eval_pairs)
+        assert set(hop_counts) <= {2, 3}
+        assert hop_counts[2] == 6
+        assert hop_counts[3] == 6
+
+    def test_determinism(self):
+        """Identical seeds yield identical splits; the total sampled never exceeds the budget."""
+        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+
+        dataset = _make_balanced_tree_dataset()
+        first = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=12, seed=7)
+        second = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=12, seed=7)
+        for factory_a, factory_b in zip(first, second, strict=True):
+            assert torch.equal(factory_a.mapped_triples, factory_b.mapped_triples)
+        _train, val, test = first
+        assert val.num_triples + test.num_triples <= 12
+
+    def test_pipeline_runs_with_hops(self):
+        """Pipeline with custom hops/num_pairs completes and returns a valid MRR score."""
+        from pykeen.pipeline.hierarchy import ancestor_descendant_pipeline
+
+        dataset = _make_balanced_tree_dataset()
+        result = ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
+        assert result.metric_results is not None
+        mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+        assert 0.0 <= mrr <= 1.0

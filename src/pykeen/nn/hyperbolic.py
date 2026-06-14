@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import warnings
+import math
 from typing import Any
 
 import geoopt
@@ -15,8 +16,9 @@ from .representation import Representation, process_max_id, process_shape
 from ..typing import FloatTensor, Hint, Initializer, LongTensor
 
 __all__ = [
-    "PoincareEmbedding",
+    "HyperbolicConesEmbedding",
     "LorentzEmbedding",
+    "PoincareEmbedding",
 ]
 
 logger = logging.getLogger(__name__)
@@ -252,3 +254,83 @@ class LorentzEmbedding(Representation):
         yield f"curvature={k:.4f}"
         if self._curvature is not None:
             yield "trainable_curvature=True"
+
+
+class HyperbolicConesEmbedding(PoincareEmbedding):
+    """Poincaré ball embeddings with an inner-radius constraint for Hyperbolic Entailment Cones.
+
+    Extends :class:`PoincareEmbedding` by enforcing that embeddings stay outside an inner
+    K-ball of radius ``inner_radius = 2K / (1 + sqrt(1 + 4K²))`` (Eq. 25 in [ganea2018]_).
+    This guarantees a well-defined cone opening angle ψ(x) = arcsin(K(1−‖x‖²)/‖x‖) for all x.
+
+    .. [ganea2018] Ganea, O.-E., Bécigneul, G., & Hofmann, T. (2018).
+       `Hyperbolic Entailment Cones for Learning Hierarchical Embeddings
+       <https://arxiv.org/abs/1804.01882>`_. ICML 2018.
+
+    ---
+    name: Hyperbolic Cones Embedding
+    """
+
+    def __init__(
+        self,
+        max_id: int | None = None,
+        num_embeddings: int | None = None,
+        embedding_dim: int | None = None,
+        shape: None | int = None,
+        k: float = 0.1,
+        curvature: float = 1.0,
+        trainable_curvature: bool = False,
+        initializer: Hint[Initializer] = None,
+        initializer_kwargs: dict[str, Any] | None = None,
+        trainable: bool = True,
+        **kwargs,
+    ):
+        """Initialize Hyperbolic Entailment Cones embeddings.
+
+        :param max_id:
+            The number of embeddings.
+        :param num_embeddings:
+            Alias for max_id (deprecated).
+        :param embedding_dim:
+            The dimensionality d of the Poincaré ball.
+        :param shape:
+            Alternative to embedding_dim; must be 1-D.
+        :param k:
+            Cone width parameter (K in the paper). Controls the opening angle ψ and the
+            inner radius. Larger k → wider cones. Typical value: 0.1.
+        :param curvature:
+            Absolute curvature c > 0.
+        :param trainable_curvature:
+            If True, wraps curvature in nn.Parameter so it is learned during training.
+        :param initializer:
+            Optional callable for weight initialization.
+        :param initializer_kwargs:
+            Additional kwargs for the initializer.
+        :param trainable:
+            Whether the embedding weights require gradient.
+        :param kwargs:
+            Passed to :class:`PoincareEmbedding`.
+        """
+        super().__init__(
+            max_id=max_id,
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim,
+            shape=shape,
+            curvature=curvature,
+            trainable_curvature=trainable_curvature,
+            initializer=initializer,
+            initializer_kwargs=initializer_kwargs,
+            trainable=trainable,
+            **kwargs,
+        )
+        self.k = k
+        self.inner_radius = 2.0 * k / (1.0 + math.sqrt(1.0 + 4.0 * k**2))
+
+    def post_parameter_update(self) -> None:  # noqa: D102
+        """Project onto Poincaré ball and lift away from the inner K-ball."""
+        super().post_parameter_update()
+        with torch.no_grad():
+            norms = self._embeddings.data.norm(dim=-1, keepdim=True).clamp(min=1e-8)
+            min_norm = self.inner_radius + 1e-5
+            scale = (min_norm / norms).clamp(min=1.0)
+            self._embeddings.data.mul_(scale)

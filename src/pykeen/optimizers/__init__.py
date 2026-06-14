@@ -17,6 +17,10 @@ __all__ = [
     "optimizer_resolver",
 ]
 
+# geoopt's Riemannian optimiser is not a ``torch.optim`` subclass discovered by the resolver,
+# so register it explicitly to make it selectable by name (e.g. ``optimizer="RiemannianAdam"``).
+optimizer_resolver.register(RiemannianAdam, raise_on_conflict=False)
+
 #: The default strategy for optimizing the optimizers' hyper-parameters (yo dawg)
 optimizers_hpo_defaults: Mapping[type[Optimizer], Mapping[str, Any]] = {
     Adagrad: {

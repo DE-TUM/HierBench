@@ -645,6 +645,22 @@ class TestAutoSF(cases.ModelTestCase):
     cls = pykeen.models.AutoSF
 
 
+class TestHyperbolicCones(cases.ModelTestCase):
+    """Test the HyperbolicCones model."""
+
+    cls = pykeen.models.HyperbolicCones
+    # one non-trainable curvature scalar from geoopt PoincareBall (isp_c)
+    num_constant_init = 1
+
+
+class TestPoincareE(cases.ModelTestCase):
+    """Test the PoincareE model."""
+
+    cls = pykeen.models.PoincareE
+    # two non-trainable curvature scalars (embedding + interaction)
+    num_constant_init = 2
+
+
 class TestTesting(unittest_templates.MetaTestCase[Model]):
     """Yo dawg, I heard you like testing, so I wrote a test to test the tests so you can test while you're testing."""
 
