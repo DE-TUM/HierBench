@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import pathlib
-import statistics
 import tarfile
 import zipfile
 from abc import abstractmethod
@@ -14,6 +13,7 @@ from typing import Any, ClassVar, cast
 
 import click
 import docdata
+import numpy as np
 import pandas as pd
 import requests
 import torch
@@ -29,6 +29,7 @@ from ..triples.remix import remix
 from ..triples.triples_factory import splits_similarity
 from ..typing import MappedTriples, TorchRandomHint
 from ..utils import ExtraReprMixin, format_relative_comparison, normalize_path, normalize_string
+from .hierarchy_analysis import HierarchyAnalysis
 
 __all__ = [
     # Base classes
@@ -139,7 +140,7 @@ def _restrict_mapping(id_to_label: Mapping[int, str], kept_ids: Sequence[int]) -
     return {id_to_label[old_id]: new_id for new_id, old_id in enumerate(kept_ids)}
 
 
-class Dataset(ExtraReprMixin):
+class Dataset(ExtraReprMixin, HierarchyAnalysis):
     """The base dataset class."""
 
     #: A factory wrapping the training triples
@@ -203,213 +204,6 @@ class Dataset(ExtraReprMixin):
         """Return whether inverse triples are created *for the training factory*."""
         return self.training.create_inverse_triples
 
-    # ------------------------------------------------------------------
-    # Hierarchical graph properties
-    # ------------------------------------------------------------------
-
-    @property
-    def root_nodes(self) -> frozenset[int]:
-        """Top-level nodes: entities that never appear as a tail.
-
-        :returns: Frozenset of entity IDs with in-degree zero.
-        """
-        tails = set(self.training.mapped_triples[:, 2].tolist())
-        return frozenset(i for i in range(self.num_entities) if i not in tails)
-
-    @property
-    def leaf_nodes(self) -> frozenset[int]:
-        """Bottom-level nodes: entities that never appear as a head.
-
-        :returns: Frozenset of entity IDs with out-degree zero.
-        """
-        heads = set(self.training.mapped_triples[:, 0].tolist())
-        return frozenset(i for i in range(self.num_entities) if i not in heads)
-
-    @property
-    def is_dag(self) -> bool:
-        """Check whether the training graph is a Directed Acyclic Graph (DAG).
-
-        Runs an iterative depth-first search with three-colour marking.
-        No auxiliary structures are stored on ``self``.
-
-        :returns: ``True`` if no directed cycle exists, ``False`` otherwise.
-        """
-        triples = self.training.mapped_triples
-        # Build a local adjacency list (freed when this property returns)
-        adj: list[list[int]] = [[] for _ in range(self.num_entities)]
-        for h, t in zip(triples[:, 0].tolist(), triples[:, 2].tolist(), strict=False):
-            adj[h].append(t)
-
-        color = [0] * self.num_entities  # 0 white, 1 grey, 2 black
-
-        for start in range(self.num_entities):
-            if color[start] != 0:
-                continue
-            stack: list[tuple[int, int]] = [(start, 0)]  # (node, child_index)
-            color[start] = 1
-            while stack:
-                node, idx = stack[-1]
-                if idx < len(adj[node]):
-                    stack[-1] = (node, idx + 1)
-                    child = adj[node][idx]
-                    if color[child] == 1:
-                        return False  # back-edge → cycle
-                    if color[child] == 0:
-                        color[child] = 1
-                        stack.append((child, 0))
-                else:
-                    color[node] = 2
-                    stack.pop()
-        return True
-
-    def _node_depths(self) -> dict[int, int]:
-        """Compute the BFS depth of each node from any root node.
-
-        Multi-source BFS starting from all root nodes simultaneously.
-        Nodes unreachable from any root are assigned depth 0.
-
-        :returns: Mapping ``{entity_id: depth}`` where depth is the minimum
-            number of hops from any root. Not cached; recomputed on each call.
-        """
-        triples = self.training.mapped_triples
-        heads = triples[:, 0]
-        tails = triples[:, 2]
-
-        roots = self.root_nodes
-        depths: dict[int, int] = dict.fromkeys(roots, 0)
-        frontier: set[int] = set(roots)
-        current_depth = 0
-
-        while frontier:
-            current_depth += 1
-            frontier_t = torch.tensor(sorted(frontier), dtype=torch.long)
-            mask = torch.isin(heads, frontier_t)
-            children = set(tails[mask].tolist())
-            next_frontier = children - set(depths.keys())
-            for c in next_frontier:
-                depths[c] = current_depth
-            frontier = next_frontier
-
-        # Nodes unreachable from any root (e.g. isolated or in a pure cycle) → depth 0
-        for n in range(self.num_entities):
-            depths.setdefault(n, 0)
-        return depths
-
-    @property
-    def hierarchy_depth(self) -> int:
-        """Maximum BFS depth of any node measured from the nearest root node.
-
-        This is **not** the graph diameter δ (longest shortest path between any
-        two vertices). It is the deepest level in a BFS tree rooted at the
-        set of source nodes (entities with in-degree zero).
-
-        :returns: The largest BFS depth across all nodes. Returns 0 if the
-            graph has no edges.
-        """
-        depths = self._node_depths()
-        return max(depths.values(), default=0)
-
-    @property
-    def average_hierarchy_depth(self) -> float:
-        """Mean BFS depth across all nodes.
-
-        :returns: Average depth from roots. Returns 0.0 for an empty graph.
-        """
-        depths = self._node_depths()
-        if not depths:
-            return 0.0
-        return sum(depths.values()) / len(depths)
-
-    @property
-    def average_fan_out(self) -> float:
-        """Average number of children per node (average out-degree).
-
-        Computed as ``total_edges / num_entities``.
-
-        :returns: Mean out-degree. Returns 0.0 for a graph with no nodes.
-        """
-        if self.num_entities == 0:
-            return 0.0
-        return int(self.training.num_triples) / self.num_entities
-
-    @property
-    def max_fan_out(self) -> int:
-        """Maximum number of children any single node has.
-
-        :returns: Maximum out-degree across all entity IDs. Returns 0 for an
-            empty graph.
-        """
-        if self.num_entities == 0:
-            return 0
-        triples = self.training.mapped_triples
-        if triples.numel() == 0:
-            return 0
-        heads = triples[:, 0]
-        counts = torch.bincount(heads, minlength=self.num_entities)
-        return int(counts.max().item())
-
-    @property
-    def balance(self) -> float:
-        """Hierarchy shape uniformity: ``1 − CoV(BFS depths)``, clamped to ``[0, 1]``.
-
-        This is a **custom** hierarchy-shape metric.  It is *not* the paper's
-        coefficient of variation cv_in / cv_out (Zloch et al. 2019 §3.2), which
-        measures degree-distribution heterogeneity.  Here CoV is applied to the
-        BFS depth values of all nodes, not to degree values.
-
-        A value of ``1.0`` means all nodes share the same BFS depth (maximally
-        uniform tree-like structure). Lower values indicate a more skewed or
-        imbalanced hierarchy.
-
-        :returns: Balance score in ``[0, 1]``.
-        """
-        depths = list(self._node_depths().values())
-        if len(depths) <= 1:
-            return 1.0
-        mean = statistics.mean(depths)
-        if mean == 0:
-            return 1.0
-        stdev = statistics.pstdev(depths)
-        cov = stdev / mean
-        return float(max(0.0, 1.0 - cov))
-
-    @property
-    def levels(self) -> int:
-        """Alias for :attr:`hierarchy_depth`.
-
-        Returns the maximum BFS depth from root nodes, **not** the graph
-        diameter δ (longest shortest path between any two vertices).
-
-        :returns: The largest BFS depth across all nodes. Returns 0 if the graph has no edges.
-        """
-        return self.hierarchy_depth
-
-    @property
-    def average_branch_out(self) -> float:
-        """Mean out-degree of non-leaf nodes (nodes with at least one child).
-
-        This is **not** the paper's z_out (Zloch et al. 2019 §3.2), which is
-        the average out-degree over *all* entities (= m / n, see
-        :attr:`average_fan_out`).  Excluding leaves inflates this value and
-        makes it a hierarchy-specific branching factor rather than a standard
-        graph metric.
-
-        :returns: Average out-degree of parent nodes. Returns 0.0 if there are no parent nodes.
-        """
-        triples = self.training.mapped_triples
-        if triples.numel() == 0:
-            return 0.0
-        heads = triples[:, 0]
-        counts = torch.bincount(heads, minlength=self.num_entities)
-        parent_counts = counts[counts > 0]
-        if parent_counts.numel() == 0:
-            return 0.0
-        return float(parent_counts.float().mean().item())
-
-    # ------------------------------------------------------------------
-    # Paper-aligned graph measures (Zloch et al. 2019 §3.2)
-    # ------------------------------------------------------------------
-
     def _in_out_degrees(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Return (in_degree, out_degree) tensors of length num_entities."""
         triples = self.training.mapped_triples
@@ -421,9 +215,189 @@ class Dataset(ExtraReprMixin):
         out_deg = torch.bincount(triples[:, 0], minlength=n)
         return in_deg, out_deg
 
+    # ------------------------------------------------------------------
+    # Paper-aligned graph measures (Zloch et al. 2019)
+    # ------------------------------------------------------------------
+
+    @property
+    def total_vertices(self) -> int:
+        """Total number of vertices |V| (Zloch et al. 2019)."""
+        return self.num_entities
+
+    @property
+    def total_edges(self) -> int:
+        """Total number of edges m (Zloch et al. 2019)."""
+        return self.training.num_triples
+
+    @property
+    def parallel_edges(self) -> int:
+        """Parallel edges m_p: edges sharing the same source and target vertices (Zloch et al. 2019)."""
+        triples = self.training.mapped_triples
+        if triples.numel() == 0:
+            return 0
+        unique_pairs = triples[:, [0, 2]].unique(dim=0).shape[0]
+        return int(self.total_edges - unique_pairs)
+
+    @property
+    def unique_edges(self) -> int:
+        """Unique edges m_u = m - m_p (Zloch et al. 2019)."""
+        return self.total_edges - self.parallel_edges
+
+    def total_degree(self, node_id: int) -> int:
+        """Total degree d(v) = d_in(v) + d_out(v) for a single vertex (Zloch et al. 2019)."""
+        in_deg, out_deg = self._in_out_degrees()
+        return int((in_deg[node_id] + out_deg[node_id]).item())
+
+    def in_degree(self, node_id: int) -> int:
+        """In-degree d_in(v) for a single vertex (Zloch et al. 2019)."""
+        in_deg, _ = self._in_out_degrees()
+        return int(in_deg[node_id].item())
+
+    def out_degree(self, node_id: int) -> int:
+        """Out-degree d_out(v) for a single vertex (Zloch et al. 2019)."""
+        _, out_deg = self._in_out_degrees()
+        return int(out_deg[node_id].item())
+
+    @property
+    def max_degree(self) -> int:
+        """Maximum total degree d_max across all vertices (Zloch et al. 2019)."""
+        in_deg, out_deg = self._in_out_degrees()
+        total_deg = in_deg + out_deg
+        return int(total_deg.max().item()) if total_deg.numel() > 0 else 0
+
+    @property
+    def max_in_degree(self) -> int:
+        """Maximum in-degree d_max,in across all vertices (Zloch et al. 2019)."""
+        in_deg, _ = self._in_out_degrees()
+        return int(in_deg.max().item()) if in_deg.numel() > 0 else 0
+
+    @property
+    def max_out_degree(self) -> int:
+        """Maximum out-degree d_max,out across all vertices (Zloch et al. 2019)."""
+        _, out_deg = self._in_out_degrees()
+        return int(out_deg.max().item()) if out_deg.numel() > 0 else 0
+
+    @property
+    def average_degree(self) -> float:
+        """Average total degree z across all vertices (Zloch et al. 2019)."""
+        in_deg, out_deg = self._in_out_degrees()
+        total_deg = in_deg + out_deg
+        return float(total_deg.float().mean().item()) if total_deg.numel() > 0 else 0.0
+
+    @property
+    def average_in_degree(self) -> float:
+        """Average in-degree z_in across all vertices (Zloch et al. 2019)."""
+        in_deg, _ = self._in_out_degrees()
+        return float(in_deg.float().mean().item()) if in_deg.numel() > 0 else 0.0
+
+    @property
+    def average_out_degree(self) -> float:
+        """Average out-degree z_out across all vertices (Zloch et al. 2019)."""
+        _, out_deg = self._in_out_degrees()
+        return float(out_deg.float().mean().item()) if out_deg.numel() > 0 else 0.0
+
+    @property
+    def h_index(self) -> int:
+        """Directed h-index h_d (Zloch et al. 2019).
+
+        The largest integer h such that at least h entities have in-degree >= h.
+
+        :returns: Directed h-index >= 0.
+        """
+        in_deg, _ = self._in_out_degrees()
+        sorted_deg = torch.sort(in_deg, descending=True)[0]
+        h = 0
+        for i, d in enumerate(sorted_deg.tolist(), start=1):
+            if d >= i:
+                h = i
+            else:
+                break
+        return h
+
+    @property
+    def undirected_h_index(self) -> int:
+        """Undirected h-index h_u based on total degree (Zloch et al. 2019)."""
+        in_deg, out_deg = self._in_out_degrees()
+        total_deg = in_deg + out_deg
+        sorted_deg = torch.sort(total_deg, descending=True)[0]
+        h = 0
+        for i, d in enumerate(sorted_deg.tolist(), start=1):
+            if d >= i:
+                h = i
+            else:
+                break
+        return h
+
+    @property
+    def degree_centrality_max(self) -> int:
+        """Maximum degree centrality C_D,max, equal to d_max (Zloch et al. 2019)."""
+        return self.max_degree
+
+    def _unique_in_out_degrees(self) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return in- and out-degree tensors using unique edges only (Zloch et al. 2019)."""
+        n = self.num_entities
+        triples = self.training.mapped_triples
+        if triples.numel() == 0:
+            zeros = torch.zeros(n, dtype=torch.long)
+            return zeros, zeros
+        unique_pairs = triples[:, [0, 2]].unique(dim=0)
+        out_deg = torch.bincount(unique_pairs[:, 0], minlength=n)
+        in_deg = torch.bincount(unique_pairs[:, 1], minlength=n)
+        return in_deg, out_deg
+
+    def _pagerank_scores(self, damping: float = 0.85, max_iter: int = 100, tol: float = 1e-12) -> torch.Tensor:
+        """Compute PageRank scores for the training graph (Zloch et al. 2019)."""
+        n = self.num_entities
+        if n == 0:
+            return torch.empty(0, dtype=torch.float)
+
+        triples = self.training.mapped_triples
+        if triples.numel() == 0:
+            return torch.full((n,), 1.0 / n, dtype=torch.float)
+
+        heads = triples[:, 0]
+        tails = triples[:, 2]
+        out_deg = torch.bincount(heads, minlength=n).to(dtype=torch.float)
+        scores = torch.full((n,), 1.0 / n, dtype=torch.float)
+        teleport = (1.0 - damping) / n
+        dangling_mask = out_deg == 0
+
+        for _ in range(max_iter):
+            previous = scores
+            contributions = torch.zeros(n, dtype=torch.float)
+            weights = previous[heads] / out_deg[heads].clamp_min(1.0)
+            contributions.scatter_add_(0, tails, weights)
+            dangling_mass = previous[dangling_mask].sum() / n
+            scores = teleport + damping * (contributions + dangling_mass)
+            if torch.sum(torch.abs(scores - previous)).item() <= tol:
+                break
+
+        total = scores.sum()
+        return scores / total if total > 0 else torch.full((n,), 1.0 / n, dtype=torch.float)
+
+    @property
+    def pagerank_max(self) -> float:
+        """Maximum PageRank score PR_max (Zloch et al. 2019)."""
+        scores = self._pagerank_scores()
+        return float(scores.max().item()) if scores.numel() > 0 else 0.0
+
+    @property
+    def graph_centralization(self) -> float:
+        """Graph centralization C_D using unique edges (Zloch et al. 2019)."""
+        n = self.num_entities
+        if n <= 2:
+            return 0.0
+        in_deg, out_deg = self._unique_in_out_degrees()
+        total_deg = in_deg + out_deg
+        d_max = int(total_deg.max().item()) if total_deg.numel() > 0 else 0
+        denominator = (n - 1) * (n - 2)
+        if denominator <= 0:
+            return 0.0
+        return float((d_max * n - total_deg.sum().item()) / denominator)
+
     @property
     def density(self) -> float:
-        """Edge density p = m / n² (Zloch et al. 2019 §3.2).
+        """Edge density p = m / n² (Zloch et al. 2019).
 
         Also called *fill* or *connectance*: the probability that a directed
         edge exists between two randomly chosen vertices (loops included).
@@ -437,9 +411,9 @@ class Dataset(ExtraReprMixin):
 
     @property
     def unique_edge_density(self) -> float:
-        """Unique-edge density p_u = m_u / n² (Zloch et al. 2019 §3.2).
+        """Unique-edge density p_u = m_u / n² (Zloch et al. 2019).
 
-        Like :attr:`density` but parallel edges (same head–tail pair, different
+        Like :attr:`density` but parallel edges (same head-tail pair, different
         relation) are counted only once.
 
         :returns: Unique-edge density in ``[0, 1]``.
@@ -455,12 +429,11 @@ class Dataset(ExtraReprMixin):
 
     @property
     def reciprocity(self) -> float:
-        """Fraction of bidirectional edges y = m_bi / m (Zloch et al. 2019 §3.2).
+        """Fraction of bidirectional edges y = m_bi / m (Zloch et al. 2019).
 
-        m_bi = |{(u, v) ∈ E | ∃(v, u) ∈ E}|: count of individual edges (incl.
-        parallel multi-relational ones) for which a reverse (v, u) also exists.
-        Divided by m, the total number of edges (same multiset cardinality).
-        Relation labels are ignored when checking for a reverse.
+        m_bi = |{(u, v) in E | exists (v, u) in E}|: count of individual edges
+        (incl. parallel multi-relational ones) for which a reverse (v, u) also
+        exists. Relation labels are ignored when checking for a reverse.
 
         :returns: Reciprocity in ``[0, 1]``. Returns 0.0 for an empty graph.
         """
@@ -474,69 +447,103 @@ class Dataset(ExtraReprMixin):
         m_bi = sum(1 for h, t in zip(heads, tails, strict=False) if (int(t), int(h)) in ht_set)
         return m_bi / m
 
+    def _undirected_adjacency(self) -> list[set[int]]:
+        """Build an undirected adjacency list from the unique edge set."""
+        adjacency: list[set[int]] = [set() for _ in range(self.num_entities)]
+        triples = self.training.mapped_triples
+        if triples.numel() == 0:
+            return adjacency
+        for head, tail in triples[:, [0, 2]].unique(dim=0).tolist():
+            if head == tail:
+                continue
+            adjacency[head].add(tail)
+            adjacency[tail].add(head)
+        return adjacency
+
+    @staticmethod
+    def _bfs_farthest(adjacency: list[set[int]], start: int, allowed: set[int]) -> tuple[int, int]:
+        """Return the farthest reachable node and its distance from start."""
+        frontier = {start}
+        visited = {start}
+        distance = -1
+        farthest = start
+        while frontier:
+            distance += 1
+            next_frontier: set[int] = set()
+            for node in frontier:
+                farthest = node
+                for neighbor in adjacency[node]:
+                    if neighbor in allowed and neighbor not in visited:
+                        visited.add(neighbor)
+                        next_frontier.add(neighbor)
+            frontier = next_frontier
+        return farthest, max(distance, 0)
+
+    def _pseudo_diameter(self) -> int:
+        """Estimate the graph diameter using a pseudo-diameter style sweep (Zloch et al. 2019)."""
+        if self.num_entities <= 1:
+            return 0
+
+        adjacency = self._undirected_adjacency()
+        unvisited = set(range(self.num_entities))
+        best = 0
+
+        while unvisited:
+            start = unvisited.pop()
+            component = {start}
+            frontier = {start}
+            while frontier:
+                next_frontier: set[int] = set()
+                for node in frontier:
+                    for neighbor in adjacency[node]:
+                        if neighbor not in component:
+                            component.add(neighbor)
+                            next_frontier.add(neighbor)
+                frontier = next_frontier
+            unvisited -= component
+
+            current = start
+            previous_distance = -1
+            while True:
+                farthest, distance = self._bfs_farthest(adjacency, current, component)
+                best = max(best, distance)
+                if distance <= previous_distance or farthest == current:
+                    break
+                previous_distance = distance
+                current = farthest
+
+        return best
+
     @property
-    def h_index(self) -> int:
-        """Directed h-index h_d (Zloch et al. 2019 §3.2).
-
-        The largest integer h such that at least h entities have in-degree ≥ h.
-        Adapted from Hirsch (2005): a high value indicates many "prestigious"
-        nodes (highly referenced entities).
-
-        :returns: Directed h-index ≥ 0.
-        """
-        in_deg, _ = self._in_out_degrees()
-        sorted_deg = torch.sort(in_deg, descending=True)[0]
-        h = 0
-        for i, d in enumerate(sorted_deg.tolist(), start=1):
-            if d >= i:
-                h = i
-            else:
-                break
-        return h
+    def diameter(self) -> int:
+        """Estimated graph diameter d using a pseudo-diameter algorithm (Zloch et al. 2019)."""
+        return self._pseudo_diameter()
 
     @property
     def degree_variance_in(self) -> float:
-        """Population variance σ²_in of the in-degree distribution (Zloch et al. 2019 §3.2).
-
-        :returns: In-degree variance. Returns 0.0 for an empty or single-node graph.
-        """
+        """Population variance sigma^2_in of in-degree distribution (Zloch et al. 2019)."""
         in_deg, _ = self._in_out_degrees()
         return float(in_deg.float().var(correction=0).item())
 
     @property
     def degree_variance_out(self) -> float:
-        """Population variance σ²_out of the out-degree distribution (Zloch et al. 2019 §3.2).
-
-        :returns: Out-degree variance. Returns 0.0 for an empty or single-node graph.
-        """
+        """Population variance sigma^2_out of out-degree distribution (Zloch et al. 2019)."""
         _, out_deg = self._in_out_degrees()
         return float(out_deg.float().var(correction=0).item())
 
     @property
     def degree_std_in(self) -> float:
-        """Population standard deviation σ_in of the in-degree distribution (Zloch et al. 2019 §3.2).
-
-        :returns: In-degree standard deviation ≥ 0.
-        """
+        """Population standard deviation sigma_in of in-degree distribution (Zloch et al. 2019)."""
         return self.degree_variance_in**0.5
 
     @property
     def degree_std_out(self) -> float:
-        """Population standard deviation σ_out of the out-degree distribution (Zloch et al. 2019 §3.2).
-
-        :returns: Out-degree standard deviation ≥ 0.
-        """
+        """Population standard deviation sigma_out of out-degree distribution (Zloch et al. 2019)."""
         return self.degree_variance_out**0.5
 
     @property
     def coefficient_of_variation_in(self) -> float:
-        """Coefficient of variation cv_in = (σ_in / z_in) × 100 (Zloch et al. 2019 §3.2).
-
-        A high value means high prominence of some vertices (heterogeneous
-        in-degree, i.e. a few nodes are referenced much more than others).
-
-        :returns: cv_in in percent. Returns 0.0 when mean in-degree is zero.
-        """
+        """Coefficient of variation cv_in = (sigma_in / z_in) * 100 (Zloch et al. 2019)."""
         in_deg, _ = self._in_out_degrees()
         z_in = float(in_deg.float().mean().item())
         if z_in == 0.0:
@@ -545,94 +552,48 @@ class Dataset(ExtraReprMixin):
 
     @property
     def coefficient_of_variation_out(self) -> float:
-        """Coefficient of variation cv_out = (σ_out / z_out) × 100 (Zloch et al. 2019 §3.2).
-
-        A low value means constant influence of vertices (homogeneous
-        out-degree distribution).
-
-        :returns: cv_out in percent. Returns 0.0 when mean out-degree is zero.
-        """
+        """Coefficient of variation cv_out = (sigma_out / z_out) * 100 (Zloch et al. 2019)."""
         _, out_deg = self._in_out_degrees()
         z_out = float(out_deg.float().mean().item())
         if z_out == 0.0:
             return 0.0
         return (self.degree_std_out / z_out) * 100.0
 
-    def get_ancestors(self, node_id: int) -> frozenset[int]:
-        """Return all ancestors (transitive predecessors) of the given node.
+    @staticmethod
+    def _fit_power_law(degrees: torch.Tensor) -> tuple[float, int]:
+        """Fit a power-law tail and return (alpha, d_min) (Zloch et al. 2019)."""
+        values = degrees.detach().cpu().numpy().astype(float)
+        values = values[values > 0]
+        if values.size < 3:
+            return 0.0, 0
+        values = np.sort(values)[::-1]
+        ranks = np.arange(1, values.size + 1, dtype=float)
+        log_ranks = np.log(ranks)
+        log_values = np.log(values)
+        slope, _intercept = np.polyfit(log_ranks, log_values, deg=1)
+        alpha = float(abs(slope))
+        return alpha, int(values.min())
 
-        Performs a BFS backwards through parent edges using only local variables.
+    @property
+    def power_law_exponent(self) -> float:
+        """Power-law exponent alpha estimated from total degree (Zloch et al. 2019)."""
+        in_deg, out_deg = self._in_out_degrees()
+        alpha, _ = self._fit_power_law(in_deg + out_deg)
+        return alpha
 
-        :param node_id: The entity ID to query.
+    @property
+    def power_law_exponent_in(self) -> float:
+        """Power-law exponent alpha_in estimated from in-degree (Zloch et al. 2019)."""
+        in_deg, _ = self._in_out_degrees()
+        alpha, _ = self._fit_power_law(in_deg)
+        return alpha
 
-        :returns: Frozenset of entity IDs that have a directed path to
-            ``node_id``. Returns an empty frozenset for root nodes.
-        """
-        triples = self.training.mapped_triples
-        heads = triples[:, 0]
-        tails = triples[:, 2]
-
-        visited: set[int] = set()
-        frontier: set[int] = {node_id}
-
-        while frontier:
-            frontier_t = torch.tensor(sorted(frontier), dtype=torch.long)
-            mask = torch.isin(tails, frontier_t)
-            parents = set(heads[mask].tolist())
-            next_frontier = parents - visited - {node_id}
-            visited.update(next_frontier)
-            frontier = next_frontier
-
-        return frozenset(visited)
-
-    def get_descendants(self, node_id: int) -> frozenset[int]:
-        """Return all descendants (transitive successors) of the given node.
-
-        Performs a BFS forward through child edges using only local variables.
-
-        :param node_id: The entity ID to query.
-
-        :returns: Frozenset of entity IDs reachable from ``node_id`` via
-            directed edges. Returns an empty frozenset for leaf nodes.
-        """
-        triples = self.training.mapped_triples
-        heads = triples[:, 0]
-        tails = triples[:, 2]
-
-        visited: set[int] = set()
-        frontier: set[int] = {node_id}
-
-        while frontier:
-            frontier_t = torch.tensor(sorted(frontier), dtype=torch.long)
-            mask = torch.isin(heads, frontier_t)
-            children = set(tails[mask].tolist())
-            next_frontier = children - visited - {node_id}
-            visited.update(next_frontier)
-            frontier = next_frontier
-
-        return frozenset(visited)
-
-    def nearest_common_ancestor(self, node_a: int, node_b: int) -> int | None:
-        """Compute the nearest (lowest) common ancestor of two nodes.
-
-        Finds the deepest node that is an ancestor of both inputs.
-        Works on general DAGs with multiple roots.
-
-        :param node_a: First entity ID.
-        :param node_b: Second entity ID.
-
-        :returns: The entity ID of the nearest common ancestor, or ``None``
-            if no common ancestor exists (e.g. disconnected components).
-        """
-        if node_a == node_b:
-            return node_a
-        ancestors_a = self.get_ancestors(node_a) | {node_a}
-        ancestors_b = self.get_ancestors(node_b) | {node_b}
-        common = ancestors_a & ancestors_b
-        if not common:
-            return None
-        depths = self._node_depths()
-        return max(common, key=lambda n: depths.get(n, 0))
+    @property
+    def power_law_minimum_cutoff(self) -> int:
+        """Minimum power-law cutoff d_min estimated from total degree (Zloch et al. 2019)."""
+        in_deg, out_deg = self._in_out_degrees()
+        _, d_min = self._fit_power_law(in_deg + out_deg)
+        return d_min
 
     @classmethod
     def docdata(cls, *parts: str) -> Any:
