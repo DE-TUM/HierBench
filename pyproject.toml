@@ -81,6 +81,7 @@ dependencies = [
     "torch-ppr>=0.0.7",
     "typing_extensions",
     "geoopt>=0.5.1",
+    "networkx>=3.4.2",
 ]
 
 [project.optional-dependencies]
