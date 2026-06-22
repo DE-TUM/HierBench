@@ -1,6 +1,6 @@
 """Standalone graph/hierarchy analysis for datasets.
 
-This module exposes :class:`GraphAnalysis`, a NetworkX-style helper that takes a
+This module exposes :class:`ExtendedGraphAnalysis`, a NetworkX-style helper that takes a
 :class:`pykeen.datasets.base.Dataset` (or any object exposing ``training`` /
 ``testing`` / ``validation`` triples factories and ``merged()``) and computes
 hierarchical and general graph measures over a chosen split.
@@ -8,9 +8,9 @@ hierarchical and general graph measures over a chosen split.
 Usage::
 
     from pykeen.datasets import Nations
-    from pykeen.datasets.hierarchy_analysis import GraphAnalysis
+    from pykeen.datasets.hierarchy_analysis import ExtendedGraphAnalysis
 
-    ha = GraphAnalysis(Nations(), split="train")
+    ha = ExtendedGraphAnalysis(Nations(), split="train")
     ha.max_hierarchy_depth
     ha.density
     ha.pagerank_max
@@ -37,13 +37,13 @@ if TYPE_CHECKING:
     from .base import Dataset
 
 __all__ = [
-    "GraphAnalysis",
+    "ExtendedGraphAnalysis",
 ]
 
 Split = Literal["full", "train", "test", "validation"]
 
 
-class GraphAnalysis:
+class ExtendedGraphAnalysis:
     """Hierarchical and general graph measures computed over one split of a dataset.
 
     All metrics operate on a single :class:`~pykeen.triples.CoreTriplesFactory`
@@ -349,7 +349,7 @@ class GraphAnalysis:
         :param mode: Traversal order. ``'bfs'`` (default) produces shallower trees
             (shortest paths from roots); ``'dfs'`` produces deeper trees.
 
-        :returns: A :class:`_SpanningTreeView` exposing all :class:`GraphAnalysis`
+        :returns: A :class:`_SpanningTreeView` exposing all :class:`ExtendedGraphAnalysis`
             metrics over the spanning-tree edges.
 
         :raises ValueError: If ``mode`` is not ``'bfs'`` or ``'dfs'``.
@@ -688,10 +688,10 @@ class GraphAnalysis:
         return d_min
 
 
-class _SpanningTreeView(GraphAnalysis):
-    """Lightweight :class:`GraphAnalysis` over a spanning-tree triples factory.
+class _SpanningTreeView(ExtendedGraphAnalysis):
+    """Lightweight :class:`ExtendedGraphAnalysis` over a spanning-tree triples factory.
 
-    Returned by :meth:`GraphAnalysis.spanning_tree`. Exposes all metrics over the
+    Returned by :meth:`ExtendedGraphAnalysis.spanning_tree`. Exposes all metrics over the
     spanning-tree edge set without wrapping a full dataset.
     """
 
