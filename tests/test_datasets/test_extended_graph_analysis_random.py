@@ -52,10 +52,7 @@ def _dataset_from_edges(edges: list[tuple[int, int, int]], n: int, num_relations
 
     :returns: An :class:`EagerDataset` using the same factory for train/test.
     """
-    if edges:
-        mapped = torch.tensor(edges, dtype=torch.long)
-    else:
-        mapped = torch.zeros((0, 3), dtype=torch.long)
+    mapped = torch.tensor(edges, dtype=torch.long) if edges else torch.zeros((0, 3), dtype=torch.long)
     tf = CoreTriplesFactory.create(mapped_triples=mapped, num_entities=n, num_relations=max(num_relations, 1))
     return EagerDataset(training=tf, testing=tf)
 
@@ -250,8 +247,8 @@ class TestStructuralInvariants:
         ha = ExtendedGraphAnalysis(_dataset_from_edges(edges, n, num_relations))
         multi, _di = _oracle_graphs(edges, n)
 
-        in_deg = {node: deg for node, deg in multi.in_degree()}
-        out_deg = {node: deg for node, deg in multi.out_degree()}
+        in_deg = dict(multi.in_degree())
+        out_deg = dict(multi.out_degree())
         total_deg = {node: in_deg[node] + out_deg[node] for node in range(n)}
 
         assert ha.max_fan_out == max(out_deg.values())
@@ -360,7 +357,8 @@ class TestStructuralInvariants:
         ha = ExtendedGraphAnalysis(_dataset_from_edges(edges, n, num_relations))
         multi, di = _oracle_graphs(edges, n)
 
-        total_degrees = [in_d + out_d for (_, in_d), (_, out_d) in zip(multi.in_degree(), multi.out_degree())]
+        pairs = zip(multi.in_degree(), multi.out_degree(), strict=False)
+        total_degrees = [in_d + out_d for (_, in_d), (_, out_d) in pairs]
         assert ha.undirected_h_index == _oracle_undirected_h_index(total_degrees)
         assert ha.undirected_h_index >= ha.h_index
 
@@ -395,7 +393,7 @@ class TestStructuralInvariants:
 
         in_degrees = [deg for _, deg in multi.in_degree()]
         out_degrees = [deg for _, deg in multi.out_degree()]
-        total_degrees = [i + o for i, o in zip(in_degrees, out_degrees)]
+        total_degrees = [i + o for i, o in zip(in_degrees, out_degrees, strict=False)]
 
         alpha, d_min = _oracle_power_law(total_degrees)
         assert ha.power_law_exponent == pytest.approx(alpha)
@@ -410,7 +408,7 @@ class TestStructuralInvariants:
 
     @pytest.mark.parametrize("seed", SEEDS)
     def test_ancestor_descendant_duality(self, seed: int) -> None:
-        """b is a descendant of a iff a is an ancestor of b; no self-membership."""
+        """B is a descendant of a iff a is an ancestor of b; no self-membership."""
         n = _node_count(seed)
         edges, num_relations = _random_digraph_edges(seed, n)
         ha = ExtendedGraphAnalysis(_dataset_from_edges(edges, n, num_relations))

@@ -1,5 +1,6 @@
 graft src
 graft tests
+graft scripts
 
 prune docs/source/api
 prune notebooks

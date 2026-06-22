@@ -21,11 +21,14 @@ PyKEEN
     tutorial/running_ablation
     tutorial/performance
     tutorial/node_piece
+    tutorial/metadata_datasets
     tutorial/inductive_lp
     tutorial/splitting
     contrib/lightning
     tutorial/using_resolvers
     tutorial/normalizer_constrainer_regularizer
+    tutorial/extended_graph_analysis
+    tutorial/cross_validation
     tutorial/troubleshooting
 
 .. toctree::
@@ -50,6 +53,7 @@ PyKEEN
     :maxdepth: 2
 
     reference/pipeline
+    reference/cross_validation
     reference/models
     reference/datasets
     reference/triples

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from .metadata import RemoteMetadataDataset
+from docdata import parse_docdata
+
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "Squirrel",
@@ -11,7 +13,8 @@ __all__ = [
 _BASE_URL = "https://syncandshare.lrz.de/dl/fiTXqqQ77hDtEfgC6Su546/squirrel/"
 
 
-class Squirrel(RemoteMetadataDataset):
+@parse_docdata
+class Squirrel(SingleFileRemoteMetadataDataset):
     """The Wikipedia Squirrel page-page graph dataset.
 
     Nodes are Wikipedia pages about squirrels; edges connect pages that share
@@ -19,7 +22,21 @@ class Squirrel(RemoteMetadataDataset):
     and one of 5 class labels (page traffic categories).
 
     Source: https://snap.stanford.edu/data/wikipedia-article-networks.html
-    (MUSAE, Rozemberczki et al., 2021)
+
+    ---
+    name: Squirrel
+    citation:
+        author: Rozemberczki
+        year: 2021
+        link: https://arxiv.org/abs/1909.13021
+        github: benedekrozemberczki/MUSAE
+    statistics:
+        entities: 5201
+        relations: 1
+        training: 173658
+        testing: 21707
+        validation: 21708
+        triples: 217073
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

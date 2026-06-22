@@ -280,7 +280,7 @@ def weighted_median(a: np.ndarray, weights: np.ndarray | None = None) -> np.ndar
     idx = np.searchsorted(cdf, v=0.5)
     # special case for exactly 0.5
     if cdf[idx] == 0.5:
-        return s_ranks[idx : idx + 2].mean()
+        return np.asarray(s_ranks[idx : idx + 2].mean())
     return s_ranks[idx]
 
 

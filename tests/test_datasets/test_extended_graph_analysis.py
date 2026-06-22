@@ -48,17 +48,22 @@ def test_split_full_uses_merged(nations: Nations) -> None:
     assert ha.total_edges == nations.merged().num_triples
 
 
-def test_split_validation(nations: Nations) -> None:
-    """The 'validation' split analyses the validation factory when present."""
-    assert nations.validation is not None
-    ha = ExtendedGraphAnalysis(nations, split="validation")
-    assert ha.total_edges == nations.validation.num_triples
-
-
 def test_split_invalid(nations: Nations) -> None:
     """An unknown split raises ValueError."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="split must be one of"):
         ExtendedGraphAnalysis(nations, split="nonsense")  # type: ignore[arg-type]
+
+
+def test_split_test_raises(nations: Nations) -> None:
+    """The 'test' split is no longer supported."""
+    with pytest.raises(ValueError, match="split must be one of"):
+        ExtendedGraphAnalysis(nations, split="test")  # type: ignore[arg-type]
+
+
+def test_split_validation_raises(nations: Nations) -> None:
+    """The 'validation' split is no longer supported."""
+    with pytest.raises(ValueError, match="split must be one of"):
+        ExtendedGraphAnalysis(nations, split="validation")  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
@@ -162,7 +167,7 @@ def test_max_hierarchy_depth_star() -> None:
 
 
 def test_levels_alias_chain() -> None:
-    """levels is an alias for max_hierarchy_depth."""
+    """Levels is an alias for max_hierarchy_depth."""
     ha = ExtendedGraphAnalysis(_chain_dataset())
     assert ha.levels == ha.max_hierarchy_depth == 3
 

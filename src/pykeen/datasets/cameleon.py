@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "Chameleon",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fi6LqgLVY3P3AEtC24Yzpq/chameleon/"
 
 
 @parse_docdata
-class Chameleon(RemoteMetadataDataset):
+class Chameleon(SingleFileRemoteMetadataDataset):
     """The Wikipedia Chameleon page-page graph dataset.
 
     Nodes are Wikipedia pages about chameleons; edges connect pages that share
@@ -29,15 +29,15 @@ class Chameleon(RemoteMetadataDataset):
     citation:
         author: Rozemberczki
         year: 2021
-        link: https://arxiv.org/abs/2106.11181
+        link: https://arxiv.org/abs/1909.13021
         github: benedekrozemberczki/MUSAE
     statistics:
         entities: 2277
         relations: 1
-        training: 24884
-        testing: 3109
-        validation: 3109
-        triples: 31102
+        training: 28880
+        testing: 3610
+        validation: 3611
+        triples: 36101
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

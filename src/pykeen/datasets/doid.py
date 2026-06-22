@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from .metadata import RemoteMetadataDataset
+from docdata import parse_docdata
+
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "DOID",
@@ -11,11 +13,30 @@ __all__ = [
 _BASE_URL = "https://syncandshare.lrz.de/dl/fiUW4yvpeJj7TQEZ9qbBra/doid/"
 
 
-class DOID(RemoteMetadataDataset):
+@parse_docdata
+class DOID(SingleFileRemoteMetadataDataset):
     """The Disease Ontology knowledge graph with per-entity metadata.
 
-    Triples file: three tab-separated columns (head, relation, tail).
-    Metadata file: one row per entity in entity-ID order.
+    Nodes are disease terms from the Human Disease Ontology; edges represent
+    hierarchical relationships (e.g. is-a) between disease concepts.
+    Each entity carries structured metadata.
+
+    Source: https://disease-ontology.org/downloads/
+
+    ---
+    name: DOID
+    citation:
+        author: Schriml
+        year:
+        link:
+        github: DiseaseOntology/HumanDiseaseOntology
+    statistics:
+        entities: 12079
+        relations: 2
+        training: 13710
+        testing: 1714
+        validation: 1714
+        triples: 17138
     """
 
     triples_url = _BASE_URL + "dataset.tsv"
