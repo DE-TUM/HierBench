@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "CiteSeer",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiSVG9qjMcqKgKXuLF7v8v/citeseer/"
 
 
 @parse_docdata
-class CiteSeer(RemoteMetadataDataset):
+class CiteSeer(SingleFileRemoteMetadataDataset):
     """The CiteSeer citation network dataset.
 
     Nodes are scientific publications; edges represent citations between them.
@@ -29,15 +29,14 @@ class CiteSeer(RemoteMetadataDataset):
     citation:
         author: Sen
         year: 2008
-        link: https://jmlr.csail.mit.edu/papers/v11/sen10a.html
-        github: kimiyoung/planetoid
+        link: https://linqs-data.soe.ucsc.edu/public/lbc/citeseer.tgz
     statistics:
-        entities: 3312
+        entities: 3327
         relations: 1
-        training: 4715
-        testing: 590
-        validation: 590
-        triples: 5895
+        training: 3785
+        testing: 473
+        validation: 474
+        triples: 4732
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

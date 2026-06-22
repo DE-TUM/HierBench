@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "Crocodile",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiSthwLrG6VmKqbr9eVsnA/crocodile/"
 
 
 @parse_docdata
-class Crocodile(RemoteMetadataDataset):
+class Crocodile(SingleFileRemoteMetadataDataset):
     """The Wikipedia Crocodile page-page graph dataset.
 
     Nodes are Wikipedia pages about crocodiles; edges connect pages that share
@@ -28,15 +28,15 @@ class Crocodile(RemoteMetadataDataset):
     citation:
         author: Rozemberczki
         year: 2021
-        link: https://arxiv.org/abs/2106.11181
+        link: https://arxiv.org/abs/1909.13021
         github: benedekrozemberczki/MUSAE
     statistics:
         entities: 11631
         relations: 1
-        training: 136734
-        testing: 17092
-        validation: 17092
-        triples: 170918
+        training: 144016
+        testing: 18002
+        validation: 18002
+        triples: 180020
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

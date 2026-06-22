@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "Squirrel",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiTXqqQ77hDtEfgC6Su546/squirrel/"
 
 
 @parse_docdata
-class Squirrel(RemoteMetadataDataset):
+class Squirrel(SingleFileRemoteMetadataDataset):
     """The Wikipedia Squirrel page-page graph dataset.
 
     Nodes are Wikipedia pages about squirrels; edges connect pages that share
@@ -28,15 +28,15 @@ class Squirrel(RemoteMetadataDataset):
     citation:
         author: Rozemberczki
         year: 2021
-        link: https://arxiv.org/abs/2106.11181
+        link: https://arxiv.org/abs/1909.13021
         github: benedekrozemberczki/MUSAE
     statistics:
         entities: 5201
         relations: 1
-        training: 158794
-        testing: 19850
-        validation: 19849
-        triples: 198493
+        training: 173658
+        testing: 21707
+        validation: 21708
+        triples: 217073
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

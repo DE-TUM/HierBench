@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "CoraOriginal",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiQHnjbWoTtkw1D9mud59W/cora_mccallum
 
 
 @parse_docdata
-class CoraOriginal(RemoteMetadataDataset):
+class CoraOriginal(SingleFileRemoteMetadataDataset):
     """The original Cora research-paper classification dataset (McCallum et al., 2000).
 
     Research papers classified into a topic hierarchy with 73 leaf categories;
@@ -30,12 +30,12 @@ class CoraOriginal(RemoteMetadataDataset):
         year: 2000
         link: https://people.cs.umass.edu/~mccallum/data.html
     statistics:
-        entities: 0
-        relations: 0
-        training: 0
-        testing: 0
-        validation: 0
-        triples: 0
+        entities: 225026
+        relations: 1
+        training: 571412
+        testing: 71427
+        validation: 71427
+        triples: 714266
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

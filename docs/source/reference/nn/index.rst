@@ -22,3 +22,4 @@
     text
     vision
     meta
+    hyperbolic

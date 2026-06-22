@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "PubMed",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiKQMfkFSLYAXMA4pgsNak/pubmed/"
 
 
 @parse_docdata
-class PubMed(RemoteMetadataDataset):
+class PubMed(SingleFileRemoteMetadataDataset):
     """The PubMed citation graph dataset.
 
     Nodes are PubMed articles about diabetes research; edges represent citation
@@ -28,14 +28,14 @@ class PubMed(RemoteMetadataDataset):
     citation:
         author: Sen
         year: 2008
-        link: https://jmlr.csail.mit.edu/papers/v11/sen10a.html
+        link: https://linqs.org/datasets/#pubmed-diabetes
     statistics:
         entities: 19717
         relations: 1
-        training: 35461
-        testing: 4433
-        validation: 4433
-        triples: 44327
+        training: 35470
+        testing: 4434
+        validation: 4434
+        triples: 44338
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

@@ -100,7 +100,7 @@ class TestDepthMetrics:
         assert ha.avg_hierarchy_depth <= ha.max_hierarchy_depth
 
     def test_levels_is_alias_for_max_hierarchy_depth(self, ha: ExtendedGraphAnalysis) -> None:
-        """levels is an alias for max_hierarchy_depth."""
+        """Levels is an alias for max_hierarchy_depth."""
         assert ha.levels == ha.max_hierarchy_depth
 
 
@@ -147,7 +147,7 @@ class TestBalance:
     """Tests for the balance property."""
 
     def test_balance_in_unit_interval(self, ha: ExtendedGraphAnalysis) -> None:
-        """balance is a float in [0, 1]."""
+        """Balance is a float in [0, 1]."""
         balance = ha.balance
         assert isinstance(balance, float)
         assert 0.0 <= balance <= 1.0

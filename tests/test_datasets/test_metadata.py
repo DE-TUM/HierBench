@@ -1,4 +1,4 @@
-"""Tests for MetadataDataset, RemoteMetadataDataset, and _load_metadata_file."""
+"""Tests for MetadataDataset, SingleFileRemoteMetadataDataset, and _load_metadata_file."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from pykeen.datasets.base import EagerDataset
-from pykeen.datasets.metadata import MetadataDataset, RemoteMetadataDataset, _load_metadata_file
+from pykeen.datasets.metadata import MetadataDataset, SingleFileRemoteMetadataDataset, _load_metadata_file
 from pykeen.triples import TriplesFactory
 
 # ---------------------------------------------------------------------------
@@ -143,17 +143,17 @@ class TestLoadMetadataFile:
 
 
 # ---------------------------------------------------------------------------
-# RemoteMetadataDataset
+# SingleFileSingleFileRemoteMetadataDataset
 # ---------------------------------------------------------------------------
 
 
-class TestRemoteMetadataDataset:
+class TestSingleFileSingleFileRemoteMetadataDataset:
     """Tests use a minimal concrete subclass with URL downloads mocked via monkeypatch."""
 
     def _make_class(
         self, triples_url="http://x/triples.tsv", entity_url=None, relation_url=None, ratios=(0.6, 0.2, 0.2)
     ):
-        class _DS(RemoteMetadataDataset):
+        class _DS(SingleFileRemoteMetadataDataset):
             pass
 
         _DS.triples_url = triples_url
@@ -182,7 +182,7 @@ class TestRemoteMetadataDataset:
         assert ds.training is not None
 
     def test_skips_download_when_file_exists(self, tmp_path: pathlib.Path, monkeypatch) -> None:
-        # RemoteMetadataDataset puts files in <cache_root>/<classname>/
+        # SingleFileRemoteMetadataDataset puts files in <cache_root>/<classname>/
         ds_class = self._make_class()
         subdir = tmp_path / ds_class.__name__.lower()
         subdir.mkdir()
@@ -264,7 +264,7 @@ class TestRemoteMetadataDataset:
     def test_custom_load_entity_metadata_hook(self, tmp_path: pathlib.Path, monkeypatch) -> None:
         """_load_entity_metadata override is called instead of the default."""
 
-        class CustomDS(RemoteMetadataDataset):
+        class CustomDS(SingleFileRemoteMetadataDataset):
             triples_url = "http://x/triples.tsv"
             entity_metadata_url = "http://x/entities.npy"
             ratios = (0.6, 0.2, 0.2)

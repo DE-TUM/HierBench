@@ -324,6 +324,10 @@ ignore = [
     "PTH",    # os.path instead of pathlib
 ]
 "benchmarking/**/*.py" = ["INP001"] # benchmarking scripts are not a package
+"scripts/**/*.py" = [
+    "INP001", # scripts are not a package
+    "T201",   # allow prints
+]
 "tests/**/*.py" = [
     "INP001", # tests are not a package
     "PIE790", # allow pass in test stubs/abstract methods

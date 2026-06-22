@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "PPI",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fi5Uw1bNRWJ4SaSC7NBCo8/PPI/"
 
 
 @parse_docdata
-class PPI(RemoteMetadataDataset):
+class PPI(SingleFileRemoteMetadataDataset):
     """The PPI (Protein-Protein Interaction) dataset.
 
     Nodes are proteins; edges represent protein-protein interactions.
@@ -30,12 +30,12 @@ class PPI(RemoteMetadataDataset):
         link: https://arxiv.org/abs/1706.02216
         github: williamleif/GraphSAGE
     statistics:
-        entities: 0
-        relations: 0
-        training: 0
-        testing: 0
-        validation: 0
-        triples: 0
+        entities: 56944
+        relations: 1
+        training: 654972
+        testing: 81872
+        validation: 81872
+        triples: 818716
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

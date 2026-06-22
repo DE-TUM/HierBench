@@ -8,7 +8,7 @@ hierarchical and general graph measures over a chosen split.
 Usage::
 
     from pykeen.datasets import Nations
-    from pykeen.datasets.hierarchy_analysis import ExtendedGraphAnalysis
+    from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 
     ha = ExtendedGraphAnalysis(Nations(), split="train")
     ha.max_hierarchy_depth
@@ -40,7 +40,7 @@ __all__ = [
     "ExtendedGraphAnalysis",
 ]
 
-Split = Literal["full", "train", "test", "validation"]
+Split = Literal["full", "train"]
 
 
 class ExtendedGraphAnalysis:
@@ -52,41 +52,35 @@ class ExtendedGraphAnalysis:
     many metrics on the same instance is cheap.
     """
 
-    def __init__(self, dataset: "Dataset", split: Split = "train") -> None:
+    def __init__(self, dataset: Dataset, split: Split = "train") -> None:
         """Initialize the analysis for a dataset split.
 
-        :param dataset: The dataset to analyse. Only ``training`` / ``testing`` /
-            ``validation`` triples factories and ``merged()`` are required.
-        :param split: Which subset to analyse: ``"train"`` (default), ``"test"``,
-            ``"validation"``, or ``"full"`` (all triples merged).
+        :param dataset: The dataset to analyse. Only ``training`` and ``merged()``
+            are required.
+        :param split: Which subset to analyse: ``"train"`` (default) or ``"full"``
+            (all triples merged). Test and validation splits share the same entity
+            vocabulary as training and are not meaningful for graph analysis.
         """
         self._factory: CoreTriplesFactory = self._resolve_factory(dataset, split)
         self._num_entities: int = self._factory.num_entities
         self._split: str = split
 
     @staticmethod
-    def _resolve_factory(dataset: "Dataset", split: Split) -> CoreTriplesFactory:
+    def _resolve_factory(dataset: Dataset, split: Split) -> CoreTriplesFactory:
         """Resolve the triples factory for the requested split.
 
         :param dataset: The dataset to analyse.
-        :param split: One of ``"full"``, ``"train"``, ``"test"``, ``"validation"``.
+        :param split: One of ``"full"`` or ``"train"``.
 
         :returns: The corresponding :class:`~pykeen.triples.CoreTriplesFactory`.
 
-        :raises ValueError: If ``split`` is not a recognized value, or if
-            ``"validation"`` is requested but the dataset has no validation split.
+        :raises ValueError: If ``split`` is not a recognized value.
         """
         if split == "train":
             return dataset.training
-        if split == "test":
-            return dataset.testing
-        if split == "validation":
-            if dataset.validation is None:
-                raise ValueError("dataset has no validation split")
-            return dataset.validation
         if split == "full":
             return dataset.merged()
-        raise ValueError(f"split must be one of 'full', 'train', 'test', 'validation', got {split!r}")
+        raise ValueError(f"split must be one of 'full', 'train', got {split!r}")
 
     # ------------------------------------------------------------------
     # Cached materialised structures
@@ -339,7 +333,7 @@ class ExtendedGraphAnalysis:
         return max(common, key=lambda n: depths.get(n, 0))
 
     # TODO: mayeb solve using networkx
-    def spanning_tree(self, mode: Literal["bfs", "dfs"] = "bfs") -> "_SpanningTreeView":
+    def spanning_tree(self, mode: Literal["bfs", "dfs"] = "bfs") -> _SpanningTreeView:
         """Return a spanning-tree view of this graph for hierarchical analysis.
 
         Breaks cycles by retaining only the edges that first discover each node
@@ -410,9 +404,7 @@ class ExtendedGraphAnalysis:
                 stack.append((next_start, -1, None))
 
         new_triples = (
-            torch.tensor(spanning_edges, dtype=torch.long)
-            if spanning_edges
-            else torch.zeros((0, 3), dtype=torch.long)
+            torch.tensor(spanning_edges, dtype=torch.long) if spanning_edges else torch.zeros((0, 3), dtype=torch.long)
         )
         new_tf = CoreTriplesFactory.create(
             mapped_triples=new_triples,

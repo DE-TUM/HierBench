@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import Any
 
 import geoopt
@@ -19,6 +20,12 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+_RIEMANNIAN_OPTIMIZER_WARNING = (
+    "{cls} works best with a Riemannian optimizer. "
+    "Consider using geoopt.optim.RiemannianAdam instead of standard Adam. "
+    "Falling back to manifold projection via post_parameter_update() after each gradient step."
+)
 
 
 class PoincareEmbedding(Representation):
@@ -89,6 +96,11 @@ class PoincareEmbedding(Representation):
         data = self.manifold.origin(max_id, _embedding_dim)
         self._embeddings = geoopt.ManifoldParameter(data, manifold=self.manifold, requires_grad=trainable)
 
+        warnings.warn(
+            _RIEMANNIAN_OPTIMIZER_WARNING.format(cls=self.__class__.__name__),
+            UserWarning,
+            stacklevel=2,
+        )
         self.reset_parameters()
 
     def reset_parameters(self) -> None:  # noqa: D102
@@ -200,6 +212,11 @@ class LorentzEmbedding(Representation):
         data = self.manifold.origin(max_id, internal_dim)
         self._embeddings = geoopt.ManifoldParameter(data, manifold=self.manifold, requires_grad=trainable)
 
+        warnings.warn(
+            _RIEMANNIAN_OPTIMIZER_WARNING.format(cls=self.__class__.__name__),
+            UserWarning,
+            stacklevel=2,
+        )
         self.reset_parameters()
 
     def reset_parameters(self) -> None:  # noqa: D102

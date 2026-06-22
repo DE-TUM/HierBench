@@ -18,6 +18,7 @@ from ..utils import normalize_path
 __all__ = [
     "MetadataDataset",
     "RemoteMetadataDataset",
+    "SingleFileRemoteMetadataDataset",
 ]
 
 logger = logging.getLogger(__name__)
@@ -79,22 +80,26 @@ class MetadataDataset(EagerDataset):
         self.relation_metadata: pd.DataFrame | None = relation_metadata
 
 
-class RemoteMetadataDataset(MetadataDataset):
-    """A :class:`MetadataDataset` that downloads its triples and metadata from URLs.
+class SingleFileRemoteMetadataDataset(MetadataDataset):
+    """A :class:`MetadataDataset` that downloads a single triples file and splits it locally.
 
-    This is the recommended base class for concrete datasets. Dataset authors
-    only need to set class-level URL attributes — no ``__init__`` boilerplate
-    required::
+    Dataset authors only need to set class-level URL attributes — no ``__init__``
+    boilerplate required::
 
-        class Cora(RemoteMetadataDataset):
+        class Cora(SingleFileRemoteMetadataDataset):
             triples_url          = "https://example.com/cora/edges.tsv"
             entity_metadata_url  = "https://example.com/cora/node_features.tsv"
             relation_metadata_url = "https://example.com/cora/rel_features.tsv"
 
+    The split is performed locally with a fixed ``random_state`` (default: 0), so
+    results are reproducible within the same PyKEEN version but not guaranteed across
+    versions.  For published benchmarks that require identical splits for every user,
+    prefer :class:`RemoteMetadataDataset`.
+
     Override :meth:`_load_entity_metadata` or :meth:`_load_relation_metadata` to
     support custom file formats (NumPy, HDF5, pickle, …)::
 
-        class MyDataset(RemoteMetadataDataset):
+        class MyDataset(SingleFileRemoteMetadataDataset):
             triples_url         = "https://example.com/edges.tsv"
             entity_metadata_url = "https://example.com/features.npy"
 
@@ -196,6 +201,151 @@ class RemoteMetadataDataset(MetadataDataset):
         Override to support custom formats (NumPy, HDF5, pickle, …).
         The default implementation handles TSV, CSV, and JSONL via
         :func:`_load_metadata_file`.
+        """
+        return _load_metadata_file(path)
+
+    def _load_relation_metadata(self, path: pathlib.Path) -> pd.DataFrame | None:
+        """Load relation metadata from *path* into a :class:`~pandas.DataFrame`.
+
+        Override to support custom formats. Default handles TSV, CSV, and JSONL.
+        """
+        return _load_metadata_file(path)
+
+
+class RemoteMetadataDataset(MetadataDataset):
+    """A :class:`MetadataDataset` with predefined train / test / validation splits served as separate files.
+
+    This is the recommended base class for benchmark datasets where reproducibility
+    requires fixed, server-side splits that are identical for every user.  It mirrors
+    the pattern of :class:`~pykeen.datasets.base.UnpackedRemoteDataset` but adds
+    optional per-entity and per-relation metadata.
+
+    Test and validation factories share the entity and relation index built from the
+    training file, following the standard PyKEEN convention.
+
+    Dataset authors only need to set class-level URL attributes::
+
+        class MyBenchmark(RemoteMetadataDataset):
+            training_url         = "https://example.com/train.tsv"
+            testing_url          = "https://example.com/test.tsv"
+            validation_url       = "https://example.com/valid.tsv"
+            entity_metadata_url  = "https://example.com/node_features.tsv"
+
+    Override :meth:`_load_entity_metadata` or :meth:`_load_relation_metadata` to
+    support custom file formats (NumPy, HDF5, pickle, …).
+    """
+
+    #: URL of the training triples file (TSV: head, relation, tail).
+    training_url: ClassVar[str]
+    #: URL of the testing triples file.
+    testing_url: ClassVar[str]
+    #: URL of the validation triples file.
+    validation_url: ClassVar[str]
+    #: URL of the entity metadata file. ``None`` means no entity metadata.
+    entity_metadata_url: ClassVar[str | None] = None
+    #: URL of the relation metadata file. ``None`` means no relation metadata.
+    relation_metadata_url: ClassVar[str | None] = None
+
+    def __init__(
+        self,
+        *,
+        cache_root: str | pathlib.Path | None = None,
+        create_inverse_triples: bool = False,
+        download_kwargs: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the dataset.
+
+        :param cache_root: Local directory for cached files. Defaults to a
+            sub-directory of :data:`pykeen.constants.PYKEEN_DATASETS` named
+            after the concrete subclass.
+        :param create_inverse_triples: Whether to add inverse triples to training.
+        :param download_kwargs: Extra keyword arguments forwarded to
+            :func:`pystow.utils.download`.
+        :param kwargs: Forwarded to :class:`MetadataDataset`.
+        """
+        from pystow.utils import download
+
+        dataset_root = normalize_path(
+            cache_root,
+            type(self).__name__.lower(),
+            mkdir=True,
+            default=PYKEEN_DATASETS,
+        )
+        download_kwargs = download_kwargs or {}
+
+        # Download the three split files
+        training_path = dataset_root / "train.tsv"
+        testing_path = dataset_root / "test.tsv"
+        validation_path = dataset_root / "valid.tsv"
+        for url, path in [
+            (self.training_url, training_path),
+            (self.testing_url, testing_path),
+            (self.validation_url, validation_path),
+        ]:
+            if not path.is_file():
+                logger.info("downloading %s from %s", path.name, url)
+                download(url=url, path=path, **download_kwargs)  # noqa: S310
+
+        # Load triples — test/valid share the training entity+relation index
+        training = TriplesFactory.from_path(
+            training_path,
+            create_inverse_triples=create_inverse_triples,
+        )
+        testing = TriplesFactory.from_path(
+            testing_path,
+            entity_to_id=training.entity_to_id,
+            relation_to_id=training.relation_to_id,
+            create_inverse_triples=False,
+        )
+        validation = TriplesFactory.from_path(
+            validation_path,
+            entity_to_id=training.entity_to_id,
+            relation_to_id=training.relation_to_id,
+            create_inverse_triples=False,
+        )
+
+        # Download and load metadata
+        entity_metadata = self._download_and_load(
+            self.entity_metadata_url, "entity_metadata", dataset_root, download, download_kwargs
+        )
+        relation_metadata = self._download_and_load(
+            self.relation_metadata_url, "relation_metadata", dataset_root, download, download_kwargs
+        )
+
+        super().__init__(
+            training=training,
+            testing=testing,
+            validation=validation,
+            entity_metadata=entity_metadata,
+            relation_metadata=relation_metadata,
+            **kwargs,
+        )
+
+    def _download_and_load(
+        self,
+        url: str | None,
+        stem: str,
+        dataset_root: pathlib.Path,
+        download_fn: Any,
+        download_kwargs: dict[str, Any],
+    ) -> pd.DataFrame | None:
+        if url is None:
+            return None
+        suffix = pathlib.Path(url).suffix or ".tsv"
+        path = dataset_root / f"{stem}{suffix}"
+        if not path.is_file():
+            logger.info("downloading %s from %s", stem, url)
+            download_fn(url=url, path=path, **download_kwargs)  # noqa: S310
+        if stem == "entity_metadata":
+            return self._load_entity_metadata(path)
+        return self._load_relation_metadata(path)
+
+    def _load_entity_metadata(self, path: pathlib.Path) -> pd.DataFrame | None:
+        """Load entity metadata from *path* into a :class:`~pandas.DataFrame`.
+
+        Override to support custom formats (NumPy, HDF5, pickle, …).
+        The default implementation handles TSV, CSV, and JSONL.
         """
         return _load_metadata_file(path)
 

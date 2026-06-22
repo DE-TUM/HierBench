@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "WordNet",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiMJE3wfCbXEy6PzjHcHoX/wordnet/"
 
 
 @parse_docdata
-class WordNet(RemoteMetadataDataset):
+class WordNet(SingleFileRemoteMetadataDataset):
     """WordNet knowledge graph with per-entity metadata.
 
     Nodes are WordNet synsets; edges represent lexical/semantic relations
@@ -29,12 +29,12 @@ class WordNet(RemoteMetadataDataset):
         year: 1995
         link: https://doi.org/10.1145/219717.219748
     statistics:
-        entities: 0
-        relations: 0
-        training: 0
-        testing: 0
-        validation: 0
-        triples: 0
+        entities: 107569
+        relations: 26
+        training: 420888
+        testing: 52611
+        validation: 52612
+        triples: 526111
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

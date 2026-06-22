@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "DOID",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiUW4yvpeJj7TQEZ9qbBra/doid/"
 
 
 @parse_docdata
-class DOID(RemoteMetadataDataset):
+class DOID(SingleFileRemoteMetadataDataset):
     """The Disease Ontology knowledge graph with per-entity metadata.
 
     Nodes are disease terms from the Human Disease Ontology; edges represent
@@ -27,16 +27,16 @@ class DOID(RemoteMetadataDataset):
     name: DOID
     citation:
         author: Schriml
-        year: 2022
-        link: https://doi.org/10.1093/nar/gkac1048
+        year:
+        link:
         github: DiseaseOntology/HumanDiseaseOntology
     statistics:
-        entities: 0
-        relations: 0
-        training: 0
-        testing: 0
-        validation: 0
-        triples: 0
+        entities: 12079
+        relations: 2
+        training: 13710
+        testing: 1714
+        validation: 1714
+        triples: 17138
     """
 
     triples_url = _BASE_URL + "dataset.tsv"

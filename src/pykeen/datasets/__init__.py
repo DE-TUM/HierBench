@@ -46,10 +46,11 @@ from .freebase import FB15k, FB15k237
 from .globi import Globi
 from .hetionet import Hetionet
 from .kinships import Kinships
-from .metadata import MetadataDataset, RemoteMetadataDataset
+from .metadata import MetadataDataset, RemoteMetadataDataset, SingleFileRemoteMetadataDataset
 from .nations import Nations
 from .numeric import (
     NumericPathDataset,
+    SingleRemoteNumericDataset,
     TabbedNumericDataset,
     UnpackedRemoteNumericDataset,
 )
@@ -115,6 +116,7 @@ __all__ = [
     "PrimeKG",
     "MetadataDataset",
     "RemoteMetadataDataset",
+    "SingleFileRemoteMetadataDataset",
     "UnpackedRemoteNumericDataset",
     "Chameleon",
     "CiteSeer",
@@ -147,6 +149,7 @@ dataset_resolver: ClassResolver[Dataset] = ClassResolver.from_subclasses(
         TabbedDataset,
         SingleTabbedDataset,
         NumericPathDataset,
+        SingleRemoteNumericDataset,
         TabbedNumericDataset,
         UnpackedRemoteNumericDataset,
         MTransEDataset,
@@ -154,6 +157,7 @@ dataset_resolver: ClassResolver[Dataset] = ClassResolver.from_subclasses(
         EADataset,
         MetadataDataset,
         RemoteMetadataDataset,
+        SingleFileRemoteMetadataDataset,
     },
 )
 dataset_resolver.register_entrypoint("pykeen.datasets")

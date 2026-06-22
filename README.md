@@ -45,7 +45,7 @@
 <p align="center">
   <a href="#installation">Installation</a> •
   <a href="#quickstart">Quickstart</a> •
-  <a href="#datasets">Datasets (37)</a> •
+  <a href="#datasets">Datasets (43)</a> •
   <a href="#inductive-datasets">Inductive Datasets (5)</a> •
   <a href="#models">Models (40)</a> •
   <a href="#supporters">Support</a> •
@@ -112,7 +112,7 @@ in ``pykeen``.
 
 ### Datasets 
 
-The following 37 datasets are built in to PyKEEN. The citation for each dataset corresponds to either the paper
+The following 43 datasets are built in to PyKEEN. The citation for each dataset corresponds to either the paper
 describing the dataset, the first paper published using the dataset with knowledge graph embedding models,
 or the URL for the dataset if neither of the first two are available. If you want to use a custom dataset,
 see the [Bring Your Own Dataset](https://pykeen.readthedocs.io/en/latest/byo/data.html) tutorial. If you
@@ -129,10 +129,13 @@ have a suggestion for another dataset to include in PyKEEN, please let us know
 | CoDEx (medium)                     | [`pykeen.datasets.CoDExMedium`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoDExMedium.html)       | [Safavi *et al*., 2020](https://arxiv.org/abs/2009.07810)                                                               |      17050 |          51 |    206205 |
 | CoDEx (small)                      | [`pykeen.datasets.CoDExSmall`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoDExSmall.html)         | [Safavi *et al*., 2020](https://arxiv.org/abs/2009.07810)                                                               |       2034 |          42 |     36543 |
 | ConceptNet                         | [`pykeen.datasets.ConceptNet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.ConceptNet.html)         | [Speer *et al*., 2017](https://arxiv.org/abs/1612.03975)                                                                |   28370083 |          50 |  34074917 |
+| Cora                               | [`pykeen.datasets.Cora`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Cora.html)                     | [McCallum *et al*., 2000](https://link.springer.com/article/10.1023/A:1007379606734)                                    |       2708 |           1 |      5429 |
 | Countries                          | [`pykeen.datasets.Countries`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Countries.html)           | [Bouchard *et al*., 2015](https://www.aaai.org/ocs/index.php/SSS/SSS15/paper/view/10257/10026)                          |        271 |           2 |      1158 |
+| Crocodile                          | [`pykeen.datasets.Crocodile`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Crocodile.html)           | [Rozemberczki *et al*., 2021](https://arxiv.org/abs/2106.11181)                                                         |      11631 |           1 |    180020 |
 | Commonsense Knowledge Graph        | [`pykeen.datasets.CSKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CSKG.html)                     | [Ilievski *et al*., 2020](http://arxiv.org/abs/2012.11490)                                                              |    2087833 |          58 |   4598728 |
 | DB100K                             | [`pykeen.datasets.DB100K`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DB100K.html)                 | [Ding *et al*., 2018](https://arxiv.org/abs/1805.02408)                                                                 |      99604 |         470 |    697479 |
 | DBpedia50                          | [`pykeen.datasets.DBpedia50`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DBpedia50.html)           | [Shi *et al*., 2017](https://arxiv.org/abs/1711.03438)                                                                  |      24624 |         351 |     34421 |
+| Disease Ontology                   | [`pykeen.datasets.DOID`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DOID.html)                     | [Schriml *et al*., 2022](https://doi.org/10.1093/nar/gkac1048)                                                          |      12079 |           2 |     17138 |
 | Drug Repositioning Knowledge Graph | [`pykeen.datasets.DRKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DRKG.html)                     | [`gnn4dr/DRKG`](https://github.com/gnn4dr/DRKG)                                                                         |      97238 |         107 |   5874257 |
 | FB15k                              | [`pykeen.datasets.FB15k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.FB15k.html)                   | [Bordes *et al*., 2013](http://papers.nips.cc/paper/5071-translating-embeddings-for-modeling-multi-relational-data.pdf) |      14951 |        1345 |    592213 |
 | FB15k-237                          | [`pykeen.datasets.FB15k237`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.FB15k237.html)             | [Toutanova *et al*., 2015](https://www.aclweb.org/anthology/W15-4007/)                                                  |      14505 |         237 |    310079 |
@@ -149,7 +152,10 @@ have a suggestion for another dataset to include in PyKEEN, please let us know
 | PharMeBINet                        | [`pykeen.datasets.PharMeBINet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharMeBINet.html)       | [Königs *et al*., 2022](https://www.nature.com/articles/s41597-022-01510-3)                                             |    2869407 |         208 |  15883653 |
 | PharmKG                            | [`pykeen.datasets.PharmKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharmKG.html)               | [Zheng *et al*., 2020](https://doi.org/10.1093/bib/bbaa344)                                                             |     188296 |          39 |   1093236 |
 | PharmKG8k                          | [`pykeen.datasets.PharmKG8k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharmKG8k.html)           | [Zheng *et al*., 2020](https://doi.org/10.1093/bib/bbaa344)                                                             |       7247 |          28 |    485787 |
+| PPI                                | [`pykeen.datasets.PPI`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PPI.html)                       | [Hamilton *et al*., 2017](https://arxiv.org/abs/1706.02216)                                                             |      56944 |           1 |    818716 |
 | PrimeKG                            | [`pykeen.datasets.PrimeKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PrimeKG.html)               | [Chandak *et al*., 2022](https://doi.org/10.1101/2022.05.01.489928)                                                     |     129375 |          30 |   8100498 |
+| PubMed                             | [`pykeen.datasets.PubMed`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PubMed.html)                 | [Sen *et al*., 2008](https://jmlr.csail.mit.edu/papers/v11/sen10a.html)                                                 |      19717 |           1 |     44338 |
+| Squirrel                           | [`pykeen.datasets.Squirrel`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Squirrel.html)             | [Rozemberczki *et al*., 2021](https://arxiv.org/abs/2106.11181)                                                         |       5201 |           1 |    217073 |
 | Unified Medical Language System    | [`pykeen.datasets.UMLS`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.UMLS.html)                     | [`ZhenfengLei/KGDatasets`](https://github.com/ZhenfengLei/KGDatasets)                                                   |        135 |          46 |      6529 |
 | WD50K (triples)                    | [`pykeen.datasets.WD50KT`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WD50KT.html)                 | [Galkin *et al*., 2020](https://www.aclweb.org/anthology/2020.emnlp-main.596/)                                          |      40107 |         473 |    232344 |
 | Wikidata5M                         | [`pykeen.datasets.Wikidata5M`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Wikidata5M.html)         | [Wang *et al*., 2019](https://arxiv.org/abs/1911.06136)                                                                 |    4594149 |         822 |  20624239 |
