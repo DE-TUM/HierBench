@@ -8,11 +8,23 @@ from .api import (
     replicate_pipeline_from_config,
     replicate_pipeline_from_path,
 )
-from .hierarchy import ancestor_descendant_pipeline
+from .hierarchy import (
+    HierarchicalPipelineResult,
+    HpoHierarchicalResult,
+    ancestor_descendant_pipeline,
+    ancestor_descendant_split,
+    build_ancestor_paths,
+    hpo_ancestor_descendant_pipeline,
+)
 from .plot_utils import plot, plot_early_stopping, plot_er, plot_losses
 
 __all__ = [
     "ancestor_descendant_pipeline",
+    "ancestor_descendant_split",
+    "hpo_ancestor_descendant_pipeline",
+    "HierarchicalPipelineResult",
+    "HpoHierarchicalResult",
+    "build_ancestor_paths",
     "PipelineResult",
     "pipeline_from_path",
     "pipeline_from_config",

@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from class_resolver.contrib.torch import optimizer_resolver
+from geoopt.optim import RiemannianAdam
 from torch.optim.adagrad import Adagrad
 from torch.optim.adam import Adam
 from torch.optim.adamax import Adamax

@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+import numpy as np
 import pytest
 import torch
 
@@ -474,7 +475,7 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
         """Every sampled val/test pair is a reachable, non-direct ancestor-descendant pair."""
         import networkx as nx
 
-        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+        from pykeen.pipeline.hierarchy import ancestor_descendant_split
 
         dataset = _make_chain_dataset()
         direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
@@ -482,7 +483,7 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
         graph.add_nodes_from(range(dataset.num_entities))
         graph.add_edges_from(direct)
 
-        _train, val, test = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=10, seed=0)
+        _train, val, test = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=10, seed=0)
         eval_pairs = {(h, t) for h, _, t in (val.mapped_triples.tolist() + test.mapped_triples.tolist())}
         # On a 4-node chain the only multi-hop pairs that exist are these three.
         assert eval_pairs <= {(0, 2), (0, 3), (1, 3)}
@@ -521,22 +522,22 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
     def test_train_is_exactly_direct_edges(self):
         """Training contains exactly the direct graph edges, regardless of the pair budget."""
-        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+        from pykeen.pipeline.hierarchy import ancestor_descendant_split
 
         dataset = _make_diamond_dataset()
         direct_edges = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
 
         for num_pairs in (0, 4, 50):
-            train, _val, _test = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=num_pairs, seed=42)
+            train, _val, _test = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=num_pairs, seed=42)
             train_pairs = {(h, t) for h, _, t in train.mapped_triples.tolist()}
             assert train_pairs == direct_edges, f"train != direct edges at num_pairs={num_pairs}"
 
     def test_hierarchy_splits_no_leakage(self):
         """No sampled eval pair appears in training, and validation/test are disjoint."""
-        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+        from pykeen.pipeline.hierarchy import ancestor_descendant_split
 
         dataset = _make_balanced_tree_dataset()
-        train, val, test = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=12, seed=42)
+        train, val, test = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=42)
         train_pairs = {(h, t) for h, _, t in train.mapped_triples.tolist()}
         val_pairs = {(h, t) for h, _, t in val.mapped_triples.tolist()}
         test_pairs = {(h, t) for h, _, t in test.mapped_triples.tolist()}
@@ -549,7 +550,7 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
         import networkx as nx
 
-        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+        from pykeen.pipeline.hierarchy import ancestor_descendant_split
 
         dataset = _make_balanced_tree_dataset()
         graph = nx.DiGraph()
@@ -558,7 +559,7 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
         # The tree supplies 12 two-hop and 8 three-hop pairs, so a budget of 12 (6 per hop)
         # is fully satisfiable and must come out exactly balanced.
-        _train, val, test = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=12, seed=42)
+        _train, val, test = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=42)
         eval_pairs = [(h, t) for h, _, t in (val.mapped_triples.tolist() + test.mapped_triples.tolist())]
         hop_counts = Counter(nx.shortest_path_length(graph, h, t) for h, t in eval_pairs)
         assert set(hop_counts) <= {2, 3}
@@ -567,11 +568,11 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
     def test_determinism(self):
         """Identical seeds yield identical splits; the total sampled never exceeds the budget."""
-        from pykeen.pipeline.hierarchy import _build_hierarchy_splits
+        from pykeen.pipeline.hierarchy import ancestor_descendant_split
 
         dataset = _make_balanced_tree_dataset()
-        first = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=12, seed=7)
-        second = _build_hierarchy_splits(dataset, hops=(2, 3), num_pairs=12, seed=7)
+        first = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=7)
+        second = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=7)
         for factory_a, factory_b in zip(first, second, strict=True):
             assert torch.equal(factory_a.mapped_triples, factory_b.mapped_triples)
         _train, val, test = first
@@ -586,3 +587,115 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
         assert result.metric_results is not None
         mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
         assert 0.0 <= mrr <= 1.0
+
+
+def test_build_ancestor_paths_chain():
+    """build_ancestor_paths returns a total inclusive ancestor map for a chain."""
+    from pykeen.pipeline.hierarchy import build_ancestor_paths
+
+    triples = torch.tensor([[0, 0, 1], [1, 0, 2], [2, 0, 3]], dtype=torch.long)
+    ancestors = build_ancestor_paths(triples, num_entities=4)
+    assert ancestors[0] == frozenset({0})
+    assert ancestors[2] == frozenset({0, 1, 2})
+    assert ancestors[3] == frozenset({0, 1, 2, 3})
+
+
+def test_build_ancestor_paths_relation_filter():
+    """build_ancestor_paths only follows edges of the given hierarchy relation."""
+    from pykeen.pipeline.hierarchy import build_ancestor_paths
+
+    # relation 0 = hierarchy chain 0→1→2; relation 1 = a non-hierarchy edge 3→0
+    triples = torch.tensor([[0, 0, 1], [1, 0, 2], [3, 1, 0]], dtype=torch.long)
+    filtered = build_ancestor_paths(triples, num_entities=4, hierarchy_relation=0)
+    assert filtered[2] == frozenset({0, 1, 2})
+    assert 3 not in filtered[0]
+    # without the filter, the relation-1 edge would make 3 an ancestor of 0
+    unfiltered = build_ancestor_paths(triples, num_entities=4)
+    assert 3 in unfiltered[0]
+
+
+def test_hierarchical_scores_perfect_and_sibling():
+    """Hierarchical scores are 1.0 for a perfect hit and reflect shared root-path for a sibling."""
+    from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
+
+    # tree R→A, A→B, A→C  (0=R, 1=A, 2=B, 3=C)
+    ancestors = {0: frozenset({0}), 1: frozenset({0, 1}), 2: frozenset({0, 1, 2}), 3: frozenset({0, 1, 3})}
+    y_true = np.array([0, 0, 1, 0])  # true target is node 2
+
+    # perfect prediction: node 2 ranked top
+    perfect = _hierarchical_scores(y_true=y_true, y_score=np.array([0.1, 0.2, 0.9, 0.3]), ancestors=ancestors)
+    assert perfect == pytest.approx((1.0, 1.0, 1.0))
+
+    # sibling prediction: node 3 ranked top → shares root-path {0, 1}
+    sibling = _hierarchical_scores(y_true=y_true, y_score=np.array([0.1, 0.2, 0.3, 0.9]), ancestors=ancestors)
+    assert sibling == pytest.approx((2 / 3, 2 / 3, 2 / 3))
+
+
+def test_hierarchical_scores_disjoint_and_empty():
+    """Disjoint branches score 0.0; an empty positive mask yields None."""
+    from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
+
+    # two disjoint chains 0→1 and 2→3
+    ancestors = {0: frozenset({0}), 1: frozenset({0, 1}), 2: frozenset({2}), 3: frozenset({2, 3})}
+    disjoint = _hierarchical_scores(
+        y_true=np.array([0, 1, 0, 0]), y_score=np.array([0.0, 0.0, 0.0, 1.0]), ancestors=ancestors
+    )
+    assert disjoint == pytest.approx((0.0, 0.0, 0.0))
+
+    empty = _hierarchical_scores(
+        y_true=np.array([0, 0, 0, 0]), y_score=np.array([0.1, 0.2, 0.3, 0.4]), ancestors=ancestors
+    )
+    assert empty is None
+
+
+def test_hierarchical_evaluator_requires_ancestors():
+    """The hierarchical evaluator raises when no ancestors map is given."""
+    from pykeen.evaluation import HierarchicalClassificationEvaluator
+
+    with pytest.raises(ValueError, match="ancestors"):
+        HierarchicalClassificationEvaluator()
+
+
+def test_pipeline_reports_hierarchical_metrics():
+    """The ancestor-descendant pipeline attaches hierarchical metrics in [0, 1] when enabled."""
+    from pykeen.pipeline.hierarchy import ancestor_descendant_pipeline
+
+    dataset = _make_balanced_tree_dataset()
+    result = ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
+    assert result.hierarchical_metric_results is not None
+    h_f1 = result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
+    assert 0.0 <= h_f1 <= 1.0
+
+    disabled = ancestor_descendant_pipeline(
+        dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0, hierarchical=False
+    )
+    assert disabled.hierarchical_metric_results is None
+
+
+def test_pipeline_persists_hierarchical_metrics():
+    """save_to_directory writes the hierarchical metrics into results.json."""
+    import json
+
+    from pykeen.pipeline.hierarchy import ancestor_descendant_pipeline
+
+    dataset = _make_balanced_tree_dataset()
+    result = ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
+    with tempfile.TemporaryDirectory() as directory:
+        result.save_to_directory(directory)
+        with pathlib.Path(directory, "results.json").open() as file:
+            saved = json.load(file)
+    assert "hierarchical_metrics" in saved
+
+
+def test_hpo_pipeline_refits_best_trial():
+    """The ancestor-descendant HPO pipeline runs a study and re-fits the best trial's hierarchical metrics."""
+    from pykeen.pipeline.hierarchy import hpo_ancestor_descendant_pipeline
+
+    dataset = _make_balanced_tree_dataset()
+    outcome = hpo_ancestor_descendant_pipeline(
+        dataset, model="PoincareE", n_trials=1, epochs=1, hops=(2, 3), num_pairs=8, seed=0
+    )
+    assert outcome.hpo_result.study is not None
+    assert outcome.result is not None
+    h_f1 = outcome.result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
+    assert 0.0 <= h_f1 <= 1.0
