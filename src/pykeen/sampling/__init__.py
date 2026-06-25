@@ -116,6 +116,7 @@ from class_resolver import ClassResolver
 
 from .basic_negative_sampler import BasicNegativeSampler
 from .bernoulli_negative_sampler import BernoulliNegativeSampler
+from .hierarchy_negative_sampler import HierarchyNegativeSampler
 from .negative_sampler import NegativeSampler
 from .pseudo_type import PseudoTypedNegativeSampler
 
@@ -124,6 +125,7 @@ __all__ = [
     "BasicNegativeSampler",
     "BernoulliNegativeSampler",
     "PseudoTypedNegativeSampler",
+    "HierarchyNegativeSampler",
     # Utils
     "negative_sampler_resolver",
 ]

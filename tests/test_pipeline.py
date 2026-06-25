@@ -589,6 +589,112 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
         assert 0.0 <= mrr <= 1.0
 
 
+def _make_bipartite_dataset() -> EagerDataset:
+    """Return a 2-parent x 4-child bipartite hierarchy (relation 0, 8 edges).
+
+    Parents {0, 1} each link to children {2, 3, 4, 5}, so parents have degree 4 and every child has
+    degree 2. Each child can lose exactly one of its two edges without being isolated, giving a clean,
+    plentiful pool of removable edges.
+    """
+    rows = [[p, 0, c] for p in (0, 1) for c in (2, 3, 4, 5)]
+    train = CoreTriplesFactory(mapped_triples=torch.tensor(rows, dtype=torch.long), num_entities=6, num_relations=1)
+    return EagerDataset(training=train, testing=train, validation=train)
+
+
+class TestHierarchyCompletionPipeline(unittest.TestCase):
+    """Tests for the hierarchy-completion (removed-edge) benchmark pipeline."""
+
+    def test_no_isolated_nodes(self):
+        """Removal never orphans a node: every node with a hierarchy edge keeps one in training."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        dataset = _make_bipartite_dataset()
+        original = dataset.training.mapped_triples.tolist()
+        nodes_with_edge = {h for h, _, _ in original} | {t for _, _, t in original}
+
+        train, _val, _test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42)
+        train_rows = train.mapped_triples.tolist()
+        train_nodes = {h for h, _, _ in train_rows} | {t for _, _, t in train_rows}
+        assert nodes_with_edge <= train_nodes
+
+    def test_leaves_never_removed(self):
+        """On a tree, every leaf's single parent edge is retained (degree-1 nodes are protected)."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        dataset = _make_balanced_tree_dataset()
+        train, _val, _test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42)
+        train_edges = {(h, t) for h, _, t in train.mapped_triples.tolist()}
+        for leaf in range(7, 15):  # leaves 7..14, parent = (leaf - 1) // 2
+            assert ((leaf - 1) // 2, leaf) in train_edges
+
+    def test_held_out_edges_are_removed_originals(self):
+        """Val/test edges are original hierarchy edges absent from train; the partition is exact."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        dataset = _make_bipartite_dataset()
+        original = {tuple(row) for row in dataset.training.mapped_triples.tolist()}
+
+        train, val, test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42)
+        train_edges = [tuple(row) for row in train.mapped_triples.tolist()]
+        held = [tuple(row) for row in (val.mapped_triples.tolist() + test.mapped_triples.tolist())]
+
+        assert set(held) <= original
+        assert set(held).isdisjoint(train_edges)
+        # exact partition, no duplicates: train + held reconstructs the original edge multiset
+        assert sorted(train_edges + held) == sorted(original)
+
+    def test_ratio_and_balanced_split(self):
+        """The number removed matches round(test_ratio*|H|) and is split 50/50 within one edge."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        dataset = _make_bipartite_dataset()  # |H| = 8, all four children supply a removable edge
+        _train, val, test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42)
+        assert val.num_triples + test.num_triples == 4  # round(0.5 * 8)
+        assert abs(val.num_triples - test.num_triples) <= 1
+
+    def test_original_relation_preserved(self):
+        """Held-out edges keep their relation id; non-hierarchy edges stay in training."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        # relation 0 = bipartite hierarchy; relation 1 = context edges that must never be held out
+        hierarchy = [[p, 0, c] for p in (0, 1) for c in (2, 3, 4, 5)]
+        context = [[2, 1, 3], [4, 1, 5]]
+        rows = torch.tensor(hierarchy + context, dtype=torch.long)
+        train_tf = CoreTriplesFactory(mapped_triples=rows, num_entities=6, num_relations=2)
+        dataset = EagerDataset(training=train_tf, testing=train_tf, validation=train_tf)
+
+        train, val, test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42, hierarchy_relation=0)
+        held = val.mapped_triples.tolist() + test.mapped_triples.tolist()
+        assert held, "expected some removed edges"
+        assert all(r == 0 for _, r, _ in held)
+        train_edges = [tuple(row) for row in train.mapped_triples.tolist()]
+        for ctx in context:
+            assert tuple(ctx) in train_edges
+
+    def test_pipeline_runs(self):
+        """Pipeline completes, returns a valid MRR, and reports hierarchical metrics."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
+
+        dataset = _make_bipartite_dataset()
+        result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0)
+        assert result.metric_results is not None
+        mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+        assert 0.0 <= mrr <= 1.0
+        assert result.hierarchical_metric_results is not None
+
+    def test_negative_sampler_selectable(self):
+        """The hierarchy default is a setdefault: pseudotyped/basic can be chosen instead."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
+
+        dataset = _make_bipartite_dataset()
+        for sampler in ("pseudotyped", "basic"):
+            result = hierarchy_completion_pipeline(
+                dataset, epochs=1, test_ratio=0.5, seed=0, negative_sampler=sampler
+            )
+            mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+            assert 0.0 <= mrr <= 1.0
+
+
 def test_build_ancestor_paths_chain():
     """build_ancestor_paths returns a total inclusive ancestor map for a chain."""
     from pykeen.pipeline.hierarchy import build_ancestor_paths
