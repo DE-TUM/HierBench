@@ -211,7 +211,7 @@ class HierarchicalClassificationEvaluator(Evaluator[HierarchicalMetricKey]):
         self.scores.clear()
 
     @staticmethod
-    def _aggregate(side: ExtendedTarget, values: Sequence[_HScore]) -> dict[HierarchicalMetricKey, float]:
+    def _aggregate(side: ExtendedTarget, values: Sequence[_HScore]) -> dict[HierarchicalMetricKey | str, float]:
         """Average the per-instance scores for one side into the three metric keys."""
         if not values:
             means = (0.0, 0.0, 0.0)
@@ -224,7 +224,7 @@ class HierarchicalClassificationEvaluator(Evaluator[HierarchicalMetricKey]):
 
     # docstr-coverage: inherited
     def finalize(self) -> HierarchicalMetricResults:  # noqa: D102
-        data: dict[HierarchicalMetricKey, float] = {}
+        data: dict[HierarchicalMetricKey | str, float] = {}
         all_values: list[_HScore] = []
         for target in sorted(self.scores):
             values = list(self.scores[target].values())

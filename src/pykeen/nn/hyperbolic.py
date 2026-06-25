@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
-import warnings
 import math
+import warnings
 from typing import Any
 
 import geoopt

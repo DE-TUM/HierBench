@@ -666,9 +666,7 @@ def test_pipeline_reports_hierarchical_metrics():
     h_f1 = result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
     assert 0.0 <= h_f1 <= 1.0
 
-    disabled = ancestor_descendant_pipeline(
-        dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0, hierarchical=False
-    )
+    disabled = ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0, hierarchical=False)
     assert disabled.hierarchical_metric_results is None
 
 

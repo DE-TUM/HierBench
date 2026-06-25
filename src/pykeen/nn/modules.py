@@ -2188,9 +2188,7 @@ class HyperbolicConesInteraction(Interaction[FloatTensor, tuple[()], FloatTensor
         cone_angle = cone_sin.arcsin()
 
         g = (1.0 + h_norm_sq * t_norm_sq - 2.0 * dot_ht).clamp(min=eps)
-        cos_child = (dot_ht * (1.0 + h_norm_sq) - h_norm_sq * (1.0 + t_norm_sq)) / (
-            h_norm * diff_norm * g.sqrt()
-        )
+        cos_child = (dot_ht * (1.0 + h_norm_sq) - h_norm_sq * (1.0 + t_norm_sq)) / (h_norm * diff_norm * g.sqrt())
         child_angle = cos_child.clamp(-1.0 + eps, 1.0 - eps).arccos()
 
         return -torch.relu(child_angle - cone_angle)

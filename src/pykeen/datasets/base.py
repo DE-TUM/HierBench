@@ -11,9 +11,9 @@ from collections.abc import Collection, Iterable, Mapping, Sequence
 from io import BytesIO
 from typing import Any, ClassVar, cast
 
-import networkx as nx
 import click
 import docdata
+import networkx as nx
 import pandas as pd
 import requests
 import torch
@@ -504,10 +504,7 @@ class Dataset(ExtraReprMixin):
         """
         graph = nx.MultiDiGraph()
         graph.add_nodes_from(range(self.num_entities))
-        graph.add_edges_from(
-            (h, t, {"relation": r})
-            for h, r, t in self.full_graph.mapped_triples.tolist()
-        )
+        graph.add_edges_from((h, t, {"relation": r}) for h, r, t in self.full_graph.mapped_triples.tolist())
         return graph
 
 

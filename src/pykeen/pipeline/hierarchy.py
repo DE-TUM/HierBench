@@ -15,7 +15,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import networkx as nx
 import numpy as np
@@ -72,9 +72,7 @@ def build_ancestor_paths(
     graph = nx.DiGraph()
     graph.add_nodes_from(range(num_entities))
     graph.add_edges_from(
-        (h, t)
-        for h, r, t in mapped_triples.tolist()
-        if hierarchy_relation is None or r == hierarchy_relation
+        (h, t) for h, r, t in mapped_triples.tolist() if hierarchy_relation is None or r == hierarchy_relation
     )
     return {n: frozenset(nx.ancestors(graph, n)) | {n} for n in graph.nodes}
 
@@ -211,9 +209,7 @@ def ancestor_descendant_split(
             stacklevel=2,
         )
 
-    def _to_factory(
-        pairs: list[tuple[int, int]], base_rows: list[list[int]] | None = None
-    ) -> CoreTriplesFactory:
+    def _to_factory(pairs: list[tuple[int, int]], base_rows: list[list[int]] | None = None) -> CoreTriplesFactory:
         rows = (base_rows or []) + [[h, 0, t] for h, t in pairs]
         mapped = torch.tensor(rows, dtype=torch.long) if rows else torch.empty((0, 3), dtype=torch.long)
         return CoreTriplesFactory(
@@ -287,9 +283,7 @@ def ancestor_descendant_pipeline(
     hierarchical_metric_results = None
     if hierarchical:
         # direct instantiation → the big ancestors dict never enters the logged config
-        ancestors = build_ancestor_paths(
-            dataset.training.mapped_triples, dataset.num_entities, hierarchy_relation
-        )
+        ancestors = build_ancestor_paths(dataset.training.mapped_triples, dataset.num_entities, hierarchy_relation)
         # mirror the pipeline's evaluation settings on the hierarchical pass (evaluation_kwargs are the
         # .evaluate()-time params; evaluator_kwargs is the constructor, used as a fallback for batch_size)
         eval_source = {
@@ -301,12 +295,15 @@ def ancestor_descendant_pipeline(
             for key in ("batch_size", "slice_size", "device", "use_tqdm", "tqdm_kwargs")
             if key in eval_source
         }
-        hierarchical_metric_results = HierarchicalClassificationEvaluator(ancestors=ancestors).evaluate(
-            model=result.model,
-            mapped_triples=test_factory.mapped_triples,
-            targets=(LABEL_HEAD, LABEL_TAIL),
-            **eval_kwargs,
-            # no additional_filter_triples → Y reflects the held-out targets only
+        hierarchical_metric_results = cast(
+            HierarchicalMetricResults,
+            HierarchicalClassificationEvaluator(ancestors=ancestors).evaluate(
+                model=result.model,
+                mapped_triples=test_factory.mapped_triples,
+                targets=(LABEL_HEAD, LABEL_TAIL),
+                **eval_kwargs,
+                # no additional_filter_triples → Y reflects the held-out targets only
+            ),
         )
 
     return HierarchicalPipelineResult(

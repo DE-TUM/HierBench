@@ -13,6 +13,7 @@ import torch
 import unittest_templates
 from PIL import Image
 
+import pykeen.nn.hyperbolic
 import pykeen.nn.message_passing
 import pykeen.nn.node_piece
 import pykeen.nn.pyg
@@ -62,6 +63,27 @@ class TensorEmbeddingTests(cases.RepresentationTestCase):
     kwargs = {
         "shape": (3, 7),
     }
+
+
+class PoincareEmbeddingTests(cases.RepresentationTestCase):
+    """Tests for Poincaré ball embeddings."""
+
+    cls = pykeen.nn.hyperbolic.PoincareEmbedding
+    kwargs = {"embedding_dim": 5}
+
+
+class LorentzEmbeddingTests(cases.RepresentationTestCase):
+    """Tests for Lorentz hyperboloid embeddings."""
+
+    cls = pykeen.nn.hyperbolic.LorentzEmbedding
+    kwargs = {"embedding_dim": 5}
+
+
+class HyperbolicConesEmbeddingTests(cases.RepresentationTestCase):
+    """Tests for Hyperbolic Entailment Cones embeddings."""
+
+    cls = pykeen.nn.hyperbolic.HyperbolicConesEmbedding
+    kwargs = {"embedding_dim": 5}
 
 
 class RGCNRepresentationTests(cases.TriplesFactoryRepresentationTestCase):
