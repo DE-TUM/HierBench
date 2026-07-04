@@ -89,6 +89,7 @@ from .ermlpe import ERMLPE
 from .hole import HolE
 from .hyperbolic_cones import HyperbolicCones
 from .kg2e import KG2E
+from .lorentz_e import LorentzE
 from .mure import MuRE
 from .node_piece import NodePiece
 from .ntn import NTN
@@ -126,6 +127,7 @@ __all__ = [
     "HolE",
     "HyperbolicCones",
     "KG2E",
+    "LorentzE",
     "MuRE",
     "NTN",
     "NodePiece",

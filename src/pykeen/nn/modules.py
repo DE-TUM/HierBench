@@ -91,6 +91,7 @@ __all__ = [
     "HyperbolicConesInteraction",
     "KG2EInteraction",
     "LineaREInteraction",
+    "LorentzInteraction",
     "MultiLinearTuckerInteraction",
     "MuREInteraction",
     "NTNInteraction",
@@ -2103,6 +2104,72 @@ class PoincareEInteraction(Interaction[FloatTensor, tuple[()], FloatTensor]):
             No relation representations.
         :param t: shape: ``(*batch_dims, d)``
             The tail representations on the Poincaré ball.
+
+        :return: shape: ``batch_dims``
+            The scores.
+        """
+        return -self.manifold.dist(h, t)
+
+
+@parse_docdata
+class LorentzInteraction(Interaction[FloatTensor, tuple[()], FloatTensor]):
+    r"""Lorentz-model embedding interaction for hierarchical link prediction.
+
+    Scores a pair ``(h, t)`` using the negative geodesic distance on the Lorentz
+    (hyperboloid) manifold of curvature ``-k``:
+
+    .. math::
+
+        -d_{\mathcal{L}_k}(\mathbf{h}, \mathbf{t}), \qquad
+        d_{\mathcal{L}_k}(\mathbf{h}, \mathbf{t})
+            = \operatorname{arcosh}(-\langle \mathbf{h}, \mathbf{t}\rangle_{\mathcal{L}})
+
+    where :math:`\langle u, v\rangle_{\mathcal{L}} = -u_0 v_0 + \sum_i u_i v_i` is the
+    Lorentzian inner product. The Lorentz distance avoids the numerical instabilities of
+    the Poincaré distance and yields higher-quality embeddings, especially in low dimensions.
+    Pair with :class:`~pykeen.nn.hyperbolic.LorentzEmbedding`, whose ``(d+1)``-dimensional
+    vectors carry the time coordinate ``h_0`` this distance needs.
+
+    .. warning::
+
+        This model uses manifold parameters. For correct Riemannian gradient updates use
+        a Riemannian optimiser such as :class:`geoopt.optim.RiemannianSGD`.
+
+    ---
+    name: Lorentz Embedding
+    citation:
+        author: Nickel
+        year: 2018
+        link: https://arxiv.org/abs/1806.03417
+    """
+
+    relation_shape: Sequence[str] = ()
+
+    def __init__(self, curvature: float = 1.0, trainable_curvature: bool = False) -> None:
+        """Initialise the interaction.
+
+        :param curvature:
+            The absolute curvature ``k`` of the Lorentz manifold. Positive float.
+        :param trainable_curvature:
+            Whether to learn the curvature during training.
+        """
+        super().__init__()
+        curvature_tensor = torch.as_tensor(curvature, dtype=torch.float)
+        if trainable_curvature:
+            self.curvature = nn.Parameter(curvature_tensor)
+        else:
+            self.register_buffer("curvature", curvature_tensor)
+        self.manifold = geoopt.Lorentz(k=self.curvature)  # Lorentz is parameterised by k, not c
+
+    def forward(self, h: FloatTensor, r: tuple[()], t: FloatTensor) -> FloatTensor:
+        """Evaluate the interaction function.
+
+        :param h: shape: ``(*batch_dims, d+1)``
+            The head representations on the Lorentz manifold.
+        :param r:
+            No relation representations.
+        :param t: shape: ``(*batch_dims, d+1)``
+            The tail representations on the Lorentz manifold.
 
         :return: shape: ``batch_dims``
             The scores.

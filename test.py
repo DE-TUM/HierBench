@@ -25,7 +25,7 @@ from __future__ import annotations
 from pykeen.datasets import Cora, ACMCCS, DOID, EuroSciVoc, NASA, MeSH
 from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 from pykeen.evaluation import ClassificationEvaluator, ClassificationMetricResults
-from pykeen.models import HyperbolicCones, PoincareE
+from pykeen.models import HyperbolicCones, LorentzE, PoincareE
 from pykeen.pipeline.hierarchy import (
     HierarchicalPipelineResult,
     HpoHierarchicalResult,
@@ -56,6 +56,22 @@ CONFIGS: list[tuple[str, object, dict, dict]] = [
             "optimizer_kwargs": {"lr": 0.3},
             # paper Eq. 6 softmax ranking loss. Must be explicit: the pipeline injects the
             # loss-resolver default (MarginRanking), overriding the PoincareE class default.
+            "loss": "crossentropy",
+            "negative_sampler_kwargs": {"num_negs_per_pos": 10},  # paper §4.1
+        },
+    ),
+    (
+        # Reported hyperparameters (Nickel & Kiela 2018, Lorentz model): same softmax ranking loss
+        # (Eq. 12) and U(-0.001, 0.001) init are the LorentzE model defaults; the rest are set here.
+        "LorentzE (Nickel & Kiela 2018)",
+        LorentzE,
+        {"embedding_dim": EMBEDDING_DIM, "curvature": 1.0},  # curvature=1.0 == K=-1
+        {
+            "optimizer": "RiemannianSGD",  # paper §3.2.2 RSGD / natural gradient
+            # base η knob — paper doesn't pin it; tune per dataset
+            "optimizer_kwargs": {"lr": 0.3},
+            # paper Eq. 12 softmax ranking loss. Must be explicit: the pipeline injects the
+            # loss-resolver default (MarginRanking), overriding the LorentzE class default.
             "loss": "crossentropy",
             "negative_sampler_kwargs": {"num_negs_per_pos": 10},  # paper §4.1
         },
