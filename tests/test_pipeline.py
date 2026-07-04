@@ -587,21 +587,23 @@ def test_build_ancestor_paths_relation_filter():
     assert 3 in unfiltered[0]
 
 
-def test_hierarchical_scores_perfect_and_sibling():
-    """Hierarchical scores are 1.0 for a perfect hit and reflect shared root-path for a sibling."""
+def test_hierarchical_scores_paper_example():
+    """Reproduce Kosmopoulos et al. (2015), Fig. 11 / Table 3 (root included, per-query scores)."""
     from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
+    from pykeen.pipeline.hierarchy import build_ancestor_paths
 
-    # tree R→A, A→B, A→C  (0=R, 1=A, 2=B, 3=C)
-    ancestors = {0: frozenset({0}), 1: frozenset({0, 1}), 2: frozenset({0, 1, 2}), 3: frozenset({0, 1, 3})}
-    y_true = np.array([0, 0, 1, 0])  # true target is node 2
+    # 0=Arts, 1=Music, 2=Theater, 3=Pop, 4=Rock, 5=Classical
+    triples = torch.tensor([[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [1, 0, 5]], dtype=torch.long)
+    ancestors = build_ancestor_paths(triples, num_entities=6)
+    y_true = np.array([0, 0, 0, 1, 0, 0])  # true class is Pop
 
-    # perfect prediction: node 2 ranked top
-    perfect = _hierarchical_scores(y_true=y_true, y_score=np.array([0.1, 0.2, 0.9, 0.3]), ancestors=ancestors)
-    assert perfect == pytest.approx((1.0, 1.0, 1.0))
+    # case (a): predicted Rock → hP = hR = hF1 = 2/3 (shared path {Arts, Music})
+    case_a = _hierarchical_scores(y_true=y_true, y_score=np.array([0, 0, 0, 0, 1.0, 0]), ancestors=ancestors)
+    assert case_a == pytest.approx((2 / 3, 2 / 3, 2 / 3))
 
-    # sibling prediction: node 3 ranked top → shares root-path {0, 1}
-    sibling = _hierarchical_scores(y_true=y_true, y_score=np.array([0.1, 0.2, 0.3, 0.9]), ancestors=ancestors)
-    assert sibling == pytest.approx((2 / 3, 2 / 3, 2 / 3))
+    # case (b): predicted Theater → hP = 1/2, hR = 1/3, hF1 = 0.4 (only Arts shared)
+    case_b = _hierarchical_scores(y_true=y_true, y_score=np.array([0, 0, 1.0, 0, 0, 0]), ancestors=ancestors)
+    assert case_b == pytest.approx((1 / 2, 1 / 3, 0.4))
 
 
 def test_hierarchical_scores_disjoint_and_empty():
@@ -619,6 +621,24 @@ def test_hierarchical_scores_disjoint_and_empty():
         y_true=np.array([0, 0, 0, 0]), y_score=np.array([0.1, 0.2, 0.3, 0.4]), ancestors=ancestors
     )
     assert empty is None
+
+
+def test_hierarchical_aggregate_averages_per_query():
+    """Aggregation averages the per-query scores (Kosmopoulos et al. 2015), not micro-pooled counts."""
+    from pykeen.evaluation.hierarchical_classification_evaluator import (
+        HierarchicalClassificationEvaluator,
+        HierarchicalMetricKey,
+    )
+
+    values = [(0.5, 0.25, 1 / 3), (1.0, 1.0, 1.0)]
+    result = HierarchicalClassificationEvaluator._aggregate(side="tail", values=values)
+    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_precision")] == pytest.approx(0.75)
+    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_recall")] == pytest.approx(0.625)
+    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_f1")] == pytest.approx(2 / 3)
+
+    # no queries → all zeros
+    zeros = HierarchicalClassificationEvaluator._aggregate(side="tail", values=[])
+    assert all(value == 0.0 for value in zeros.values())
 
 
 def test_hierarchical_evaluator_requires_ancestors():

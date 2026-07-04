@@ -1,10 +1,11 @@
 r"""Hierarchical classification metrics (precision / recall / F1) over ancestor paths.
 
-This adapts the set-based hierarchical metrics of Plaud et al. (2024), *Revisiting Hierarchical
-Text Classification* (https://arxiv.org/abs/2410.01305), to knowledge-graph link prediction. For a
-query, the model's per-entity scores are turned into a predicted node set via the same top-``|Y|``
-rule used by :func:`pykeen.metrics.classification.construct_indicator` (where ``|Y|`` is the number
-of ground-truth positives). Both the predicted set and the ground-truth set are augmented with the
+This adapts the set-based hierarchical metrics of Kosmopoulos et al. (2015), *Evaluation measures
+for hierarchical classification: a unified view and novel approaches*
+(https://doi.org/10.1007/s10618-014-0382-x), to knowledge-graph link prediction. For a query, the
+model's per-entity scores are turned into a predicted node set via the same top-``|Y|`` rule used
+by :func:`pykeen.metrics.classification.construct_indicator` (where ``|Y|`` is the number of
+ground-truth positives). Both the predicted set and the ground-truth set are augmented with the
 ancestors (root-paths) of their nodes, and hierarchical precision/recall/F1 are computed on the
 augmented sets:
 
@@ -14,7 +15,7 @@ augmented sets:
     hR = \\frac{|\\hat{Y}_{aug} \\cap Y_{aug}|}{|Y_{aug}|}, \\quad
     hF_1 = \\frac{2 \\cdot hP \\cdot hR}{hP + hR}
 
-The per-instance scores are averaged over all queries ("samples" setting), reported for each side
+As in the paper, the per-query scores are averaged over all queries, reported for each side
 (``head`` / ``tail``) and combined (``both``).
 
 .. note::
@@ -56,7 +57,7 @@ class HierarchicalPrecision(Metric):
 
     ---
     description: Ancestor-augmented precision of the predicted node set.
-    link: https://arxiv.org/abs/2410.01305
+    link: https://doi.org/10.1007/s10618-014-0382-x
     """
 
     name: ClassVar[str] = "Hierarchical Precision"
@@ -70,7 +71,7 @@ class HierarchicalRecall(Metric):
 
     ---
     description: Ancestor-augmented recall of the predicted node set.
-    link: https://arxiv.org/abs/2410.01305
+    link: https://doi.org/10.1007/s10618-014-0382-x
     """
 
     name: ClassVar[str] = "Hierarchical Recall"
@@ -84,7 +85,7 @@ class HierarchicalF1(Metric):
 
     ---
     description: Harmonic mean of hierarchical precision and recall.
-    link: https://arxiv.org/abs/2410.01305
+    link: https://doi.org/10.1007/s10618-014-0382-x
     """
 
     name: ClassVar[str] = "Hierarchical F1"
@@ -155,7 +156,7 @@ def _hierarchical_scores(
 class HierarchicalClassificationEvaluator(Evaluator[HierarchicalMetricKey]):
     """An evaluator computing hierarchical precision/recall/F1 over ancestor paths.
 
-    :param ancestors: a mapping from entity id to its inclusive ancestor set (root-path). Build it
+    :param ancestors: a mapping from entity id to its inclusive ancestor set. Build it
         with :func:`pykeen.pipeline.hierarchy.build_ancestor_paths`.
     """
 
@@ -167,7 +168,7 @@ class HierarchicalClassificationEvaluator(Evaluator[HierarchicalMetricKey]):
     def __init__(self, ancestors: Mapping[int, frozenset[int]] | None = None, **kwargs):
         """Initialize the evaluator.
 
-        :param ancestors: a mapping from entity id to its inclusive ancestor set (root-path).
+        :param ancestors: a mapping from entity id to its inclusive ancestor set.
         :param kwargs: keyword-based parameters passed to :meth:`Evaluator.__init__`.
 
         :raises ValueError: if no ``ancestors`` map is provided.
@@ -212,7 +213,7 @@ class HierarchicalClassificationEvaluator(Evaluator[HierarchicalMetricKey]):
 
     @staticmethod
     def _aggregate(side: ExtendedTarget, values: Sequence[_HScore]) -> dict[HierarchicalMetricKey | str, float]:
-        """Average the per-instance scores for one side into the three metric keys."""
+        """Average the per-query scores for one side into the three metric keys."""
         if not values:
             means = (0.0, 0.0, 0.0)
         else:

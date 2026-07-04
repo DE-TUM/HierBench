@@ -87,6 +87,9 @@ def build_ancestor_paths(
 ) -> dict[int, frozenset[int]]:
     """Build the inclusive ancestor set (root-path) for every entity from direct edges.
 
+    Roots are kept in the sets, following the set augmentation of Kosmopoulos et al.
+    (2015, https://doi.org/10.1007/s10618-014-0382-x).
+
     :param mapped_triples: The direct edges defining the hierarchy.
     :param num_entities: The total number of entities; all of them become nodes, so the returned
         mapping is total (isolated/root nodes map to ``{n}``).
