@@ -45,10 +45,20 @@ SEED = 42
 # Each entry: (label, model, model_kwargs, extra pipeline kwargs)
 CONFIGS: list[tuple[str, object, dict, dict]] = [
     (
-        "PoincareE (hyperbolic dist.)",
+        # Reported hyperparameters (Nickel & Kiela 2017): softmax ranking loss (Eq. 6) and
+        # U(-0.001, 0.001) init are the PoincareE model defaults; the rest are set here.
+        "PoincareE (Nickel & Kiela 2017)",
         PoincareE,
-        {"embedding_dim": EMBEDDING_DIM, "curvature": 1.0},
-        {"optimizer": "RiemannianAdam", "optimizer_kwargs": {"lr": 0.05}},
+        {"embedding_dim": EMBEDDING_DIM, "curvature": 1.0},  # curvature=1.0 == K=-1
+        {
+            "optimizer": "RiemannianSGD",  # paper §3.1 RSGD / natural gradient
+            # base η knob — paper doesn't pin it; reference impl used ~1.0, tune per dataset
+            "optimizer_kwargs": {"lr": 0.3},
+            # paper Eq. 6 softmax ranking loss. Must be explicit: the pipeline injects the
+            # loss-resolver default (MarginRanking), overriding the PoincareE class default.
+            "loss": "crossentropy",
+            "negative_sampler_kwargs": {"num_negs_per_pos": 10},  # paper §4.1
+        },
     ),
     (
         "HyperbolicCones (entailment)",
