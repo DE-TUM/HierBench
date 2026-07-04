@@ -26,14 +26,12 @@ class HyperbolicCones(ERModel[FloatTensor, tuple[()], FloatTensor]):
     :func:`pykeen.pipeline.hierarchy.hierarchy_completion_pipeline` and a
     Riemannian optimiser such as :class:`geoopt.optim.RiemannianAdam`.
 
+    Introduced by [ganea2018]_.
+
     .. warning::
 
         This model uses manifold parameters. For correct Riemannian gradient updates use
         a Riemannian optimiser such as :class:`geoopt.optim.RiemannianAdam`.
-
-    .. [ganea2018] Ganea, O.-E., Bécigneul, G., & Hofmann, T. (2018).
-       `Hyperbolic Entailment Cones for Learning Hierarchical Embeddings
-       <https://arxiv.org/abs/1804.01882>`_. ICML 2018.
     """
 
     loss_default = MarginRankingLoss

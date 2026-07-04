@@ -5,6 +5,7 @@ Datasets
     :include-all-objects:
 
 .. automodapi:: pykeen.datasets.base
+    :skip: Dataset
 
 .. automodapi:: pykeen.datasets.analysis
 
@@ -35,6 +36,7 @@ Numeric Datasets
 
 .. automodapi:: pykeen.datasets.numeric
     :include-all-objects:
+    :skip: UnpackedRemoteNumericDataset
 
 K-Fold Datasets
 ===============

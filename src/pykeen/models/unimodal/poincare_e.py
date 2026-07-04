@@ -22,6 +22,8 @@ class PoincareE(ERModel[FloatTensor, tuple[()], FloatTensor]):
         This model uses manifold parameters. For correct Riemannian gradient updates use a
         Riemannian optimiser such as :class:`geoopt.optim.RiemannianAdam`.
 
+    Introduced by [nickel2017]_.
+
     .. [nickel2017] Nickel, M., & Kiela, D. (2017). `Poincaré embeddings for learning hierarchical
        representations <https://arxiv.org/abs/1705.08039>`_. NeurIPS 2017.
     """

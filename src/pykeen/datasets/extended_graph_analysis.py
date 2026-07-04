@@ -456,7 +456,7 @@ class ExtendedGraphAnalysis:
 
     @property
     def total_vertices(self) -> int:
-        """Total number of vertices |V| (Zloch et al. 2019)."""
+        """Total number of vertices ``|V|`` (Zloch et al. 2019)."""
         return self._num_entities
 
     @property
