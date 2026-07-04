@@ -43,11 +43,13 @@ from .dbpedia import DBpedia50
 from .doid import DOID
 from .drkg import DRKG
 from .ea import CN3l, EADataset, MTransEDataset, OpenEA, WK3l15k, WK3l120k
+from .estat_fss import EstatFSS
 from .euroscivoc import EuroSciVoc
 from .freebase import FB15k, FB15k237
 from .globi import Globi
 from .hetionet import Hetionet
 from .kinships import Kinships
+from .mesh import MeSH
 from .metadata import MetadataDataset, RemoteMetadataDataset, SingleFileRemoteMetadataDataset
 from .nasa import NASA
 from .nations import Nations
@@ -132,6 +134,8 @@ __all__ = [
     "Globi",
     "PharMeBINet",
     "NASA",
+    "MeSH",
+    "EstatFSS",
 ]
 
 logger = logging.getLogger(__name__)

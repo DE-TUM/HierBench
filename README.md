@@ -45,7 +45,7 @@
 <p align="center">
   <a href="#installation">Installation</a> •
   <a href="#quickstart">Quickstart</a> •
-  <a href="#datasets">Datasets (49)</a> •
+  <a href="#datasets">Datasets (51)</a> •
   <a href="#inductive-datasets">Inductive Datasets (5)</a> •
   <a href="#models">Models (42)</a> •
   <a href="#supporters">Support</a> •
@@ -112,7 +112,7 @@ in ``pykeen``.
 
 ### Datasets 
 
-The following 49 datasets are built in to PyKEEN. The citation for each dataset corresponds to either the paper
+The following 51 datasets are built in to PyKEEN. The citation for each dataset corresponds to either the paper
 describing the dataset, the first paper published using the dataset with knowledge graph embedding models,
 or the URL for the dataset if neither of the first two are available. If you want to use a custom dataset,
 see the [Bring Your Own Dataset](https://pykeen.readthedocs.io/en/latest/byo/data.html) tutorial. If you
@@ -141,12 +141,14 @@ have a suggestion for another dataset to include in PyKEEN, please let us know
 | DBpedia50                          | [`pykeen.datasets.DBpedia50`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DBpedia50.html)           | [Shi *et al*., 2017](https://arxiv.org/abs/1711.03438)                                                                  |      24624 |         351 |     34421 |
 | DOID                               | [`pykeen.datasets.DOID`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DOID.html)                     | [`DiseaseOntology/HumanDiseaseOntology`](https://github.com/DiseaseOntology/HumanDiseaseOntology)                       |      12079 |           2 |     17138 |
 | Drug Repositioning Knowledge Graph | [`pykeen.datasets.DRKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DRKG.html)                     | [`gnn4dr/DRKG`](https://github.com/gnn4dr/DRKG)                                                                         |      97238 |         107 |   5874257 |
+| Estat-FSS                          | [`pykeen.datasets.EstatFSS`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.EstatFSS.html)             | [Eurostat *et al*., 2016](https://data.europa.eu/data/datasets?query=fss_2010-16)                                       |        355 |           4 |       452 |
 | EuroSciVoc                         | [`pykeen.datasets.EuroSciVoc`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.EuroSciVoc.html)         | [Publications office of the european union *et al*., 2019](https://op.europa.eu/en/web/eu-vocabularies/euroscivoc)      |       1065 |           2 |      1064 |
 | FB15k                              | [`pykeen.datasets.FB15k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.FB15k.html)                   | [Bordes *et al*., 2013](http://papers.nips.cc/paper/5071-translating-embeddings-for-modeling-multi-relational-data.pdf) |      14951 |        1345 |    592213 |
 | FB15k-237                          | [`pykeen.datasets.FB15k237`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.FB15k237.html)             | [Toutanova *et al*., 2015](https://www.aclweb.org/anthology/W15-4007/)                                                  |      14505 |         237 |    310079 |
 | Global Biotic Interactions         | [`pykeen.datasets.Globi`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Globi.html)                   | [Poelen *et al*., 2014](https://doi.org/10.1016/j.ecoinf.2014.08.005)                                                   |     404207 |          39 |   1966385 |
 | Hetionet                           | [`pykeen.datasets.Hetionet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Hetionet.html)             | [Himmelstein *et al*., 2017](https://doi.org/10.7554/eLife.26726)                                                       |      45158 |          24 |   2250197 |
 | Kinships                           | [`pykeen.datasets.Kinships`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Kinships.html)             | [Kemp *et al*., 2006](https://www.aaai.org/Papers/AAAI/2006/AAAI06-061.pdf)                                             |        104 |          25 |     10686 |
+| MeSH                               | [`pykeen.datasets.MeSH`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.MeSH.html)                     | [National library of medicine *et al*., 2024](https://www.nlm.nih.gov/mesh/meshhome.html)                               |      30837 |           3 |     56383 |
 | NASA                               | [`pykeen.datasets.NASA`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.NASA.html)                     |                                                                                                                         |        495 |           1 |       478 |
 | Nations                            | [`pykeen.datasets.Nations`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Nations.html)               | [`ZhenfengLei/KGDatasets`](https://github.com/ZhenfengLei/KGDatasets)                                                   |         14 |          55 |      1992 |
 | NationsL                           | [`pykeen.datasets.NationsLiteral`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.NationsLiteral.html) | [`pykeen/pykeen`](https://github.com/pykeen/pykeen)                                                                     |         14 |          55 |      1992 |
