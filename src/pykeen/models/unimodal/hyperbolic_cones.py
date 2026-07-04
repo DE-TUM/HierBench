@@ -23,7 +23,7 @@ class HyperbolicCones(ERModel[FloatTensor, tuple[()], FloatTensor]):
     lies inside the cone.
 
     Designed for hierarchical datasets; best paired with
-    :func:`pykeen.pipeline.hierarchy.transitive_ancestor_descendant_pipeline` and a
+    :func:`pykeen.pipeline.hierarchy.hierarchy_completion_pipeline` and a
     Riemannian optimiser such as :class:`geoopt.optim.RiemannianAdam`.
 
     .. warning::

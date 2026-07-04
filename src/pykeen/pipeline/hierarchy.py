@@ -1,19 +1,19 @@
-"""Hierarchical KG benchmarking tasks (e.g. ancestor-descendant prediction).
+"""Hierarchical KG benchmarking tasks (e.g. hierarchy completion).
 
 The public surface mirrors PyKEEN's function-style pipeline API:
 
-* :func:`transitive_ancestor_descendant_split` is pure data preparation — it returns standard
+* :func:`hierarchy_completion_split` is pure data preparation — it returns standard
   ``(train, val, test)`` :class:`~pykeen.triples.CoreTriplesFactory` instances, so it composes with
   :func:`pykeen.pipeline.pipeline`, :func:`pykeen.hpo.hpo_pipeline`, or a hand-rolled training loop
   ("beyond the pipeline").
-* :func:`transitive_ancestor_descendant_pipeline` is the one-call convenience that trains and additionally
+* :func:`hierarchy_completion_pipeline` is the one-call convenience that trains and additionally
   reports hierarchical precision/recall/F1.
 """
 
 from __future__ import annotations
 
 import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from typing import TYPE_CHECKING, Any, cast
 
@@ -35,25 +35,18 @@ from ..triples import CoreTriplesFactory
 from ..typing import LABEL_HEAD, LABEL_TAIL, MappedTriples
 
 if TYPE_CHECKING:
-    # imported lazily inside hpo_transitive_ancestor_descendant_pipeline to avoid a circular import
+    # imported lazily inside hpo_hierarchy_completion_pipeline to avoid a circular import
     # (pykeen.hpo imports pykeen.pipeline, which imports this module)
     from ..hpo import HpoPipelineResult
 
 __all__ = [
     "build_ancestor_paths",
-    "transitive_ancestor_descendant_split",
-    "transitive_ancestor_descendant_pipeline",
-    "hpo_transitive_ancestor_descendant_pipeline",
     "hierarchy_completion_split",
     "hierarchy_completion_pipeline",
     "hpo_hierarchy_completion_pipeline",
     "HierarchicalPipelineResult",
     "HpoHierarchicalResult",
 ]
-
-#: Multiplier bounding sampling attempts per hop, so shallow/small graphs that cannot
-#: supply the requested number of distinct k-hop pairs still terminate.
-_MAX_ATTEMPTS_FACTOR = 100
 
 #: default model used when the caller passes ``model=None``
 _DEFAULT_MODEL: type[ERModel] = PoincareE
@@ -109,7 +102,7 @@ class HierarchicalPipelineResult(PipelineResult):
 
 @dataclass
 class HpoHierarchicalResult:
-    """The result of :func:`hpo_transitive_ancestor_descendant_pipeline`.
+    """The result of :func:`hpo_hierarchy_completion_pipeline`.
 
     Bundles the standard HPO study with the best trial re-fitted on the same split, so the full HPO
     surface (``hpo_result.study``, ``hpo_result.save_to_directory(...)``) stays available alongside the
@@ -120,172 +113,6 @@ class HpoHierarchicalResult:
     hpo_result: HpoPipelineResult
     #: The best trial re-trained on the split, or ``None`` when ``hierarchical=False``.
     result: HierarchicalPipelineResult | None = None
-
-
-def transitive_ancestor_descendant_split(
-    dataset: Dataset,
-    *,
-    hops: Sequence[int] = (2, 3, 4, 5),
-    num_pairs: int = 400,
-    seed: int = 42,
-    hierarchy_relation: int | None = None,
-) -> tuple[CoreTriplesFactory, CoreTriplesFactory, CoreTriplesFactory]:
-    """Build ``(train, val, test)`` triple factories for ancestor-descendant prediction.
-
-    Training is the regular graph (direct edges only, restricted to ``hierarchy_relation`` when set).
-    Held-out ancestor-descendant pairs are obtained by hop-balanced random-walk sampling rather than
-    enumerating the transitive closure: a fixed budget ``num_pairs`` is split equally across the
-    requested ``hops``, and each *k*-hop pair is produced by a length-*k* downward random walk. The
-    sampled pairs are split 50/50 into validation and test, keeping the per-hop balance.
-
-    The returned factories share the dataset's entity/relation vocabulary, so they plug directly into
-    :func:`pykeen.pipeline.pipeline`, :func:`pykeen.hpo.hpo_pipeline`, or a custom training loop.
-
-    Method based on *Poincaré Embeddings for Learning Hierarchical Representations* (Nickel & Kiela,
-    NeurIPS 2017) and *Hyperbolic Entailment Cones for Learning Hierarchical Embeddings* (Ganea et
-    al., ICML 2018).
-
-    :param dataset: A hierarchical dataset. Its training edges define the hierarchy.
-    :param hops: Hop distances to sample ancestor-descendant pairs at.
-    :param num_pairs: Total budget of held-out pairs, split equally across ``hops``.
-    :param seed: Random seed for reproducible sampling and val/test splits.
-    :param hierarchy_relation: If given, only edges with this relation id define the hierarchy;
-        otherwise all training edges are used.
-
-    :returns: A ``(train, val, test)`` tuple of :class:`~pykeen.triples.CoreTriplesFactory` instances.
-    """
-    if hierarchy_relation is None and dataset.num_relations > 1:
-        warnings.warn(
-            f"hierarchy_relation is None but the dataset has {dataset.num_relations} relations; all edges "
-            "(regardless of relation) will be flattened into a single hierarchy relation. Pass "
-            "hierarchy_relation to restrict the hierarchy to one relation.",
-            stacklevel=2,
-        )
-    edge_list = [
-        (h, t)
-        for h, r, t in dataset.training.mapped_triples.tolist()
-        if hierarchy_relation is None or r == hierarchy_relation
-    ]
-    direct_edges = set(edge_list)
-
-    graph = nx.DiGraph()
-    graph.add_nodes_from(range(dataset.num_entities))
-    graph.add_edges_from(edge_list)
-
-    rng = np.random.default_rng(seed)
-
-    # Split the budget equally across the requested hops; first ``rem`` hops get one extra.
-    base, rem = divmod(num_pairs, len(hops))
-    targets = {k: base + (1 if i < rem else 0) for i, k in enumerate(hops)}
-
-    starts = [n for n in graph.nodes if graph.out_degree(n) > 0]
-    successors = {n: list(graph.successors(n)) for n in starts}
-
-    val_pairs: list[tuple[int, int]] = []
-    test_pairs: list[tuple[int, int]] = []
-    seen: set[tuple[int, int]] = set()
-
-    for k, target in targets.items():
-        if target <= 0 or not starts:
-            continue
-        sampled: list[tuple[int, int]] = []
-        for _ in range(target * _MAX_ATTEMPTS_FACTOR):
-            if len(sampled) >= target:
-                break
-            current = starts[rng.integers(len(starts))]
-            start = current
-            # ponytail: a length-k walk yields a pair reachable in <=k hops (a DAG may also reach it
-            # by a shorter path); `seen` dedups across hops, so per-hop counts can drift slightly.
-            for _step in range(k):
-                children = successors.get(current)
-                if not children:  # hit a leaf before completing k steps
-                    current = start
-                    break
-                current = children[rng.integers(len(children))]
-            pair = (start, current)
-            if start == current or pair in direct_edges or pair in seen:
-                continue
-            sampled.append(pair)
-            seen.add(pair)
-        # Split this hop's pairs 50/50 so both val and test stay hop-balanced.
-        rng.shuffle(sampled)
-        n_val = len(sampled) // 2
-        val_pairs.extend(sampled[:n_val])
-        test_pairs.extend(sampled[n_val:])
-
-    # num_pairs == 0 is a legitimate "train-only" request; for a positive budget, an empty holdout means
-    # the hierarchy is too shallow (or its only transitive pairs are also direct edges). Warn rather than
-    # raise, since the latter is a valid graph shape — but a silent empty val/test is a debugging trap.
-    if num_pairs > 0 and not val_pairs and not test_pairs:
-        warnings.warn(
-            f"No ancestor-descendant pairs could be sampled for hops={tuple(hops)}; validation/test will be "
-            "empty. The hierarchy is likely too shallow/small for these hops, or its transitive pairs are all "
-            "direct edges. Lower `hops`, raise `num_pairs`, or check `hierarchy_relation`.",
-            stacklevel=2,
-        )
-
-    def _to_factory(pairs: list[tuple[int, int]], base_rows: list[list[int]] | None = None) -> CoreTriplesFactory:
-        return _factory_from_rows((base_rows or []) + [[h, 0, t] for h, t in pairs], dataset)
-
-    direct_rows = [[h, 0, t] for h, t in sorted(direct_edges)]
-    train_factory = _to_factory([], base_rows=direct_rows)
-    val_factory = _to_factory(val_pairs)
-    test_factory = _to_factory(test_pairs)
-
-    return train_factory, val_factory, test_factory
-
-
-def transitive_ancestor_descendant_pipeline(
-    dataset: Dataset,
-    *,
-    model: type[ERModel] | str | None = None,
-    embedding_dim: int = 64,
-    epochs: int = 100,
-    hops: Sequence[int] = (2, 3, 4, 5),
-    num_pairs: int = 400,
-    seed: int = 42,
-    hierarchical: bool = True,
-    hierarchy_relation: int | None = None,
-    **pipeline_kwargs,
-) -> HierarchicalPipelineResult:
-    """Train on direct edges; evaluate on sampled ancestor-descendant pairs.
-
-    Convenience wrapper that mirrors :func:`pykeen.pipeline.pipeline`: it builds the split with
-    :func:`transitive_ancestor_descendant_split`, trains the model, and (unless ``hierarchical`` is ``False``)
-    additionally reports hierarchical precision/recall/F1 (over ancestor paths) alongside the regular
-    rank-based metrics.
-
-    :param dataset: A hierarchical dataset.
-    :param model: Model class, string alias, or instance forwarded to
-        :func:`pykeen.pipeline.pipeline`. When ``None``, uses
-        :class:`~pykeen.models.unimodal.PoincareE` with ``embedding_dim``.
-    :param embedding_dim: Dimensionality of entity embeddings. Only used when ``model`` is ``None``.
-    :param epochs: Number of training epochs.
-    :param hops: Hop distances to sample ancestor-descendant pairs at. Default ``(2, 3, 4, 5)``.
-    :param num_pairs: Total budget of held-out pairs, split equally across ``hops``. Default 400.
-    :param seed: Random seed for reproducible sampling and val/test splits.
-    :param hierarchical: Whether to compute the hierarchical metrics (an extra evaluation pass).
-    :param hierarchy_relation: If given, only edges with this relation id define the hierarchy.
-    :param pipeline_kwargs: Additional kwargs forwarded to :func:`pykeen.pipeline.pipeline`.
-
-    :returns: A :class:`HierarchicalPipelineResult`; its ``hierarchical_metric_results`` is ``None``
-        when ``hierarchical`` is ``False``.
-    """
-    train_factory, val_factory, test_factory = transitive_ancestor_descendant_split(
-        dataset, hops=hops, num_pairs=num_pairs, seed=seed, hierarchy_relation=hierarchy_relation
-    )
-    return _train_and_score_hierarchical(
-        dataset,
-        train_factory,
-        val_factory,
-        test_factory,
-        model=model,
-        embedding_dim=embedding_dim,
-        epochs=epochs,
-        hierarchical=hierarchical,
-        hierarchy_relation=hierarchy_relation,
-        **pipeline_kwargs,
-    )
 
 
 def _train_and_score_hierarchical(
@@ -303,9 +130,9 @@ def _train_and_score_hierarchical(
 ) -> HierarchicalPipelineResult:
     """Train on ``train_factory`` and score ``test_factory``, optionally with hierarchical metrics.
 
-    Shared body of :func:`transitive_ancestor_descendant_pipeline` and :func:`hierarchy_completion_pipeline`,
-    which differ only in how they build the split. Ground-truth ancestor paths for the hierarchical
-    pass come from the full, pre-split hierarchy (``dataset.training``).
+    Shared body of the task-specific pipelines (e.g. :func:`hierarchy_completion_pipeline`), which
+    differ only in how they build the split. Ground-truth ancestor paths for the hierarchical pass
+    come from the full, pre-split hierarchy (``dataset.training``).
     """
     resolved_model = model if model is not None else _DEFAULT_MODEL
     # copy so we never mutate a dict the caller still holds a reference to
@@ -358,56 +185,6 @@ def _train_and_score_hierarchical(
 _NON_PIPELINE_CONFIG_KEYS = ("training", "testing", "validation", "dataset", "dataset_kwargs")
 
 
-def hpo_transitive_ancestor_descendant_pipeline(
-    dataset: Dataset,
-    *,
-    model: type[ERModel] | str | None = None,
-    hops: Sequence[int] = (2, 3, 4, 5),
-    num_pairs: int = 400,
-    seed: int = 42,
-    hierarchy_relation: int | None = None,
-    hierarchical: bool = True,
-    **hpo_kwargs,
-) -> HpoHierarchicalResult:
-    """Run HPO on the ancestor-descendant task, then re-fit and score the best trial.
-
-    Mirrors :func:`transitive_ancestor_descendant_pipeline` for the HPO case: it builds the split with
-    :func:`transitive_ancestor_descendant_split`, runs :func:`pykeen.hpo.hpo_pipeline` over it, and (unless
-    ``hierarchical`` is ``False``) re-trains the winning configuration on the same split and reports
-    its hierarchical precision/recall/F1. HPO optimizes the rank-based objective on validation and
-    keeps no fitted model, so the best trial is retrained via :func:`transitive_ancestor_descendant_pipeline`.
-
-    :param dataset: A hierarchical dataset. Its training edges define the hierarchy.
-    :param model: Model class, string alias, or ``None`` (defaults to
-        :class:`~pykeen.models.unimodal.PoincareE`), forwarded to :func:`pykeen.hpo.hpo_pipeline`.
-    :param hops: Hop distances to sample ancestor-descendant pairs at. Default ``(2, 3, 4, 5)``.
-    :param num_pairs: Total budget of held-out pairs, split equally across ``hops``. Default 400.
-    :param seed: Random seed for reproducible sampling and val/test splits.
-    :param hierarchy_relation: If given, only edges with this relation id define the hierarchy.
-    :param hierarchical: Whether to re-fit the best trial and compute the hierarchical metrics.
-    :param hpo_kwargs: Additional kwargs forwarded to :func:`pykeen.hpo.hpo_pipeline` (e.g.
-        ``n_trials``, ``optimizer``, ``model_kwargs_ranges``, ``epochs``).
-
-    :returns: A :class:`HpoHierarchicalResult`; its ``result`` is ``None`` when ``hierarchical`` is
-        ``False``.
-    """
-    train_factory, val_factory, test_factory = transitive_ancestor_descendant_split(
-        dataset, hops=hops, num_pairs=num_pairs, seed=seed, hierarchy_relation=hierarchy_relation
-    )
-    return _hpo_and_refit(
-        dataset,
-        train_factory,
-        val_factory,
-        test_factory,
-        refit=transitive_ancestor_descendant_pipeline,
-        split_kwargs={"hops": hops, "num_pairs": num_pairs, "seed": seed},
-        model=model,
-        hierarchy_relation=hierarchy_relation,
-        hierarchical=hierarchical,
-        **hpo_kwargs,
-    )
-
-
 def _hpo_and_refit(
     dataset: Dataset,
     train_factory: CoreTriplesFactory,
@@ -423,10 +200,9 @@ def _hpo_and_refit(
 ) -> HpoHierarchicalResult:
     """Run HPO over a fixed split, then re-fit and score the best trial via ``refit``.
 
-    Shared body of :func:`hpo_transitive_ancestor_descendant_pipeline` and
-    :func:`hpo_hierarchy_completion_pipeline`; ``refit`` is the task's own pipeline function and
-    ``split_kwargs`` are the task-specific split parameters forwarded to it so the re-fit uses the
-    same split.
+    Shared body of the task-specific HPO pipelines (e.g. :func:`hpo_hierarchy_completion_pipeline`);
+    ``refit`` is the task's own pipeline function and ``split_kwargs`` are the task-specific split
+    parameters forwarded to it so the re-fit uses the same split.
     """
     resolved_model = model if model is not None else _DEFAULT_MODEL
 
@@ -497,8 +273,8 @@ def hierarchy_completion_split(
 ) -> tuple[CoreTriplesFactory, CoreTriplesFactory, CoreTriplesFactory]:
     """Build ``(train, val, test)`` triple factories by removing direct hierarchy edges.
 
-    Held-out positives are direct hierarchy edges *removed* from training (rather than the transitive
-    pairs of :func:`transitive_ancestor_descendant_split`). Edges are removed connectivity-preserving: an edge
+    Held-out positives are direct hierarchy edges *removed* from training (rather than sampled
+    transitive pairs). Edges are removed connectivity-preserving: an edge
     is removable only if both endpoints keep at least one other incident hierarchy edge, so no node is
     ever cut off from the hierarchy (leaves are never orphaned). The removed edges keep their original
     relation id and are split 50/50 into validation and test; ``train`` is the remaining triples
@@ -588,7 +364,7 @@ def hierarchy_completion_pipeline(
 ) -> HierarchicalPipelineResult:
     """Remove direct hierarchy edges, train on the rest, and predict the removed edges.
 
-    Convenience wrapper mirroring :func:`transitive_ancestor_descendant_pipeline`: it builds the split with
+    Convenience wrapper that mirrors :func:`pykeen.pipeline.pipeline`: it builds the split with
     :func:`hierarchy_completion_split`, trains the model, and (unless ``hierarchical`` is ``False``)
     additionally reports hierarchical precision/recall/F1 alongside the rank-based metrics.
 
@@ -639,10 +415,9 @@ def hpo_hierarchy_completion_pipeline(
 ) -> HpoHierarchicalResult:
     """Run HPO on the hierarchy-completion task, then re-fit and score the best trial.
 
-    Mirrors :func:`hpo_transitive_ancestor_descendant_pipeline` for the removed-edge task: it builds the split
-    with :func:`hierarchy_completion_split`, runs :func:`pykeen.hpo.hpo_pipeline` over it, and (unless
-    ``hierarchical`` is ``False``) re-trains the winning configuration on the same split and reports
-    its hierarchical precision/recall/F1.
+    Builds the split with :func:`hierarchy_completion_split`, runs :func:`pykeen.hpo.hpo_pipeline`
+    over it, and (unless ``hierarchical`` is ``False``) re-trains the winning configuration on the
+    same split and reports its hierarchical precision/recall/F1.
 
     :param dataset: A hierarchical dataset. Its training edges define the hierarchy.
     :param model: Model class, string alias, or ``None`` (defaults to

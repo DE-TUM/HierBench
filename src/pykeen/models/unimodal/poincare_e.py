@@ -15,7 +15,7 @@ class PoincareE(ERModel[FloatTensor, tuple[()], FloatTensor]):
 
     Embeds entities on the Poincaré ball and scores triples by negative Poincaré distance.
     Designed for hierarchical datasets; best paired with
-    :func:`pykeen.pipeline.hierarchy.transitive_ancestor_descendant_pipeline`.
+    :func:`pykeen.pipeline.hierarchy.hierarchy_completion_pipeline`.
 
     .. warning::
 
