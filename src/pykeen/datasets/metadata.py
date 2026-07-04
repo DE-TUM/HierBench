@@ -16,6 +16,7 @@ from ..typing import TorchRandomHint
 from ..utils import normalize_path
 
 __all__ = [
+    "HierarchicalGraph",
     "MetadataDataset",
     "RemoteMetadataDataset",
     "SingleFileRemoteMetadataDataset",
@@ -23,6 +24,18 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 Metadata: TypeAlias = Mapping[str, Any]
+
+
+class HierarchicalGraph:
+    """Mixin marking a dataset whose triples form a taxonomy/hierarchy.
+
+    Concrete datasets set :attr:`hierarchical_relation` to the relation label
+    forming the parent/child tree edges (e.g. ``narrower``, ``has_subclass``).
+    Detect taxonomy datasets with ``isinstance(ds, HierarchicalGraph)``.
+    """
+
+    #: Name of the relation forming the parent/child hierarchy edges.
+    hierarchical_relation: ClassVar[str]
 
 
 def _load_metadata_file(path: pathlib.Path) -> pd.DataFrame:

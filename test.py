@@ -22,7 +22,7 @@ Three metric families are reported side by side:
 
 from __future__ import annotations
 
-from pykeen.datasets import Cora, ACMCCS, DOID, EuroSciVoc, NASA
+from pykeen.datasets import Cora, ACMCCS, DOID, EuroSciVoc, NASA, MeSH
 from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 from pykeen.evaluation import ClassificationEvaluator, ClassificationMetricResults
 from pykeen.models import HyperbolicCones, PoincareE
@@ -35,7 +35,7 @@ from pykeen.pipeline.hierarchy import (
 )
 
 # --- Shared experiment settings ---------------------------------------------------------
-DATASET = NASA()
+DATASET = ACMCCS()
 EPOCHS = 100
 EMBEDDING_DIM = 128
 TEST_RATIO = 0.1
@@ -217,7 +217,8 @@ def main() -> None:
 if __name__ == "__main__":
     data = DATASET
     ea = ExtendedGraphAnalysis(data)
-    print(ea.is_dag)
+    print(f"Is DAG: {ea.is_dag}")
+    print(f"Hierarchical Relation: {data.hierarchical_relation}")
     print(f"Number of root nodes: {len(ea.root_nodes)}")
     print(f"Number of leaf nodes: {len(ea.leaf_nodes)}")
     print(f"Balance: {ea.balance}")
@@ -225,4 +226,4 @@ if __name__ == "__main__":
     print(f"Min Hierarchy Depth: {ea.min_hierarchy_depth}")
     print(f"Avg Hierarchy Depth: {ea.avg_hierarchy_depth}")
 
-    # main()
+    main()

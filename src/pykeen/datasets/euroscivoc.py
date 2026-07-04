@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import SingleFileRemoteMetadataDataset
+from .metadata import HierarchicalGraph, SingleFileRemoteMetadataDataset
 
 __all__ = [
     "EuroSciVoc",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiCbKyE5KfNYjeU9YJPyhi/EuroSciVoc/"
 
 
 @parse_docdata
-class EuroSciVoc(SingleFileRemoteMetadataDataset):
+class EuroSciVoc(SingleFileRemoteMetadataDataset, HierarchicalGraph):
     """The European Science Vocabulary (EuroSciVoc) taxonomy.
 
     Nodes are EuroSciVoc concepts covering all fields of science; edges are
@@ -46,3 +46,4 @@ class EuroSciVoc(SingleFileRemoteMetadataDataset):
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
     ratios = None
+    hierarchical_relation = "narrower"

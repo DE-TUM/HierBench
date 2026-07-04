@@ -50,7 +50,7 @@ from .globi import Globi
 from .hetionet import Hetionet
 from .kinships import Kinships
 from .mesh import MeSH
-from .metadata import MetadataDataset, RemoteMetadataDataset, SingleFileRemoteMetadataDataset
+from .metadata import HierarchicalGraph, MetadataDataset, RemoteMetadataDataset, SingleFileRemoteMetadataDataset
 from .nasa import NASA
 from .nations import Nations
 from .numeric import (
@@ -119,6 +119,7 @@ __all__ = [
     "PharmKG8k",
     "PharmKG",
     "PrimeKG",
+    "HierarchicalGraph",
     "MetadataDataset",
     "RemoteMetadataDataset",
     "SingleFileRemoteMetadataDataset",

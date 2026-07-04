@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import SingleFileRemoteMetadataDataset
+from .metadata import HierarchicalGraph, SingleFileRemoteMetadataDataset
 
 __all__ = [
     "NASA",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiHdHacRoQetsxARSBLcak/NASA/"
 
 
 @parse_docdata
-class NASA(SingleFileRemoteMetadataDataset):
+class NASA(SingleFileRemoteMetadataDataset, HierarchicalGraph):
     """The 2024 NASA Technology Taxonomy.
 
     Nodes are NASA technology areas; edges are ``has_subclass`` relations forming the
@@ -44,3 +44,4 @@ class NASA(SingleFileRemoteMetadataDataset):
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
     ratios = None
+    hierarchical_relation = "has_subclass"

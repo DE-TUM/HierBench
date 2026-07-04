@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import SingleFileRemoteMetadataDataset
+from .metadata import HierarchicalGraph, SingleFileRemoteMetadataDataset
 
 __all__ = [
     "MeSH",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fi3K4YDeddSRQqrTFLC6nt/MeSH/"
 
 
 @parse_docdata
-class MeSH(SingleFileRemoteMetadataDataset):
+class MeSH(SingleFileRemoteMetadataDataset, HierarchicalGraph):
     """The Medical Subject Headings (MeSH) taxonomy.
 
     Nodes are MeSH descriptors; edges are ``narrower``, ``pharmacologicalAction``,
@@ -45,3 +45,4 @@ class MeSH(SingleFileRemoteMetadataDataset):
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
     ratios = None
+    hierarchical_relation = "narrower"

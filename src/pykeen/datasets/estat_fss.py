@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import SingleFileRemoteMetadataDataset
+from .metadata import HierarchicalGraph, SingleFileRemoteMetadataDataset
 
 __all__ = [
     "EstatFSS",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiC48NobSc45aqDo4EbJNt/estat-fss/"
 
 
 @parse_docdata
-class EstatFSS(SingleFileRemoteMetadataDataset):
+class EstatFSS(SingleFileRemoteMetadataDataset, HierarchicalGraph):
     """The Eurostat Farm Structure Survey (FSS) taxonomy.
 
     Nodes are FSS concepts; edges are ``narrower``, ``hasTopConcept``,
@@ -46,3 +46,4 @@ class EstatFSS(SingleFileRemoteMetadataDataset):
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
     ratios = None
+    hierarchical_relation = "narrower"

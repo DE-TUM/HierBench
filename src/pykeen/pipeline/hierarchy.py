@@ -23,6 +23,7 @@ import torch
 
 from .api import PipelineResult, pipeline
 from ..datasets.base import Dataset
+from ..datasets.metadata import HierarchicalGraph
 from ..evaluation.hierarchical_classification_evaluator import (
     HierarchicalClassificationEvaluator,
     HierarchicalMetricResults,
@@ -50,6 +51,23 @@ __all__ = [
 
 #: default model used when the caller passes ``model=None``
 _DEFAULT_MODEL: type[ERModel] = PoincareE
+
+
+def _resolve_hierarchy_relation(dataset: Dataset, hierarchy_relation: int | str | None) -> int | None:
+    """Resolve the hierarchy relation to a relation id.
+
+    Precedence: an explicit ``hierarchy_relation`` (id or label) wins; otherwise, if ``dataset`` is a
+    :class:`~pykeen.datasets.metadata.HierarchicalGraph`, its :attr:`hierarchical_relation` label is
+    used. Returns ``None`` when neither is available (all edges are treated as hierarchy edges).
+    """
+    if hierarchy_relation is None and isinstance(dataset, HierarchicalGraph):
+        hierarchy_relation = dataset.hierarchical_relation
+    if isinstance(hierarchy_relation, str):
+        try:
+            return dataset.training.relation_to_id[hierarchy_relation]
+        except (AttributeError, KeyError) as exc:
+            raise KeyError(f"hierarchy relation {hierarchy_relation!r} not found in dataset relations") from exc
+    return hierarchy_relation
 
 
 def _factory_from_rows(rows: list[list[int]], dataset: Dataset) -> CoreTriplesFactory:
@@ -269,7 +287,7 @@ def hierarchy_completion_split(
     *,
     test_ratio: float = 0.1,
     seed: int = 42,
-    hierarchy_relation: int | None = None,
+    hierarchy_relation: int | str | None = None,
 ) -> tuple[CoreTriplesFactory, CoreTriplesFactory, CoreTriplesFactory]:
     """Build ``(train, val, test)`` triple factories by removing direct hierarchy edges.
 
@@ -283,11 +301,13 @@ def hierarchy_completion_split(
     :param dataset: A hierarchical dataset. Its training edges define the hierarchy.
     :param test_ratio: Fraction of removable hierarchy edges to hold out (``round(test_ratio·|H|)``).
     :param seed: Random seed for reproducible removal and val/test splits.
-    :param hierarchy_relation: If given, only edges with this relation id define the hierarchy;
-        otherwise all training edges are used.
+    :param hierarchy_relation: Relation id or label whose edges define the hierarchy. Defaults to the
+        dataset's :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when it is a
+        :class:`~pykeen.datasets.metadata.HierarchicalGraph`; otherwise all training edges are used.
 
     :returns: A ``(train, val, test)`` tuple of :class:`~pykeen.triples.CoreTriplesFactory` instances.
     """
+    hierarchy_relation = _resolve_hierarchy_relation(dataset, hierarchy_relation)
     if hierarchy_relation is None and dataset.num_relations > 1:
         warnings.warn(
             f"hierarchy_relation is None but the dataset has {dataset.num_relations} relations; all edges "
@@ -359,7 +379,7 @@ def hierarchy_completion_pipeline(
     test_ratio: float = 0.1,
     seed: int = 42,
     hierarchical: bool = True,
-    hierarchy_relation: int | None = None,
+    hierarchy_relation: int | str | None = None,
     **pipeline_kwargs,
 ) -> HierarchicalPipelineResult:
     """Remove direct hierarchy edges, train on the rest, and predict the removed edges.
@@ -377,7 +397,8 @@ def hierarchy_completion_pipeline(
     :param test_ratio: Fraction of removable hierarchy edges to hold out. Default 0.1.
     :param seed: Random seed for reproducible removal and val/test splits.
     :param hierarchical: Whether to compute the hierarchical metrics (an extra evaluation pass).
-    :param hierarchy_relation: If given, only edges with this relation id define the hierarchy.
+    :param hierarchy_relation: Relation id or label defining the hierarchy; defaults to the dataset's
+        :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when available.
     :param pipeline_kwargs: Additional kwargs forwarded to :func:`pykeen.pipeline.pipeline`. Under
         sLCWA the negative sampler defaults to :class:`~pykeen.sampling.HierarchyNegativeSampler`
         (same-depth hard negatives); pass ``negative_sampler="pseudotyped"`` / ``"basic"`` to override.
@@ -385,6 +406,7 @@ def hierarchy_completion_pipeline(
     :returns: A :class:`HierarchicalPipelineResult`; its ``hierarchical_metric_results`` is ``None``
         when ``hierarchical`` is ``False``.
     """
+    hierarchy_relation = _resolve_hierarchy_relation(dataset, hierarchy_relation)
     train_factory, val_factory, test_factory = hierarchy_completion_split(
         dataset, test_ratio=test_ratio, seed=seed, hierarchy_relation=hierarchy_relation
     )
@@ -409,7 +431,7 @@ def hpo_hierarchy_completion_pipeline(
     model: type[ERModel] | str | None = None,
     test_ratio: float = 0.1,
     seed: int = 42,
-    hierarchy_relation: int | None = None,
+    hierarchy_relation: int | str | None = None,
     hierarchical: bool = True,
     **hpo_kwargs,
 ) -> HpoHierarchicalResult:
@@ -424,7 +446,8 @@ def hpo_hierarchy_completion_pipeline(
         :class:`~pykeen.models.unimodal.PoincareE`), forwarded to :func:`pykeen.hpo.hpo_pipeline`.
     :param test_ratio: Fraction of removable hierarchy edges to hold out. Default 0.1.
     :param seed: Random seed for reproducible removal and val/test splits.
-    :param hierarchy_relation: If given, only edges with this relation id define the hierarchy.
+    :param hierarchy_relation: Relation id or label defining the hierarchy; defaults to the dataset's
+        :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when available.
     :param hierarchical: Whether to re-fit the best trial and compute the hierarchical metrics.
     :param hpo_kwargs: Additional kwargs forwarded to :func:`pykeen.hpo.hpo_pipeline`. Under sLCWA the
         negative sampler defaults to :class:`~pykeen.sampling.HierarchyNegativeSampler` (same-depth
@@ -433,6 +456,7 @@ def hpo_hierarchy_completion_pipeline(
     :returns: A :class:`HpoHierarchicalResult`; its ``result`` is ``None`` when ``hierarchical`` is
         ``False``.
     """
+    hierarchy_relation = _resolve_hierarchy_relation(dataset, hierarchy_relation)
     train_factory, val_factory, test_factory = hierarchy_completion_split(
         dataset, test_ratio=test_ratio, seed=seed, hierarchy_relation=hierarchy_relation
     )
