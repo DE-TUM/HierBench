@@ -10,6 +10,7 @@ import logging
 
 from class_resolver import ClassResolver
 
+from .acm_ccs import ACMCCS
 from .aristo import AristoV4
 from .base import (  # noqa:F401
     CompressedSingleDataset,
@@ -42,6 +43,7 @@ from .dbpedia import DBpedia50
 from .doid import DOID
 from .drkg import DRKG
 from .ea import CN3l, EADataset, MTransEDataset, OpenEA, WK3l15k, WK3l120k
+from .euroscivoc import EuroSciVoc
 from .freebase import FB15k, FB15k237
 from .globi import Globi
 from .hetionet import Hetionet
@@ -67,7 +69,6 @@ from .utils import get_dataset
 from .wd50k import WD50KT
 from .wikidata5m import Wikidata5M
 from .wordnet import WN18, WN18RR
-from .wordnet_metadata import WordNet
 from .yago import YAGO310
 
 __all__ = [
@@ -78,6 +79,7 @@ __all__ = [
     # Base Classes
     "Dataset",
     # Concrete Classes
+    "ACMCCS",
     "AristoV4",
     "Hetionet",
     "Kinships",
@@ -97,7 +99,6 @@ __all__ = [
     "WK3l120k",
     "WN18",
     "WN18RR",
-    "WordNet",
     "YAGO310",
     "DRKG",
     "BioKG",
@@ -107,6 +108,7 @@ __all__ = [
     "DBpedia50",
     "DB100K",
     "DOID",
+    "EuroSciVoc",
     "OpenEA",
     "Countries",
     "WD50KT",

@@ -115,8 +115,11 @@ class SingleFileRemoteMetadataDataset(MetadataDataset):
     entity_metadata_url: ClassVar[str | None] = None
     #: URL of the relation metadata file. ``None`` means no relation metadata.
     relation_metadata_url: ClassVar[str | None] = None
-    #: Train / test / validation split ratios.
-    ratios: ClassVar[Sequence[float]] = (0.8, 0.1, 0.1)
+    #: Train / test / validation split ratios. ``None`` skips splitting entirely — training,
+    #: testing, and validation all point at the full triples factory. This is needed for tree-shaped
+    #: datasets (e.g. taxonomies) where most entities have degree 1 and a random split cannot cover
+    #: all entities in the training portion; see :func:`pykeen.pipeline.hierarchy.hierarchy_completion_split`.
+    ratios: ClassVar[Sequence[float] | None] = (0.8, 0.1, 0.1)
 
     def __init__(
         self,
@@ -161,7 +164,10 @@ class SingleFileRemoteMetadataDataset(MetadataDataset):
         )
 
         full_factory = TriplesFactory.from_path(triples_path, create_inverse_triples=create_inverse_triples)
-        training, testing, validation = full_factory.split(ratios=self.ratios, random_state=random_state)
+        if self.ratios is None:
+            training = testing = validation = full_factory
+        else:
+            training, testing, validation = full_factory.split(ratios=self.ratios, random_state=random_state)
 
         super().__init__(
             training=training,

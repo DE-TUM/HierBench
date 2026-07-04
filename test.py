@@ -22,10 +22,10 @@ Three metric families are reported side by side:
 
 from __future__ import annotations
 
-from pykeen.datasets import Cora
+from pykeen.datasets import Cora, ACMCCS, DOID, EuroSciVoc
+from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 from pykeen.evaluation import ClassificationEvaluator, ClassificationMetricResults
 from pykeen.models import HyperbolicCones, PoincareE
-from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 from pykeen.pipeline.hierarchy import (
     HierarchicalPipelineResult,
     HpoHierarchicalResult,
@@ -35,7 +35,7 @@ from pykeen.pipeline.hierarchy import (
 )
 
 # --- Shared experiment settings ---------------------------------------------------------
-DATASET = Cora()
+DATASET = EuroSciVoc()
 EPOCHS = 100
 EMBEDDING_DIM = 128
 TEST_RATIO = 0.1
@@ -131,8 +131,15 @@ def _evaluate_config(model: object, model_kwargs: dict, extra: dict) -> dict[str
     """
     train, val, test = hierarchy_completion_split(DATASET, test_ratio=TEST_RATIO, seed=SEED)
     result = hierarchy_completion_pipeline(
-        DATASET, model=model, model_kwargs=model_kwargs, epochs=EPOCHS, negative_sampler="basic",
-        test_ratio=TEST_RATIO, seed=SEED, random_seed=SEED, **extra,
+        DATASET,
+        model=model,
+        model_kwargs=model_kwargs,
+        epochs=EPOCHS,
+        negative_sampler="basic",
+        test_ratio=TEST_RATIO,
+        seed=SEED,
+        random_seed=SEED,
+        **extra,
     )
     classification = ClassificationEvaluator().evaluate(
         result.model,
@@ -208,7 +215,14 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
-    # data = Cora()
-    # ea = ExtendedGraphAnalysis(data)
-    # print(ea.is_dag)
+    data = DATASET
+    ea = ExtendedGraphAnalysis(data)
+    print(ea.is_dag)
+    print(f"Number of root nodes: {len(ea.root_nodes)}")
+    print(f"Number of leaf nodes: {len(ea.leaf_nodes)}")
+    print(f"Balance: {ea.balance}")
+    print(f"Max Hierarchy Depth: {ea.max_hierarchy_depth}")
+    print(f"Min Hierarchy Depth: {ea.min_hierarchy_depth}")
+    print(f"Avg Hierarchy Depth: {ea.avg_hierarchy_depth}")
+
+    # main()

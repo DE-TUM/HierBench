@@ -185,6 +185,7 @@ exclude_lines = [
 [tool.ruff]
 line-length = 120
 extend-include = ["*.ipynb"]
+extend-exclude = ["test.py"]
 
 [tool.ruff.lint]
 # See https://docs.astral.sh/ruff/rules
@@ -333,7 +334,6 @@ ignore = [
     "INP001", # scripts are not a package
     "T201",   # allow prints
 ]
-"test.py" = ["INP001", "T201"]     # playground script
 "tests/**/*.py" = [
     "INP001", # tests are not a package
     "PIE790", # allow pass in test stubs/abstract methods

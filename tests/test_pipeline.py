@@ -557,9 +557,7 @@ class TestHierarchyCompletionPipeline(unittest.TestCase):
 
         dataset = _make_bipartite_dataset()
         for sampler in ("pseudotyped", "basic"):
-            result = hierarchy_completion_pipeline(
-                dataset, epochs=1, test_ratio=0.5, seed=0, negative_sampler=sampler
-            )
+            result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0, negative_sampler=sampler)
             mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
             assert 0.0 <= mrr <= 1.0
 
