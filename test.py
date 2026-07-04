@@ -22,7 +22,7 @@ Three metric families are reported side by side:
 
 from __future__ import annotations
 
-from pykeen.datasets import Cora, ACMCCS, DOID, EuroSciVoc
+from pykeen.datasets import Cora, ACMCCS, DOID, EuroSciVoc, NASA
 from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 from pykeen.evaluation import ClassificationEvaluator, ClassificationMetricResults
 from pykeen.models import HyperbolicCones, PoincareE
@@ -35,7 +35,7 @@ from pykeen.pipeline.hierarchy import (
 )
 
 # --- Shared experiment settings ---------------------------------------------------------
-DATASET = EuroSciVoc()
+DATASET = NASA()
 EPOCHS = 100
 EMBEDDING_DIM = 128
 TEST_RATIO = 0.1

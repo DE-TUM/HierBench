@@ -49,6 +49,7 @@ from .globi import Globi
 from .hetionet import Hetionet
 from .kinships import Kinships
 from .metadata import MetadataDataset, RemoteMetadataDataset, SingleFileRemoteMetadataDataset
+from .nasa import NASA
 from .nations import Nations
 from .numeric import (
     NumericPathDataset,
@@ -130,6 +131,7 @@ __all__ = [
     "Squirrel",
     "Globi",
     "PharMeBINet",
+    "NASA",
 ]
 
 logger = logging.getLogger(__name__)
