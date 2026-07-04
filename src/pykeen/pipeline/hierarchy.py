@@ -64,7 +64,7 @@ def _resolve_hierarchy_relation(dataset: Dataset, hierarchy_relation: int | str 
         hierarchy_relation = dataset.hierarchical_relation
     if isinstance(hierarchy_relation, str):
         try:
-            return dataset.training.relation_to_id[hierarchy_relation]
+            return dataset.training.relations_to_ids([hierarchy_relation])[0]
         except (AttributeError, KeyError) as exc:
             raise KeyError(f"hierarchy relation {hierarchy_relation!r} not found in dataset relations") from exc
     return hierarchy_relation
