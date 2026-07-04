@@ -20,7 +20,7 @@ The per-instance scores are averaged over all queries ("samples" setting), repor
 .. note::
 
     The metric is only meaningful on a hierarchy (a DAG with well-defined ancestors). It is wired
-    through :func:`pykeen.pipeline.hierarchy.ancestor_descendant_pipeline` rather than the generic
+    through :func:`pykeen.pipeline.hierarchy.transitive_ancestor_descendant_pipeline` rather than the generic
     pipeline, so the (potentially large) ``ancestors`` map never travels through the result tracker.
 """
 

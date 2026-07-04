@@ -11,20 +11,20 @@ from .api import (
 from .hierarchy import (
     HierarchicalPipelineResult,
     HpoHierarchicalResult,
-    ancestor_descendant_pipeline,
-    ancestor_descendant_split,
     build_ancestor_paths,
     hierarchy_completion_pipeline,
     hierarchy_completion_split,
-    hpo_ancestor_descendant_pipeline,
     hpo_hierarchy_completion_pipeline,
+    hpo_transitive_ancestor_descendant_pipeline,
+    transitive_ancestor_descendant_pipeline,
+    transitive_ancestor_descendant_split,
 )
 from .plot_utils import plot, plot_early_stopping, plot_er, plot_losses
 
 __all__ = [
-    "ancestor_descendant_pipeline",
-    "ancestor_descendant_split",
-    "hpo_ancestor_descendant_pipeline",
+    "transitive_ancestor_descendant_pipeline",
+    "transitive_ancestor_descendant_split",
+    "hpo_transitive_ancestor_descendant_pipeline",
     "hierarchy_completion_pipeline",
     "hierarchy_completion_split",
     "hpo_hierarchy_completion_pipeline",

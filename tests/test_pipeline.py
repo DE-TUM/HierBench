@@ -463,10 +463,10 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
     def test_pipeline_runs(self):
         """Pipeline completes and returns a valid MRR score on a small chain dataset."""
-        from pykeen.pipeline.hierarchy import ancestor_descendant_pipeline
+        from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_pipeline
 
         dataset = _make_chain_dataset()
-        result = ancestor_descendant_pipeline(dataset, epochs=1)
+        result = transitive_ancestor_descendant_pipeline(dataset, epochs=1)
         assert result.metric_results is not None
         mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
         assert 0.0 <= mrr <= 1.0
@@ -475,7 +475,7 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
         """Every sampled val/test pair is a reachable, non-direct ancestor-descendant pair."""
         import networkx as nx
 
-        from pykeen.pipeline.hierarchy import ancestor_descendant_split
+        from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_split
 
         dataset = _make_chain_dataset()
         direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
@@ -483,7 +483,7 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
         graph.add_nodes_from(range(dataset.num_entities))
         graph.add_edges_from(direct)
 
-        _train, val, test = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=10, seed=0)
+        _train, val, test = transitive_ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=10, seed=0)
         eval_pairs = {(h, t) for h, _, t in (val.mapped_triples.tolist() + test.mapped_triples.tolist())}
         # On a 4-node chain the only multi-hop pairs that exist are these three.
         assert eval_pairs <= {(0, 2), (0, 3), (1, 3)}
@@ -522,22 +522,24 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
     def test_train_is_exactly_direct_edges(self):
         """Training contains exactly the direct graph edges, regardless of the pair budget."""
-        from pykeen.pipeline.hierarchy import ancestor_descendant_split
+        from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_split
 
         dataset = _make_diamond_dataset()
         direct_edges = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
 
         for num_pairs in (0, 4, 50):
-            train, _val, _test = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=num_pairs, seed=42)
+            train, _val, _test = transitive_ancestor_descendant_split(
+                dataset, hops=(2, 3), num_pairs=num_pairs, seed=42
+            )
             train_pairs = {(h, t) for h, _, t in train.mapped_triples.tolist()}
             assert train_pairs == direct_edges, f"train != direct edges at num_pairs={num_pairs}"
 
     def test_hierarchy_splits_no_leakage(self):
         """No sampled eval pair appears in training, and validation/test are disjoint."""
-        from pykeen.pipeline.hierarchy import ancestor_descendant_split
+        from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_split
 
         dataset = _make_balanced_tree_dataset()
-        train, val, test = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=42)
+        train, val, test = transitive_ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=42)
         train_pairs = {(h, t) for h, _, t in train.mapped_triples.tolist()}
         val_pairs = {(h, t) for h, _, t in val.mapped_triples.tolist()}
         test_pairs = {(h, t) for h, _, t in test.mapped_triples.tolist()}
@@ -550,7 +552,7 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
         import networkx as nx
 
-        from pykeen.pipeline.hierarchy import ancestor_descendant_split
+        from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_split
 
         dataset = _make_balanced_tree_dataset()
         graph = nx.DiGraph()
@@ -559,7 +561,7 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
         # The tree supplies 12 two-hop and 8 three-hop pairs, so a budget of 12 (6 per hop)
         # is fully satisfiable and must come out exactly balanced.
-        _train, val, test = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=42)
+        _train, val, test = transitive_ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=42)
         eval_pairs = [(h, t) for h, _, t in (val.mapped_triples.tolist() + test.mapped_triples.tolist())]
         hop_counts = Counter(nx.shortest_path_length(graph, h, t) for h, t in eval_pairs)
         assert set(hop_counts) <= {2, 3}
@@ -568,11 +570,11 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
     def test_determinism(self):
         """Identical seeds yield identical splits; the total sampled never exceeds the budget."""
-        from pykeen.pipeline.hierarchy import ancestor_descendant_split
+        from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_split
 
         dataset = _make_balanced_tree_dataset()
-        first = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=7)
-        second = ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=7)
+        first = transitive_ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=7)
+        second = transitive_ancestor_descendant_split(dataset, hops=(2, 3), num_pairs=12, seed=7)
         for factory_a, factory_b in zip(first, second, strict=True):
             assert torch.equal(factory_a.mapped_triples, factory_b.mapped_triples)
         _train, val, test = first
@@ -580,10 +582,10 @@ class TestAncestorDescendantPipeline(unittest.TestCase):
 
     def test_pipeline_runs_with_hops(self):
         """Pipeline with custom hops/num_pairs completes and returns a valid MRR score."""
-        from pykeen.pipeline.hierarchy import ancestor_descendant_pipeline
+        from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_pipeline
 
         dataset = _make_balanced_tree_dataset()
-        result = ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
+        result = transitive_ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
         assert result.metric_results is not None
         mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
         assert 0.0 <= mrr <= 1.0
@@ -764,15 +766,17 @@ def test_hierarchical_evaluator_requires_ancestors():
 
 def test_pipeline_reports_hierarchical_metrics():
     """The ancestor-descendant pipeline attaches hierarchical metrics in [0, 1] when enabled."""
-    from pykeen.pipeline.hierarchy import ancestor_descendant_pipeline
+    from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_pipeline
 
     dataset = _make_balanced_tree_dataset()
-    result = ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
+    result = transitive_ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
     assert result.hierarchical_metric_results is not None
     h_f1 = result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
     assert 0.0 <= h_f1 <= 1.0
 
-    disabled = ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0, hierarchical=False)
+    disabled = transitive_ancestor_descendant_pipeline(
+        dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0, hierarchical=False
+    )
     assert disabled.hierarchical_metric_results is None
 
 
@@ -780,10 +784,10 @@ def test_pipeline_persists_hierarchical_metrics():
     """save_to_directory writes the hierarchical metrics into results.json."""
     import json
 
-    from pykeen.pipeline.hierarchy import ancestor_descendant_pipeline
+    from pykeen.pipeline.hierarchy import transitive_ancestor_descendant_pipeline
 
     dataset = _make_balanced_tree_dataset()
-    result = ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
+    result = transitive_ancestor_descendant_pipeline(dataset, epochs=1, hops=[2, 3], num_pairs=8, seed=0)
     with tempfile.TemporaryDirectory() as directory:
         result.save_to_directory(directory)
         with pathlib.Path(directory, "results.json").open() as file:
@@ -793,10 +797,10 @@ def test_pipeline_persists_hierarchical_metrics():
 
 def test_hpo_pipeline_refits_best_trial():
     """The ancestor-descendant HPO pipeline runs a study and re-fits the best trial's hierarchical metrics."""
-    from pykeen.pipeline.hierarchy import hpo_ancestor_descendant_pipeline
+    from pykeen.pipeline.hierarchy import hpo_transitive_ancestor_descendant_pipeline
 
     dataset = _make_balanced_tree_dataset()
-    outcome = hpo_ancestor_descendant_pipeline(
+    outcome = hpo_transitive_ancestor_descendant_pipeline(
         dataset, model="PoincareE", n_trials=1, epochs=1, hops=(2, 3), num_pairs=8, seed=0
     )
     assert outcome.hpo_result.study is not None

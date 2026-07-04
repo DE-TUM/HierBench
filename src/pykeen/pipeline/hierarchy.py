@@ -2,11 +2,11 @@
 
 The public surface mirrors PyKEEN's function-style pipeline API:
 
-* :func:`ancestor_descendant_split` is pure data preparation — it returns standard
+* :func:`transitive_ancestor_descendant_split` is pure data preparation — it returns standard
   ``(train, val, test)`` :class:`~pykeen.triples.CoreTriplesFactory` instances, so it composes with
   :func:`pykeen.pipeline.pipeline`, :func:`pykeen.hpo.hpo_pipeline`, or a hand-rolled training loop
   ("beyond the pipeline").
-* :func:`ancestor_descendant_pipeline` is the one-call convenience that trains and additionally
+* :func:`transitive_ancestor_descendant_pipeline` is the one-call convenience that trains and additionally
   reports hierarchical precision/recall/F1.
 """
 
@@ -35,15 +35,15 @@ from ..triples import CoreTriplesFactory
 from ..typing import LABEL_HEAD, LABEL_TAIL, MappedTriples
 
 if TYPE_CHECKING:
-    # imported lazily inside hpo_ancestor_descendant_pipeline to avoid a circular import
+    # imported lazily inside hpo_transitive_ancestor_descendant_pipeline to avoid a circular import
     # (pykeen.hpo imports pykeen.pipeline, which imports this module)
     from ..hpo import HpoPipelineResult
 
 __all__ = [
     "build_ancestor_paths",
-    "ancestor_descendant_split",
-    "ancestor_descendant_pipeline",
-    "hpo_ancestor_descendant_pipeline",
+    "transitive_ancestor_descendant_split",
+    "transitive_ancestor_descendant_pipeline",
+    "hpo_transitive_ancestor_descendant_pipeline",
     "hierarchy_completion_split",
     "hierarchy_completion_pipeline",
     "hpo_hierarchy_completion_pipeline",
@@ -109,7 +109,7 @@ class HierarchicalPipelineResult(PipelineResult):
 
 @dataclass
 class HpoHierarchicalResult:
-    """The result of :func:`hpo_ancestor_descendant_pipeline`.
+    """The result of :func:`hpo_transitive_ancestor_descendant_pipeline`.
 
     Bundles the standard HPO study with the best trial re-fitted on the same split, so the full HPO
     surface (``hpo_result.study``, ``hpo_result.save_to_directory(...)``) stays available alongside the
@@ -122,7 +122,7 @@ class HpoHierarchicalResult:
     result: HierarchicalPipelineResult | None = None
 
 
-def ancestor_descendant_split(
+def transitive_ancestor_descendant_split(
     dataset: Dataset,
     *,
     hops: Sequence[int] = (2, 3, 4, 5),
@@ -235,7 +235,7 @@ def ancestor_descendant_split(
     return train_factory, val_factory, test_factory
 
 
-def ancestor_descendant_pipeline(
+def transitive_ancestor_descendant_pipeline(
     dataset: Dataset,
     *,
     model: type[ERModel] | str | None = None,
@@ -251,7 +251,7 @@ def ancestor_descendant_pipeline(
     """Train on direct edges; evaluate on sampled ancestor-descendant pairs.
 
     Convenience wrapper that mirrors :func:`pykeen.pipeline.pipeline`: it builds the split with
-    :func:`ancestor_descendant_split`, trains the model, and (unless ``hierarchical`` is ``False``)
+    :func:`transitive_ancestor_descendant_split`, trains the model, and (unless ``hierarchical`` is ``False``)
     additionally reports hierarchical precision/recall/F1 (over ancestor paths) alongside the regular
     rank-based metrics.
 
@@ -271,7 +271,7 @@ def ancestor_descendant_pipeline(
     :returns: A :class:`HierarchicalPipelineResult`; its ``hierarchical_metric_results`` is ``None``
         when ``hierarchical`` is ``False``.
     """
-    train_factory, val_factory, test_factory = ancestor_descendant_split(
+    train_factory, val_factory, test_factory = transitive_ancestor_descendant_split(
         dataset, hops=hops, num_pairs=num_pairs, seed=seed, hierarchy_relation=hierarchy_relation
     )
     return _train_and_score_hierarchical(
@@ -303,7 +303,7 @@ def _train_and_score_hierarchical(
 ) -> HierarchicalPipelineResult:
     """Train on ``train_factory`` and score ``test_factory``, optionally with hierarchical metrics.
 
-    Shared body of :func:`ancestor_descendant_pipeline` and :func:`hierarchy_completion_pipeline`,
+    Shared body of :func:`transitive_ancestor_descendant_pipeline` and :func:`hierarchy_completion_pipeline`,
     which differ only in how they build the split. Ground-truth ancestor paths for the hierarchical
     pass come from the full, pre-split hierarchy (``dataset.training``).
     """
@@ -358,7 +358,7 @@ def _train_and_score_hierarchical(
 _NON_PIPELINE_CONFIG_KEYS = ("training", "testing", "validation", "dataset", "dataset_kwargs")
 
 
-def hpo_ancestor_descendant_pipeline(
+def hpo_transitive_ancestor_descendant_pipeline(
     dataset: Dataset,
     *,
     model: type[ERModel] | str | None = None,
@@ -371,11 +371,11 @@ def hpo_ancestor_descendant_pipeline(
 ) -> HpoHierarchicalResult:
     """Run HPO on the ancestor-descendant task, then re-fit and score the best trial.
 
-    Mirrors :func:`ancestor_descendant_pipeline` for the HPO case: it builds the split with
-    :func:`ancestor_descendant_split`, runs :func:`pykeen.hpo.hpo_pipeline` over it, and (unless
+    Mirrors :func:`transitive_ancestor_descendant_pipeline` for the HPO case: it builds the split with
+    :func:`transitive_ancestor_descendant_split`, runs :func:`pykeen.hpo.hpo_pipeline` over it, and (unless
     ``hierarchical`` is ``False``) re-trains the winning configuration on the same split and reports
     its hierarchical precision/recall/F1. HPO optimizes the rank-based objective on validation and
-    keeps no fitted model, so the best trial is retrained via :func:`ancestor_descendant_pipeline`.
+    keeps no fitted model, so the best trial is retrained via :func:`transitive_ancestor_descendant_pipeline`.
 
     :param dataset: A hierarchical dataset. Its training edges define the hierarchy.
     :param model: Model class, string alias, or ``None`` (defaults to
@@ -391,7 +391,7 @@ def hpo_ancestor_descendant_pipeline(
     :returns: A :class:`HpoHierarchicalResult`; its ``result`` is ``None`` when ``hierarchical`` is
         ``False``.
     """
-    train_factory, val_factory, test_factory = ancestor_descendant_split(
+    train_factory, val_factory, test_factory = transitive_ancestor_descendant_split(
         dataset, hops=hops, num_pairs=num_pairs, seed=seed, hierarchy_relation=hierarchy_relation
     )
     return _hpo_and_refit(
@@ -399,7 +399,7 @@ def hpo_ancestor_descendant_pipeline(
         train_factory,
         val_factory,
         test_factory,
-        refit=ancestor_descendant_pipeline,
+        refit=transitive_ancestor_descendant_pipeline,
         split_kwargs={"hops": hops, "num_pairs": num_pairs, "seed": seed},
         model=model,
         hierarchy_relation=hierarchy_relation,
@@ -423,7 +423,7 @@ def _hpo_and_refit(
 ) -> HpoHierarchicalResult:
     """Run HPO over a fixed split, then re-fit and score the best trial via ``refit``.
 
-    Shared body of :func:`hpo_ancestor_descendant_pipeline` and
+    Shared body of :func:`hpo_transitive_ancestor_descendant_pipeline` and
     :func:`hpo_hierarchy_completion_pipeline`; ``refit`` is the task's own pipeline function and
     ``split_kwargs`` are the task-specific split parameters forwarded to it so the re-fit uses the
     same split.
@@ -498,7 +498,7 @@ def hierarchy_completion_split(
     """Build ``(train, val, test)`` triple factories by removing direct hierarchy edges.
 
     Held-out positives are direct hierarchy edges *removed* from training (rather than the transitive
-    pairs of :func:`ancestor_descendant_split`). Edges are removed connectivity-preserving: an edge
+    pairs of :func:`transitive_ancestor_descendant_split`). Edges are removed connectivity-preserving: an edge
     is removable only if both endpoints keep at least one other incident hierarchy edge, so no node is
     ever cut off from the hierarchy (leaves are never orphaned). The removed edges keep their original
     relation id and are split 50/50 into validation and test; ``train`` is the remaining triples
@@ -588,7 +588,7 @@ def hierarchy_completion_pipeline(
 ) -> HierarchicalPipelineResult:
     """Remove direct hierarchy edges, train on the rest, and predict the removed edges.
 
-    Convenience wrapper mirroring :func:`ancestor_descendant_pipeline`: it builds the split with
+    Convenience wrapper mirroring :func:`transitive_ancestor_descendant_pipeline`: it builds the split with
     :func:`hierarchy_completion_split`, trains the model, and (unless ``hierarchical`` is ``False``)
     additionally reports hierarchical precision/recall/F1 alongside the rank-based metrics.
 
@@ -639,7 +639,7 @@ def hpo_hierarchy_completion_pipeline(
 ) -> HpoHierarchicalResult:
     """Run HPO on the hierarchy-completion task, then re-fit and score the best trial.
 
-    Mirrors :func:`hpo_ancestor_descendant_pipeline` for the removed-edge task: it builds the split
+    Mirrors :func:`hpo_transitive_ancestor_descendant_pipeline` for the removed-edge task: it builds the split
     with :func:`hierarchy_completion_split`, runs :func:`pykeen.hpo.hpo_pipeline` over it, and (unless
     ``hierarchical`` is ``False``) re-trains the winning configuration on the same split and reports
     its hierarchical precision/recall/F1.
