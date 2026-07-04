@@ -77,10 +77,20 @@ CONFIGS: list[tuple[str, object, dict, dict]] = [
         },
     ),
     (
-        "HyperbolicCones (entailment)",
+        # Reported hyperparameters (Ganea et al. 2018 §5): max-margin loss (Eq. 32) with γ=0.01,
+        # aperture/inner-radius K=ε=0.1, 10 negatives per positive, SGD w/ retraction @ lr=1e-4.
+        # loss must be explicit: the pipeline injects the loss-resolver default (MarginRanking,
+        # margin=1.0), which would otherwise override the model's baked-in γ=0.01.
+        "HyperbolicCones (Ganea et al. 2018)",
         HyperbolicCones,
-        {"embedding_dim": EMBEDDING_DIM, "k": 0.1, "curvature": 1.0},
-        {"optimizer": "RiemannianAdam", "optimizer_kwargs": {"lr": 0.05}},
+        {"embedding_dim": EMBEDDING_DIM, "k": 0.1, "curvature": 1.0},  # K=ε=0.1 (paper §5)
+        {
+            "optimizer": "RiemannianSGD",  # paper §4.2/§5: SGD w/ retraction approximation
+            "optimizer_kwargs": {"lr": 1e-4},  # paper §5 learning rate
+            "loss": "marginranking",  # paper Eq. 32 max-margin loss
+            "loss_kwargs": {"margin": 0.01},  # paper §5 margin γ=0.01
+            "negative_sampler_kwargs": {"num_negs_per_pos": 10},  # paper §5: 10 negatives/positive
+        },
     ),
     (
         "TransE (Euclidean baseline)",
