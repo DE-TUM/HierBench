@@ -4,7 +4,13 @@ import numpy.testing
 import torch
 import unittest_templates
 
-from pykeen.sampling import BasicNegativeSampler, BernoulliNegativeSampler, NegativeSampler, PseudoTypedNegativeSampler
+from pykeen.sampling import (
+    BasicNegativeSampler,
+    BernoulliNegativeSampler,
+    HierarchyNegativeSampler,
+    NegativeSampler,
+    PseudoTypedNegativeSampler,
+)
 from pykeen.sampling.pseudo_type import create_index
 from tests.test_sampling import cases
 
@@ -84,6 +90,57 @@ class PseudoTypedNegativeSamplerTest(cases.NegativeSamplerGenericTestCase):
     def test_entity_corruption(self):
         """Verify entity corruption."""
         _verify_entity_corruption(instance=self.instance, positive_batch=self.positive_batch)
+
+
+class HierarchyNegativeSamplerTest(cases.NegativeSamplerGenericTestCase):
+    """Test the hierarchy (same-depth) negative sampler."""
+
+    cls = HierarchyNegativeSampler
+
+    def test_entity_corruption(self):
+        """Verify entity corruption."""
+        _verify_entity_corruption(instance=self.instance, positive_batch=self.positive_batch)
+
+
+def test_hierarchy_sampler_same_depth():
+    """Hard corruptions land at the same depth as the entity they replace."""
+    # parent->child tree: depths {0: 0, 1,2: 1, 3,4,5,6: 2}; every non-root depth has >=2 nodes
+    mapped = torch.as_tensor([[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [2, 0, 5], [2, 0, 6]])
+    sampler = HierarchyNegativeSampler(
+        mapped_triples=mapped,
+        num_entities=7,
+        num_relations=1,
+        hard_ratio=1.0,  # never fall back to uniform
+        head_corruption_prob=0.0,  # always corrupt the (child) tail, whose depth bucket has >=2 nodes
+        num_negs_per_pos=20,
+    )
+    negative_batch = sampler.corrupt_batch(positive_batch=mapped)
+
+    original_tail_depth = sampler.node_depth[mapped[:, 2]].unsqueeze(dim=-1)
+    negative_tail_depth = sampler.node_depth[negative_batch[..., 2]]
+    assert (negative_tail_depth == original_tail_depth).all()
+    # heads are left untouched and tails actually change
+    assert (negative_batch[..., 0] == mapped[:, 0].unsqueeze(dim=-1)).all()
+    assert (negative_batch[..., 2] != mapped[:, 2].unsqueeze(dim=-1)).all()
+
+
+def test_hierarchy_sampler_star_fallback():
+    """A singleton depth level (e.g. a star's root) falls back to uniform without error."""
+    # star: root 0 -> leaves 1..4; depth 0 = {0} is a singleton, so head corruption has no peer
+    mapped = torch.as_tensor([[0, 0, 1], [0, 0, 2], [0, 0, 3], [0, 0, 4]])
+    sampler = HierarchyNegativeSampler(
+        mapped_triples=mapped,
+        num_entities=5,
+        num_relations=1,
+        hard_ratio=1.0,
+        head_corruption_prob=1.0,  # always corrupt the root, whose depth bucket is a singleton
+        num_negs_per_pos=15,
+    )
+    negative_batch = sampler.corrupt_batch(positive_batch=mapped)
+    heads = negative_batch[..., 0]
+    assert (heads != 0).all()  # uniform fallback never reproduces the root itself
+    assert (heads >= 0).all()
+    assert (heads < 5).all()
 
 
 class NegativeSamplerMetaTestCase(unittest_templates.MetaTestCase):

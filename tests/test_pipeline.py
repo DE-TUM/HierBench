@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+import numpy as np
 import pytest
 import torch
 
@@ -413,3 +414,279 @@ def test_loading_training_triples_factory(tf_cls: type[CoreTriplesFactory]):
     with tempfile.TemporaryDirectory() as directory:
         result.save_to_directory(directory)
         tf_cls.from_path_binary(pathlib.Path(directory, "training_triples"))
+
+
+def _make_balanced_tree_dataset() -> EagerDataset:
+    """Return a depth-3 complete binary tree (15 nodes, no shortcuts).
+
+    Node ``i`` has children ``2i+1`` and ``2i+2`` for ``i`` in 0..6; nodes 7..14 are leaves.
+    Because the graph is a tree, the hop distance of any ancestor-descendant pair equals its
+    unique shortest-path length, which makes per-hop sampling balance verifiable.
+    """
+    rows = [[i, 0, child] for i in range(7) for child in (2 * i + 1, 2 * i + 2)]
+    train_triples = torch.tensor(rows, dtype=torch.long)
+    train = CoreTriplesFactory(mapped_triples=train_triples, num_entities=15, num_relations=1)
+    return EagerDataset(training=train, testing=train, validation=train)
+
+
+def test_poincare_scores_are_non_positive():
+    """Poincaré interaction scores are always ≤ 0 (negative Poincaré distance).
+
+    Self-pairs score exactly 0; all other pairs score strictly below 0.
+    """
+    from pykeen.nn.modules import PoincareEInteraction
+
+    interaction = PoincareEInteraction(curvature=1.0)
+    # Embeddings strictly inside the unit ball
+    embeddings = torch.tensor(
+        [[0.0, 0.0], [0.1, 0.1], [0.3, -0.2], [-0.5, 0.4]],
+        dtype=torch.float32,
+    )
+
+    def score(h_idx: int, t_idx: int) -> float:
+        """Score a single (head, tail) pair using Poincaré interaction."""
+        return interaction.forward(embeddings[h_idx].unsqueeze(0), (), embeddings[t_idx].unsqueeze(0)).item()
+
+    # Self-pairs: distance to itself is 0 → score = 0
+    for i in range(len(embeddings)):
+        assert score(i, i) == pytest.approx(0.0, abs=1e-5), f"Self-score for entity {i} should be 0"
+
+    # Cross-pairs: all other scores must be strictly negative
+    for i in range(len(embeddings)):
+        for j in range(len(embeddings)):
+            if i != j:
+                assert score(i, j) < 0.0, f"score({i}, {j}) should be negative"
+
+
+def _make_bipartite_dataset() -> EagerDataset:
+    """Return a 2-parent x 4-child bipartite hierarchy (relation 0, 8 edges).
+
+    Parents {0, 1} each link to children {2, 3, 4, 5}, so parents have degree 4 and every child has
+    degree 2. Each child can lose exactly one of its two edges without being isolated, giving a clean,
+    plentiful pool of removable edges.
+    """
+    rows = [[p, 0, c] for p in (0, 1) for c in (2, 3, 4, 5)]
+    train = CoreTriplesFactory(mapped_triples=torch.tensor(rows, dtype=torch.long), num_entities=6, num_relations=1)
+    return EagerDataset(training=train, testing=train, validation=train)
+
+
+class TestHierarchyCompletionPipeline(unittest.TestCase):
+    """Tests for the hierarchy-completion (removed-edge) benchmark pipeline."""
+
+    def test_no_isolated_nodes(self):
+        """Removal never orphans a node: every node with a hierarchy edge keeps one in training."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        dataset = _make_bipartite_dataset()
+        original = dataset.training.mapped_triples.tolist()
+        nodes_with_edge = {h for h, _, _ in original} | {t for _, _, t in original}
+
+        train, _val, _test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42)
+        train_rows = train.mapped_triples.tolist()
+        train_nodes = {h for h, _, _ in train_rows} | {t for _, _, t in train_rows}
+        assert nodes_with_edge <= train_nodes
+
+    def test_leaves_never_removed(self):
+        """On a tree, every leaf's single parent edge is retained (degree-1 nodes are protected)."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        dataset = _make_balanced_tree_dataset()
+        train, _val, _test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42)
+        train_edges = {(h, t) for h, _, t in train.mapped_triples.tolist()}
+        for leaf in range(7, 15):  # leaves 7..14, parent = (leaf - 1) // 2
+            assert ((leaf - 1) // 2, leaf) in train_edges
+
+    def test_held_out_edges_are_removed_originals(self):
+        """Val/test edges are original hierarchy edges absent from train; the partition is exact."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        dataset = _make_bipartite_dataset()
+        original = {tuple(row) for row in dataset.training.mapped_triples.tolist()}
+
+        train, val, test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42)
+        train_edges = [tuple(row) for row in train.mapped_triples.tolist()]
+        held = [tuple(row) for row in (val.mapped_triples.tolist() + test.mapped_triples.tolist())]
+
+        assert set(held) <= original
+        assert set(held).isdisjoint(train_edges)
+        # exact partition, no duplicates: train + held reconstructs the original edge multiset
+        assert sorted(train_edges + held) == sorted(original)
+
+    def test_ratio_and_balanced_split(self):
+        """The number removed matches round(test_ratio*|H|) and is split 50/50 within one edge."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        dataset = _make_bipartite_dataset()  # |H| = 8, all four children supply a removable edge
+        _train, val, test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42)
+        assert val.num_triples + test.num_triples == 4  # round(0.5 * 8)
+        assert abs(val.num_triples - test.num_triples) <= 1
+
+    def test_original_relation_preserved(self):
+        """Held-out edges keep their relation id; non-hierarchy edges stay in training."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_split
+
+        # relation 0 = bipartite hierarchy; relation 1 = context edges that must never be held out
+        hierarchy = [[p, 0, c] for p in (0, 1) for c in (2, 3, 4, 5)]
+        context = [[2, 1, 3], [4, 1, 5]]
+        rows = torch.tensor(hierarchy + context, dtype=torch.long)
+        train_tf = CoreTriplesFactory(mapped_triples=rows, num_entities=6, num_relations=2)
+        dataset = EagerDataset(training=train_tf, testing=train_tf, validation=train_tf)
+
+        train, val, test = hierarchy_completion_split(dataset, test_ratio=0.5, seed=42, hierarchy_relation=0)
+        held = val.mapped_triples.tolist() + test.mapped_triples.tolist()
+        assert held, "expected some removed edges"
+        assert all(r == 0 for _, r, _ in held)
+        train_edges = [tuple(row) for row in train.mapped_triples.tolist()]
+        for ctx in context:
+            assert tuple(ctx) in train_edges
+
+    def test_pipeline_runs(self):
+        """Pipeline completes, returns a valid MRR, and reports hierarchical metrics."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
+
+        dataset = _make_bipartite_dataset()
+        result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0)
+        assert result.metric_results is not None
+        mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+        assert 0.0 <= mrr <= 1.0
+        assert result.hierarchical_metric_results is not None
+
+    def test_negative_sampler_selectable(self):
+        """The hierarchy default is a setdefault: pseudotyped/basic can be chosen instead."""
+        from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
+
+        dataset = _make_bipartite_dataset()
+        for sampler in ("pseudotyped", "basic"):
+            result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0, negative_sampler=sampler)
+            mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+            assert 0.0 <= mrr <= 1.0
+
+
+def test_build_ancestor_paths_chain():
+    """build_ancestor_paths returns a total inclusive ancestor map for a chain."""
+    from pykeen.pipeline.hierarchy import build_ancestor_paths
+
+    triples = torch.tensor([[0, 0, 1], [1, 0, 2], [2, 0, 3]], dtype=torch.long)
+    ancestors = build_ancestor_paths(triples, num_entities=4)
+    assert ancestors[0] == frozenset({0})
+    assert ancestors[2] == frozenset({0, 1, 2})
+    assert ancestors[3] == frozenset({0, 1, 2, 3})
+
+
+def test_build_ancestor_paths_relation_filter():
+    """build_ancestor_paths only follows edges of the given hierarchy relation."""
+    from pykeen.pipeline.hierarchy import build_ancestor_paths
+
+    # relation 0 = hierarchy chain 0→1→2; relation 1 = a non-hierarchy edge 3→0
+    triples = torch.tensor([[0, 0, 1], [1, 0, 2], [3, 1, 0]], dtype=torch.long)
+    filtered = build_ancestor_paths(triples, num_entities=4, hierarchy_relation=0)
+    assert filtered[2] == frozenset({0, 1, 2})
+    assert 3 not in filtered[0]
+    # without the filter, the relation-1 edge would make 3 an ancestor of 0
+    unfiltered = build_ancestor_paths(triples, num_entities=4)
+    assert 3 in unfiltered[0]
+
+
+def test_hierarchical_scores_paper_example():
+    """Reproduce Kosmopoulos et al. (2015), Fig. 11 / Table 3 (root included, per-query scores)."""
+    from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
+    from pykeen.pipeline.hierarchy import build_ancestor_paths
+
+    # 0=Arts, 1=Music, 2=Theater, 3=Pop, 4=Rock, 5=Classical
+    triples = torch.tensor([[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [1, 0, 5]], dtype=torch.long)
+    ancestors = build_ancestor_paths(triples, num_entities=6)
+    y_true = np.array([0, 0, 0, 1, 0, 0])  # true class is Pop
+
+    # case (a): predicted Rock → hP = hR = hF1 = 2/3 (shared path {Arts, Music})
+    case_a = _hierarchical_scores(y_true=y_true, y_score=np.array([0, 0, 0, 0, 1.0, 0]), ancestors=ancestors)
+    assert case_a == pytest.approx((2 / 3, 2 / 3, 2 / 3))
+
+    # case (b): predicted Theater → hP = 1/2, hR = 1/3, hF1 = 0.4 (only Arts shared)
+    case_b = _hierarchical_scores(y_true=y_true, y_score=np.array([0, 0, 1.0, 0, 0, 0]), ancestors=ancestors)
+    assert case_b == pytest.approx((1 / 2, 1 / 3, 0.4))
+
+
+def test_hierarchical_scores_disjoint_and_empty():
+    """Disjoint branches score 0.0; an empty positive mask yields None."""
+    from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
+
+    # two disjoint chains 0→1 and 2→3
+    ancestors = {0: frozenset({0}), 1: frozenset({0, 1}), 2: frozenset({2}), 3: frozenset({2, 3})}
+    disjoint = _hierarchical_scores(
+        y_true=np.array([0, 1, 0, 0]), y_score=np.array([0.0, 0.0, 0.0, 1.0]), ancestors=ancestors
+    )
+    assert disjoint == pytest.approx((0.0, 0.0, 0.0))
+
+    empty = _hierarchical_scores(
+        y_true=np.array([0, 0, 0, 0]), y_score=np.array([0.1, 0.2, 0.3, 0.4]), ancestors=ancestors
+    )
+    assert empty is None
+
+
+def test_hierarchical_aggregate_averages_per_query():
+    """Aggregation averages the per-query scores (Kosmopoulos et al. 2015), not micro-pooled counts."""
+    from pykeen.evaluation.hierarchical_classification_evaluator import (
+        HierarchicalClassificationEvaluator,
+        HierarchicalMetricKey,
+    )
+
+    values = [(0.5, 0.25, 1 / 3), (1.0, 1.0, 1.0)]
+    result = HierarchicalClassificationEvaluator._aggregate(side="tail", values=values)
+    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_precision")] == pytest.approx(0.75)
+    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_recall")] == pytest.approx(0.625)
+    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_f1")] == pytest.approx(2 / 3)
+
+    # no queries → all zeros
+    zeros = HierarchicalClassificationEvaluator._aggregate(side="tail", values=[])
+    assert all(value == 0.0 for value in zeros.values())
+
+
+def test_hierarchical_evaluator_requires_ancestors():
+    """The hierarchical evaluator raises when no ancestors map is given."""
+    from pykeen.evaluation import HierarchicalClassificationEvaluator
+
+    with pytest.raises(ValueError, match="ancestors"):
+        HierarchicalClassificationEvaluator()
+
+
+def test_pipeline_reports_hierarchical_metrics():
+    """The hierarchy-completion pipeline attaches hierarchical metrics in [0, 1] when enabled."""
+    from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
+
+    dataset = _make_balanced_tree_dataset()
+    result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0)
+    assert result.hierarchical_metric_results is not None
+    h_f1 = result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
+    assert 0.0 <= h_f1 <= 1.0
+
+    disabled = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0, hierarchical=False)
+    assert disabled.hierarchical_metric_results is None
+
+
+def test_pipeline_persists_hierarchical_metrics():
+    """save_to_directory writes the hierarchical metrics into results.json."""
+    import json
+
+    from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
+
+    dataset = _make_balanced_tree_dataset()
+    result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0)
+    with tempfile.TemporaryDirectory() as directory:
+        result.save_to_directory(directory)
+        with pathlib.Path(directory, "results.json").open() as file:
+            saved = json.load(file)
+    assert "hierarchical_metrics" in saved
+
+
+def test_hpo_pipeline_refits_best_trial():
+    """The hierarchy-completion HPO pipeline runs a study and re-fits the best trial's hierarchical metrics."""
+    from pykeen.pipeline.hierarchy import hpo_hierarchy_completion_pipeline
+
+    dataset = _make_balanced_tree_dataset()
+    outcome = hpo_hierarchy_completion_pipeline(
+        dataset, model="PoincareE", n_trials=1, epochs=1, test_ratio=0.5, seed=0
+    )
+    assert outcome.hpo_result.study is not None
+    assert outcome.result is not None
+    h_f1 = outcome.result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
+    assert 0.0 <= h_f1 <= 1.0

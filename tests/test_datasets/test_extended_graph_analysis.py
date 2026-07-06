@@ -173,15 +173,15 @@ def test_levels_alias_chain() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Task 4: average_fan_out, max_fan_out, balance
+# Task 4: avg_fan_out, max_fan_out, balance
 # ---------------------------------------------------------------------------
 
 
-def test_average_fan_out_float(nations: Nations) -> None:
-    """average_fan_out is a non-negative float."""
+def test_avg_fan_out_float(nations: Nations) -> None:
+    """avg_fan_out is a non-negative float."""
     ha = ExtendedGraphAnalysis(nations)
-    assert isinstance(ha.average_fan_out, float)
-    assert ha.average_fan_out >= 0.0
+    assert isinstance(ha.avg_fan_out, float)
+    assert ha.avg_fan_out >= 0.0
 
 
 def test_max_fan_out_int(nations: Nations) -> None:
@@ -192,10 +192,10 @@ def test_max_fan_out_int(nations: Nations) -> None:
 
 
 def test_fan_out_star() -> None:
-    """Star 0→{1,2,3}: max_fan_out=3, average_fan_out=0.75."""
+    """Star 0→{1,2,3}: max_fan_out=3, avg_fan_out=0.75."""
     ha = ExtendedGraphAnalysis(_star_dataset())
     assert ha.max_fan_out == 3
-    assert ha.average_fan_out == pytest.approx(0.75)
+    assert ha.avg_fan_out == pytest.approx(0.75)
 
 
 def test_balance_range(nations: Nations) -> None:
@@ -449,20 +449,20 @@ def test_h_index_empty() -> None:
 
 
 # ---------------------------------------------------------------------------
-# degree_variance_in / degree_variance_out
+# variance_in_degree / variance_out_degree
 # ---------------------------------------------------------------------------
 
 
-def test_degree_variance_in_float(nations: Nations) -> None:
+def test_variance_in_degree_float(nations: Nations) -> None:
     """Degree_variance_in is a non-negative float."""
-    v = ExtendedGraphAnalysis(nations).degree_variance_in
+    v = ExtendedGraphAnalysis(nations).variance_in_degree
     assert isinstance(v, float)
     assert v >= 0.0
 
 
-def test_degree_variance_out_float(nations: Nations) -> None:
+def test_variance_out_degree_float(nations: Nations) -> None:
     """Degree_variance_out is a non-negative float."""
-    v = ExtendedGraphAnalysis(nations).degree_variance_out
+    v = ExtendedGraphAnalysis(nations).variance_out_degree
     assert isinstance(v, float)
     assert v >= 0.0
 
@@ -470,60 +470,60 @@ def test_degree_variance_out_float(nations: Nations) -> None:
 def test_degree_variance_chain() -> None:
     """Chain in/out-degrees both [0,1,1,1]/[1,1,1,0]: population variance is 0.1875."""
     ha = ExtendedGraphAnalysis(_chain_dataset())
-    assert ha.degree_variance_in == pytest.approx(0.1875)
-    assert ha.degree_variance_out == pytest.approx(0.1875)
+    assert ha.variance_in_degree == pytest.approx(0.1875)
+    assert ha.variance_out_degree == pytest.approx(0.1875)
 
 
 def test_degree_variance_empty() -> None:
     """Empty graph has degree variances of 0.0."""
     ha = ExtendedGraphAnalysis(_empty_dataset())
-    assert ha.degree_variance_in == 0.0
-    assert ha.degree_variance_out == 0.0
+    assert ha.variance_in_degree == 0.0
+    assert ha.variance_out_degree == 0.0
 
 
 # ---------------------------------------------------------------------------
-# degree_std_in / degree_std_out
+# std_in_degree / std_out_degree
 # ---------------------------------------------------------------------------
 
 
-def test_degree_std_in_float(nations: Nations) -> None:
-    """Degree_std_in is a non-negative float equal to sqrt(degree_variance_in)."""
+def test_std_in_degree_float(nations: Nations) -> None:
+    """Degree_std_in is a non-negative float equal to sqrt(variance_in_degree)."""
     ha = ExtendedGraphAnalysis(nations)
-    assert isinstance(ha.degree_std_in, float)
-    assert ha.degree_std_in >= 0.0
-    assert ha.degree_std_in == pytest.approx(ha.degree_variance_in**0.5)
+    assert isinstance(ha.std_in_degree, float)
+    assert ha.std_in_degree >= 0.0
+    assert ha.std_in_degree == pytest.approx(ha.variance_in_degree**0.5)
 
 
-def test_degree_std_out_float(nations: Nations) -> None:
-    """Degree_std_out is a non-negative float equal to sqrt(degree_variance_out)."""
+def test_std_out_degree_float(nations: Nations) -> None:
+    """Degree_std_out is a non-negative float equal to sqrt(variance_out_degree)."""
     ha = ExtendedGraphAnalysis(nations)
-    assert isinstance(ha.degree_std_out, float)
-    assert ha.degree_std_out >= 0.0
-    assert ha.degree_std_out == pytest.approx(ha.degree_variance_out**0.5)
+    assert isinstance(ha.std_out_degree, float)
+    assert ha.std_out_degree >= 0.0
+    assert ha.std_out_degree == pytest.approx(ha.variance_out_degree**0.5)
 
 
 def test_degree_std_chain() -> None:
     """Chain degree std is sqrt(0.1875) for both in and out."""
     ha = ExtendedGraphAnalysis(_chain_dataset())
-    assert ha.degree_std_in == pytest.approx(0.1875**0.5)
-    assert ha.degree_std_out == pytest.approx(0.1875**0.5)
+    assert ha.std_in_degree == pytest.approx(0.1875**0.5)
+    assert ha.std_out_degree == pytest.approx(0.1875**0.5)
 
 
 # ---------------------------------------------------------------------------
-# coefficient_of_variation_in / coefficient_of_variation_out
+# coefficient_of_variation_in_degree / coefficient_of_variation_out_degree
 # ---------------------------------------------------------------------------
 
 
 def test_cv_in_float(nations: Nations) -> None:
-    """Coefficient_of_variation_in is a non-negative float."""
-    cv = ExtendedGraphAnalysis(nations).coefficient_of_variation_in
+    """Coefficient_of_variation_in_degree is a non-negative float."""
+    cv = ExtendedGraphAnalysis(nations).coefficient_of_variation_in_degree
     assert isinstance(cv, float)
     assert cv >= 0.0
 
 
 def test_cv_out_float(nations: Nations) -> None:
-    """Coefficient_of_variation_out is a non-negative float."""
-    cv = ExtendedGraphAnalysis(nations).coefficient_of_variation_out
+    """Coefficient_of_variation_out_degree is a non-negative float."""
+    cv = ExtendedGraphAnalysis(nations).coefficient_of_variation_out_degree
     assert isinstance(cv, float)
     assert cv >= 0.0
 
@@ -531,15 +531,15 @@ def test_cv_out_float(nations: Nations) -> None:
 def test_cv_uniform_degree() -> None:
     """Graph where every entity has in- and out-degree 1 has cv_in = cv_out = 0.0."""
     ha = ExtendedGraphAnalysis(_uniform_degree_dataset())
-    assert ha.coefficient_of_variation_in == pytest.approx(0.0)
-    assert ha.coefficient_of_variation_out == pytest.approx(0.0)
+    assert ha.coefficient_of_variation_in_degree == pytest.approx(0.0)
+    assert ha.coefficient_of_variation_out_degree == pytest.approx(0.0)
 
 
 def test_cv_empty() -> None:
     """Empty graph has cv_in = cv_out = 0.0."""
     ha = ExtendedGraphAnalysis(_empty_dataset())
-    assert ha.coefficient_of_variation_in == 0.0
-    assert ha.coefficient_of_variation_out == 0.0
+    assert ha.coefficient_of_variation_in_degree == 0.0
+    assert ha.coefficient_of_variation_out_degree == 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -693,3 +693,32 @@ def test_power_law_chain_total_degree() -> None:
     ha = ExtendedGraphAnalysis(_chain_dataset())
     assert ha.power_law_exponent > 0.0
     assert ha.power_law_minimum_cutoff == 1
+
+
+# ---------------------------------------------------------------------------
+# min_branch_out / max_branch_out
+# ---------------------------------------------------------------------------
+
+
+def test_branch_out_star() -> None:
+    """A star's single parent (out-degree 3) sets min, max and avg branch-out to 3."""
+    ha = ExtendedGraphAnalysis(_star_dataset())
+    assert ha.min_branch_out == 3
+    assert ha.max_branch_out == 3
+    assert ha.avg_branch_out == pytest.approx(3.0)
+
+
+def test_branch_out_mixed() -> None:
+    """With parents of out-degree 2 and 1, branch-out spans [1, 2]."""
+    ds = _make_dataset([[0, 0, 1], [0, 0, 2], [1, 0, 3]], num_entities=4)
+    ha = ExtendedGraphAnalysis(ds)
+    assert ha.min_branch_out == 1
+    assert ha.max_branch_out == 2
+    assert ha.min_branch_out <= ha.avg_branch_out <= ha.max_branch_out
+
+
+def test_max_branch_out_equals_max_fan_out(nations: Nations) -> None:
+    """The largest-out-degree node is always a parent, so max_branch_out == max_fan_out."""
+    ha = ExtendedGraphAnalysis(nations)
+    assert ha.max_branch_out == ha.max_fan_out
+    assert ha.min_branch_out <= ha.avg_branch_out <= ha.max_branch_out

@@ -87,11 +87,14 @@ from .distmult import DistMult
 from .ermlp import ERMLP
 from .ermlpe import ERMLPE
 from .hole import HolE
+from .hyperbolic_cones import HyperbolicCones
 from .kg2e import KG2E
+from .lorentz_e import LorentzE
 from .mure import MuRE
 from .node_piece import NodePiece
 from .ntn import NTN
 from .pair_re import PairRE
+from .poincare_e import PoincareE
 from .proj_e import ProjE
 from .quate import QuatE
 from .rescal import RESCAL
@@ -122,11 +125,14 @@ __all__ = [
     "ERMLP",
     "ERMLPE",
     "HolE",
+    "HyperbolicCones",
     "KG2E",
+    "LorentzE",
     "MuRE",
     "NTN",
     "NodePiece",
     "PairRE",
+    "PoincareE",
     "ProjE",
     "QuatE",
     "RESCAL",

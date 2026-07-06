@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import RemoteMetadataDataset
+from .metadata import SingleFileRemoteMetadataDataset
 
 __all__ = [
     "Cora",
@@ -14,7 +14,7 @@ _BASE_URL = "https://syncandshare.lrz.de/dl/fiRjW4AR7yjLBjut8onBg5/cora/"
 
 
 @parse_docdata
-class Cora(RemoteMetadataDataset):
+class Cora(SingleFileRemoteMetadataDataset):
     """The Cora citation network dataset.
 
     Nodes are scientific publications classified into one of seven subject

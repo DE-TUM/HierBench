@@ -59,7 +59,6 @@ requires-python = ">=3.10"
 dependencies = [
     "dataclasses-json",
     "numpy",
-    "numpy",
     "scipy>=1.7.0",
     "click",
     "click_default_group",
@@ -81,7 +80,7 @@ dependencies = [
     "torch-ppr>=0.0.7",
     "typing_extensions",
     "geoopt>=0.5.1",
-    "networkx>=3.4.2",
+    "networkx",
 ]
 
 [project.optional-dependencies]
@@ -144,6 +143,12 @@ pykeen = "pykeen.cli:main"
 [tool.cruft]
 skip = ["**/__init__.py", "tests/*"]
 
+[tool.check-manifest]
+ignore = [
+    "CLAUDE.md",
+    ".claude/**",
+]
+
 # MyPy, see https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
 plugins = []
@@ -180,6 +185,7 @@ exclude_lines = [
 [tool.ruff]
 line-length = 120
 extend-include = ["*.ipynb"]
+extend-exclude = ["test.py"]
 
 [tool.ruff.lint]
 # See https://docs.astral.sh/ruff/rules

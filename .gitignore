@@ -121,4 +121,6 @@ doctests/
 tox2.ini
 uv.lock
 CLAUDE.md
-test.py
+# test.py
+/test_classification.py
+notebooks/

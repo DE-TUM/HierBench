@@ -256,13 +256,13 @@ class TestStructuralInvariants:
         assert ha.max_in_degree == max(in_deg.values())
         assert ha.max_degree == max(total_deg.values())
 
-        assert ha.average_out_degree == pytest.approx(sum(out_deg.values()) / n)
-        assert ha.average_in_degree == pytest.approx(sum(in_deg.values()) / n)
-        assert ha.average_degree == pytest.approx(sum(total_deg.values()) / n)
-        assert ha.average_fan_out == pytest.approx(len(edges) / n)
+        assert ha.avg_out_degree == pytest.approx(sum(out_deg.values()) / n)
+        assert ha.avg_in_degree == pytest.approx(sum(in_deg.values()) / n)
+        assert ha.avg_degree == pytest.approx(sum(total_deg.values()) / n)
+        assert ha.avg_fan_out == pytest.approx(len(edges) / n)
         # Excluding leaves can only raise the mean; tolerance covers float32 rounding
         # in the torch mean when there are no leaves and the two are mathematically equal.
-        assert ha.average_branch_out >= ha.average_fan_out - 1e-6
+        assert ha.avg_branch_out >= ha.avg_fan_out - 1e-6
 
         for node in range(n):
             assert ha.in_degree(node) == in_deg[node]
@@ -321,10 +321,10 @@ class TestStructuralInvariants:
         edges, num_relations = _random_digraph_edges(seed, n)
         ha = ExtendedGraphAnalysis(_dataset_from_edges(edges, n, num_relations))
 
-        assert ha.degree_variance_in >= 0.0
-        assert ha.degree_variance_out >= 0.0
-        assert ha.degree_std_in == pytest.approx(ha.degree_variance_in**0.5)
-        assert ha.degree_std_out == pytest.approx(ha.degree_variance_out**0.5)
+        assert ha.variance_in_degree >= 0.0
+        assert ha.variance_out_degree >= 0.0
+        assert ha.std_in_degree == pytest.approx(ha.variance_in_degree**0.5)
+        assert ha.std_out_degree == pytest.approx(ha.variance_out_degree**0.5)
 
     @pytest.mark.parametrize("seed", SEEDS)
     def test_depth_metrics(self, seed: int) -> None:

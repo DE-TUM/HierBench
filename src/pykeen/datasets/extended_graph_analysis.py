@@ -223,6 +223,17 @@ class ExtendedGraphAnalysis:
         return sum(depths.values()) / len(depths)
 
     @property
+    def min_hierarchy_depth(self) -> int:
+        """Minimum shortest-path depth across all nodes (from the nearest root).
+
+        :returns: Minimum depth from roots. Returns 0 for an empty or rootless graph.
+        """
+        depths = self._node_depths
+        if not depths:
+            return 0
+        return min(depths.values())
+
+    @property
     def levels(self) -> int:
         """Alias for :attr:`max_hierarchy_depth`.
 
@@ -231,7 +242,7 @@ class ExtendedGraphAnalysis:
         return self.max_hierarchy_depth
 
     @property
-    def average_fan_out(self) -> float:
+    def avg_fan_out(self) -> float:
         """Average number of children per node (average out-degree = ``m / n``).
 
         :returns: Mean out-degree. Returns 0.0 for a graph with no nodes.
@@ -251,11 +262,11 @@ class ExtendedGraphAnalysis:
         return int(out_deg.max().item()) if out_deg.numel() > 0 else 0
 
     @property
-    def average_branch_out(self) -> float:
+    def avg_branch_out(self) -> float:
         """Mean out-degree of non-leaf nodes (nodes with at least one child).
 
         This is **not** the paper's z_out (Zloch et al. 2019), which averages
-        out-degree over *all* entities (see :attr:`average_fan_out`). Excluding
+        out-degree over *all* entities (see :attr:`avg_fan_out`). Excluding
         leaves makes this a hierarchy-specific branching factor.
 
         :returns: Average out-degree of parent nodes. Returns 0.0 if there are no
@@ -266,6 +277,32 @@ class ExtendedGraphAnalysis:
         if parent_counts.numel() == 0:
             return 0.0
         return float(parent_counts.float().mean().item())
+
+    @property
+    def min_branch_out(self) -> int:
+        """Minimum out-degree among non-leaf nodes (nodes with at least one child).
+
+        :returns: Smallest branching factor of a parent node. Returns 0 if there
+            are no parent nodes.
+        """
+        _, out_deg = self._in_out_degrees
+        parent_counts = out_deg[out_deg > 0]
+        return int(parent_counts.min().item()) if parent_counts.numel() else 0
+
+    @property
+    def max_branch_out(self) -> int:
+        """Maximum out-degree among non-leaf nodes.
+
+        Equals :attr:`max_fan_out` for any non-empty graph (the node with the
+        largest out-degree is by definition a parent); kept for symmetry with
+        :attr:`min_branch_out` and :attr:`avg_branch_out`.
+
+        :returns: Largest branching factor of a parent node. Returns 0 if there
+            are no parent nodes.
+        """
+        _, out_deg = self._in_out_degrees
+        parent_counts = out_deg[out_deg > 0]
+        return int(parent_counts.max().item()) if parent_counts.numel() else 0
 
     @property
     def balance(self) -> float:
@@ -419,7 +456,7 @@ class ExtendedGraphAnalysis:
 
     @property
     def total_vertices(self) -> int:
-        """Total number of vertices |V| (Zloch et al. 2019)."""
+        """Total number of vertices ``|V|`` (Zloch et al. 2019)."""
         return self._num_entities
 
     @property
@@ -469,20 +506,20 @@ class ExtendedGraphAnalysis:
         return int(out_deg.max().item()) if out_deg.numel() > 0 else 0
 
     @property
-    def average_degree(self) -> float:
+    def avg_degree(self) -> float:
         """Average total degree z across all vertices (Zloch et al. 2019)."""
         in_deg, out_deg = self._in_out_degrees
         total_deg = in_deg + out_deg
         return float(total_deg.float().mean().item()) if total_deg.numel() > 0 else 0.0
 
     @property
-    def average_in_degree(self) -> float:
+    def avg_in_degree(self) -> float:
         """Average in-degree z_in across all vertices (Zloch et al. 2019)."""
         in_deg, _ = self._in_out_degrees
         return float(in_deg.float().mean().item()) if in_deg.numel() > 0 else 0.0
 
     @property
-    def average_out_degree(self) -> float:
+    def avg_out_degree(self) -> float:
         """Average out-degree z_out across all vertices (Zloch et al. 2019)."""
         _, out_deg = self._in_out_degrees
         return float(out_deg.float().mean().item()) if out_deg.numel() > 0 else 0.0
@@ -604,44 +641,44 @@ class ExtendedGraphAnalysis:
         )
 
     @property
-    def degree_variance_in(self) -> float:
+    def variance_in_degree(self) -> float:
         """Population variance sigma^2_in of in-degree distribution (Zloch et al. 2019)."""
         in_deg, _ = self._in_out_degrees
         return float(in_deg.float().var(correction=0).item())
 
     @property
-    def degree_variance_out(self) -> float:
+    def variance_out_degree(self) -> float:
         """Population variance sigma^2_out of out-degree distribution (Zloch et al. 2019)."""
         _, out_deg = self._in_out_degrees
         return float(out_deg.float().var(correction=0).item())
 
     @property
-    def degree_std_in(self) -> float:
+    def std_in_degree(self) -> float:
         """Population standard deviation sigma_in of in-degree distribution (Zloch et al. 2019)."""
-        return self.degree_variance_in**0.5
+        return self.variance_in_degree**0.5
 
     @property
-    def degree_std_out(self) -> float:
+    def std_out_degree(self) -> float:
         """Population standard deviation sigma_out of out-degree distribution (Zloch et al. 2019)."""
-        return self.degree_variance_out**0.5
+        return self.variance_out_degree**0.5
 
     @property
-    def coefficient_of_variation_in(self) -> float:
+    def coefficient_of_variation_in_degree(self) -> float:
         """Coefficient of variation cv_in = (sigma_in / z_in) * 100 (Zloch et al. 2019)."""
         in_deg, _ = self._in_out_degrees
         z_in = float(in_deg.float().mean().item())
         if z_in == 0.0:
             return 0.0
-        return (self.degree_std_in / z_in) * 100.0
+        return (self.std_in_degree / z_in) * 100.0
 
     @property
-    def coefficient_of_variation_out(self) -> float:
+    def coefficient_of_variation_out_degree(self) -> float:
         """Coefficient of variation cv_out = (sigma_out / z_out) * 100 (Zloch et al. 2019)."""
         _, out_deg = self._in_out_degrees
         z_out = float(out_deg.float().mean().item())
         if z_out == 0.0:
             return 0.0
-        return (self.degree_std_out / z_out) * 100.0
+        return (self.std_out_degree / z_out) * 100.0
 
     @staticmethod
     def _fit_power_law(degrees: torch.Tensor) -> tuple[float, int]:

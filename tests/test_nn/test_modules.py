@@ -440,6 +440,79 @@ class UMTests(cases.TranslationalInteractionTests):
         return -(h - t).pow(self.instance.p).sum()
 
 
+class PoincareEInteractionTests(cases.InteractionTestCase):
+    """Tests for PoincareE interaction function."""
+
+    cls = pykeen.nn.modules.PoincareEInteraction
+
+    @staticmethod
+    def _to_ball(x: torch.Tensor) -> torch.Tensor:
+        """Project tensor into the open unit Poincaré ball (||x|| < 1)."""
+        norms = x.norm(dim=-1, keepdim=True).clamp(min=1e-8)
+        return x / (norms + 1e-6) * 0.9
+
+    def _get_hrt(self, *shapes):
+        """Generate head/tail tensors inside the Poincaré ball."""
+        h, r, t = super()._get_hrt(*shapes)
+        return self._to_ball(h), r, self._to_ball(t)
+
+    def _exp_score(self, h, r, t) -> torch.FloatTensor:
+        """Return the expected score: -d_P(h, t)."""
+        import geoopt
+
+        assert not r
+        return -geoopt.PoincareBall(c=1.0).dist(h, t)
+
+    def _additional_score_checks(self, scores):
+        """Scores are always non-positive (Poincaré distance >= 0)."""
+        assert (scores <= 0).all()
+
+
+class HyperbolicConesInteractionTests(cases.InteractionTestCase):
+    """Tests for HyperbolicConesInteraction."""
+
+    cls = pykeen.nn.modules.HyperbolicConesInteraction
+    kwargs = {"k": 0.1}
+
+    @staticmethod
+    def _to_cone_ball(x: torch.Tensor, k: float = 0.1) -> torch.Tensor:
+        """Project tensor into the Poincaré ball and lift above the inner radius."""
+        import math
+
+        inner = 2.0 * k / (1.0 + math.sqrt(1.0 + 4.0 * k**2))
+        norms = x.norm(dim=-1, keepdim=True).clamp(min=1e-8)
+        x = x / (norms + 1e-6) * 0.9
+        norms2 = x.norm(dim=-1, keepdim=True).clamp(min=1e-8)
+        scale = ((inner + 1e-4) / norms2).clamp(min=1.0)
+        return x * scale
+
+    def _get_hrt(self, *shapes):
+        """Generate head/tail tensors valid for cone membership checks."""
+        h, r, t = super()._get_hrt(*shapes)
+        return self._to_cone_ball(h), r, self._to_cone_ball(t)
+
+    def _exp_score(self, h, r, t) -> torch.FloatTensor:
+        """Return the expected score: -relu(child_angle - cone_angle)."""
+        assert not r
+        k = 0.1
+        eps = 1e-5
+        h_norm_sq = (h * h).sum(dim=-1)
+        t_norm_sq = (t * t).sum(dim=-1)
+        h_norm = h_norm_sq.sqrt().clamp(min=eps)
+        dot_ht = (h * t).sum(dim=-1)
+        diff_norm = (h - t).norm(dim=-1).clamp(min=eps)
+        cone_sin = (k * (1.0 - h_norm_sq) / h_norm).clamp(-1.0 + eps, 1.0 - eps)
+        cone_angle = cone_sin.arcsin()
+        g = (1.0 + h_norm_sq * t_norm_sq - 2.0 * dot_ht).clamp(min=eps)
+        cos_child = (dot_ht * (1.0 + h_norm_sq) - h_norm_sq * (1.0 + t_norm_sq)) / (h_norm * diff_norm * g.sqrt())
+        child_angle = cos_child.clamp(-1.0 + eps, 1.0 - eps).arccos()
+        return -torch.relu(child_angle - cone_angle)
+
+    def _additional_score_checks(self, scores):
+        """Scores are always non-positive (energy is non-negative)."""
+        assert (scores <= 0).all()
+
+
 class PairRETests(cases.TranslationalInteractionTests):
     """Tests for PairRE interaction function."""
 

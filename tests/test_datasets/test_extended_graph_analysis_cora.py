@@ -105,18 +105,18 @@ class TestDepthMetrics:
 
 
 class TestFanOutMetrics:
-    """Tests for average_fan_out, max_fan_out, and average_branch_out."""
+    """Tests for avg_fan_out, max_fan_out, and avg_branch_out."""
 
-    def test_average_fan_out_non_negative_float(self, ha: ExtendedGraphAnalysis) -> None:
-        """average_fan_out is a non-negative float."""
-        afo = ha.average_fan_out
+    def test_avg_fan_out_non_negative_float(self, ha: ExtendedGraphAnalysis) -> None:
+        """avg_fan_out is a non-negative float."""
+        afo = ha.avg_fan_out
         assert isinstance(afo, float)
         assert afo >= 0.0
 
-    def test_average_fan_out_matches_edge_to_entity_ratio(self, cora: Cora, ha: ExtendedGraphAnalysis) -> None:
-        """average_fan_out equals num_triples / num_entities."""
+    def test_avg_fan_out_matches_edge_to_entity_ratio(self, cora: Cora, ha: ExtendedGraphAnalysis) -> None:
+        """avg_fan_out equals num_triples / num_entities."""
         expected = cora.training.num_triples / cora.num_entities
-        assert ha.average_fan_out == pytest.approx(expected)
+        assert ha.avg_fan_out == pytest.approx(expected)
 
     def test_max_fan_out_non_negative_int(self, ha: ExtendedGraphAnalysis) -> None:
         """max_fan_out is a non-negative int."""
@@ -124,23 +124,23 @@ class TestFanOutMetrics:
         assert isinstance(mfo, int)
         assert mfo > 0
 
-    def test_max_fan_out_at_least_average_fan_out(self, ha: ExtendedGraphAnalysis) -> None:
+    def test_max_fan_out_at_least_avg_fan_out(self, ha: ExtendedGraphAnalysis) -> None:
         """The maximum out-degree is at least the average out-degree."""
-        assert ha.max_fan_out >= ha.average_fan_out
+        assert ha.max_fan_out >= ha.avg_fan_out
 
-    def test_average_branch_out_non_negative_float(self, ha: ExtendedGraphAnalysis) -> None:
-        """average_branch_out is a non-negative float."""
-        abo = ha.average_branch_out
+    def test_avg_branch_out_non_negative_float(self, ha: ExtendedGraphAnalysis) -> None:
+        """avg_branch_out is a non-negative float."""
+        abo = ha.avg_branch_out
         assert isinstance(abo, float)
         assert abo >= 0.0
 
-    def test_average_branch_out_at_least_average_fan_out(self, ha: ExtendedGraphAnalysis) -> None:
+    def test_avg_branch_out_at_least_avg_fan_out(self, ha: ExtendedGraphAnalysis) -> None:
         """Excluding leaves from the average can only raise the value."""
-        assert ha.average_branch_out >= ha.average_fan_out
+        assert ha.avg_branch_out >= ha.avg_fan_out
 
-    def test_average_branch_out_at_most_max_fan_out(self, ha: ExtendedGraphAnalysis) -> None:
+    def test_avg_branch_out_at_most_max_fan_out(self, ha: ExtendedGraphAnalysis) -> None:
         """The average over parent nodes cannot exceed the global maximum."""
-        assert ha.average_branch_out <= ha.max_fan_out
+        assert ha.avg_branch_out <= ha.max_fan_out
 
 
 class TestBalance:
@@ -253,5 +253,5 @@ class TestSpanningTree:
         assert isinstance(tree.root_nodes, frozenset)
         assert isinstance(tree.leaf_nodes, frozenset)
         assert isinstance(tree.balance, float)
-        assert isinstance(tree.average_fan_out, float)
+        assert isinstance(tree.avg_fan_out, float)
         assert isinstance(tree.max_fan_out, int)
