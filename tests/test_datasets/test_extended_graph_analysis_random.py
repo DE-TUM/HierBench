@@ -10,7 +10,7 @@ from the same edge list -- never reusing the :class:`ExtendedGraphAnalysis` inte
 NetworkX is used as much as possible for both graph *generation* and the
 *oracles*. Even where ``ExtendedGraphAnalysis`` calls NetworkX internally, the oracle
 still validates its wiring: triples -> graph construction, torch-tensor
-aggregation, and the paper formulas (density ``m/n^2``, h-index, balance,
+aggregation, and the paper formulas (density ``m/n^2``, h-index, leaf-depth variance,
 parallel/unique counts) layered on top.
 
 ``hypothesis`` is not available, so we follow the repo's lightweight pattern
@@ -328,7 +328,7 @@ class TestStructuralInvariants:
 
     @pytest.mark.parametrize("seed", SEEDS)
     def test_depth_metrics(self, seed: int) -> None:
-        """Average/max depth and balance match the nx shortest-path oracle / bounds."""
+        """Average/max depth and leaf-depth variance match the nx shortest-path oracle / bounds."""
         n = _node_count(seed)
         edges, num_relations = _random_digraph_edges(seed, n)
         ha = ExtendedGraphAnalysis(_dataset_from_edges(edges, n, num_relations))
@@ -338,7 +338,10 @@ class TestStructuralInvariants:
         assert ha.avg_hierarchy_depth == pytest.approx(sum(depths.values()) / n)
         assert ha.max_hierarchy_depth == _oracle_max_depth(di)
         assert ha.avg_hierarchy_depth <= ha.max_hierarchy_depth
-        assert 0.0 <= ha.balance <= 1.0
+        # leaf_depth_variance == variance of leaf depths (Coronado et al. 2020); leaves = out-degree 0
+        leaf_depths = [depths[node] for node, deg in di.out_degree() if deg == 0]
+        expected = float(np.var(leaf_depths)) if len(leaf_depths) > 1 else 0.0
+        assert ha.leaf_depth_variance == pytest.approx(expected)
 
     @pytest.mark.parametrize("seed", SEEDS)
     def test_is_dag_matches_networkx(self, seed: int) -> None:

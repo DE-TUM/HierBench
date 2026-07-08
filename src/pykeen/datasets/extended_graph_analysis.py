@@ -23,7 +23,7 @@ metrics, so computing a full report does not recompute these intermediates.
 from __future__ import annotations
 
 import functools
-import statistics
+import math
 from collections import deque
 from typing import TYPE_CHECKING, Literal
 
@@ -322,27 +322,102 @@ class ExtendedGraphAnalysis:
         return int(parent_counts.max().item()) if parent_counts.numel() else 0
 
     @property
-    def balance(self) -> float:
-        """Hierarchy shape uniformity: ``1 - CoV(depths)``, clamped to ``[0, 1]``.
+    def leaf_depth_variance(self) -> float:
+        r"""Variance of the leaves' depths V (Sackin's original balance index).
 
-        This is a **custom** hierarchy-shape metric, *not* the paper's cv_in /
-        cv_out (Zloch et al. 2019). Here the coefficient of variation is applied
-        to the per-node BFS depth values, not to degree values.
+        Following Coronado, Mir, Rosselló & Rotger (2020), *"On Sackin's original
+        proposal: the variance of the leaves' depths as a phylogenetic balance
+        index"*, BMC Bioinformatics 21:154 (see also the TreeBalance compendium,
+        https://treebalance.wordpress.com/variance-of-leaf-depths/):
 
-        A value of ``1.0`` means all nodes share the same depth (maximally
-        uniform). Lower values indicate a more skewed hierarchy.
+        .. math:: V(T) = \frac{1}{n} \sum_{x \in L(T)} (\delta(x) - \bar\delta)^2
 
-        :returns: Balance score in ``[0, 1]``.
+        where :math:`L(T)` is the set of **leaves** (out-degree-zero nodes),
+        :math:`\delta(x)` the depth of leaf ``x`` from its nearest root, and
+        :math:`\bar\delta` the mean leaf depth. It is the *raw* population
+        variance over leaf depths only (not a coefficient of variation, not over
+        all nodes).
+
+        This is an *imbalance* index: ``0.0`` means all leaves share the same
+        depth (maximally balanced, e.g. a fully symmetric tree); larger values
+        indicate a more skewed hierarchy (a comb/caterpillar maximises it).
+
+        The index is defined for bifurcating phylogenetic trees; here it is
+        applied to a general multi-root DAG, so leaf depths use the shortest
+        path from the nearest root (:attr:`_node_depths`).
+
+        :returns: Variance of leaf depths V >= 0.0. Returns 0.0 for fewer than
+            two leaves.
         """
-        depths = list(self._node_depths.values())
-        if len(depths) <= 1:
-            return 1.0
-        mean = statistics.mean(depths)
-        if mean == 0:
-            return 1.0
-        stdev = statistics.pstdev(depths)
-        cov = stdev / mean
-        return float(max(0.0, 1.0 - cov))
+        depths = self._node_depths
+        leaf_depths = [depths[leaf] for leaf in self.leaf_nodes]
+        n = len(leaf_depths)
+        if n <= 1:
+            return 0.0
+        sackin = sum(leaf_depths)  # S(T): sum of leaf depths
+        sackin_sq = sum(d * d for d in leaf_depths)  # S^(2)(T): sum of squared leaf depths
+        return sackin_sq / n - (sackin / n) ** 2
+
+    @property
+    def balance(self) -> float:
+        r"""J¹ robust, universal tree balance index (Lemant, Le Sueur, Manojlović & Noble 2021).
+
+        Following Lemant, Le Sueur, Manojlović & Noble (2021), *"Robust, Universal
+        Tree Balance Indices"* (bioRxiv 2021.08.25.457695), the recommended index
+        J¹ is a weighted average of the normalised Shannon entropies of the internal
+        nodes. For cladograms with equally-sized leaves and zero-size internal nodes
+        (the case here, where entities carry no size) it takes the closed form of
+        their Equation 5:
+
+        .. math:: J^1(T) = \frac{-1}{\sum_{i \in \widetilde V} n_i}
+            \sum_{i \in \widetilde V} \sum_{j \in C(i)} n_j \log_{d^+(i)} \frac{n_j}{n_i}
+
+        where :math:`\widetilde V` is the set of internal nodes (out-degree >= 1),
+        :math:`C(i)` the children of ``i``, :math:`d^+(i)` its out-degree, and
+        :math:`n_i` the number of leaves of the subtree rooted at ``i``. The
+        denominator is exactly Sackin's index (summed over internal nodes).
+
+        Unlike Sackin's index (see :attr:`leaf_depth_variance`), J¹ is intrinsically
+        normalised to ``[0, 1]``: ``0.0`` for a linear (or single-node) graph and
+        ``1.0`` for a fully symmetric tree. Linear nodes (out-degree 1) get balance
+        score 0, so they never contribute to the numerator (the base-1 logarithm is
+        undefined) but still count toward the denominator.
+
+        Like :attr:`leaf_depth_variance`, this operates directly on the DAG
+        (:attr:`_digraph`), generalising the tree index to a multi-root DAG: ``n_i``
+        is the number of *distinct* leaf descendants of ``i``. For strict tree
+        semantics, compute it on :meth:`spanning_tree` instead.
+
+        :returns: J¹ in ``[0, 1]``. Returns 0.0 for a graph with no internal nodes
+            (empty, single-node, or fully linear).
+        """
+        graph = self._digraph
+        leaves = self.leaf_nodes
+        # n_i: distinct leaves reachable from each node. Each leaf contributes 1 to
+        # itself and to every ancestor (nx.ancestors handles cycles pragmatically).
+        # ponytail: O(L*(V+E)) via per-leaf ancestor walks; switch to a reverse-topo
+        # pass only if this shows up in profiling on large DAGs.
+        leaf_count: dict[int, int] = dict.fromkeys(leaves, 1)
+        for leaf in leaves:
+            for anc in nx.ancestors(graph, leaf):
+                leaf_count[anc] = leaf_count.get(anc, 0) + 1
+
+        numerator = 0.0
+        sackin = 0  # sum of n_i over internal nodes — Sackin's index (denominator)
+        for i, out_deg in graph.out_degree():
+            if out_deg == 0:
+                continue  # leaf, not an internal node
+            n_i = leaf_count.get(i, 0)
+            sackin += n_i
+            if out_deg < 2 or n_i == 0:
+                continue  # W^1_i = 0 for linear nodes (base-1 log undefined)
+            for j in graph.successors(i):
+                n_j = leaf_count.get(j, 0)
+                if n_j > 0:
+                    numerator += n_j * math.log(n_j / n_i, out_deg)
+        if sackin == 0:
+            return 0.0
+        return -numerator / sackin
 
     def get_ancestors(self, node_id: int) -> frozenset[int]:
         """Return all ancestors (transitive predecessors) of the given node.
@@ -470,6 +545,16 @@ class ExtendedGraphAnalysis:
     # ------------------------------------------------------------------
     # Paper-aligned graph measures (Zloch et al. 2019)
     # ------------------------------------------------------------------
+
+    @property
+    def num_entities(self) -> int:
+        """Number of entities (vertices) in the analysed split."""
+        return self._num_entities
+
+    @property
+    def num_relations(self) -> int:
+        """Number of relations in the analysed split."""
+        return self._factory.num_relations
 
     @property
     def total_vertices(self) -> int:

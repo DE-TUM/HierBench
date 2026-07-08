@@ -1,6 +1,6 @@
 """Tests for hierarchical properties of :class:`ExtendedGraphAnalysis` using the Cora dataset.
 
-Only hierarchical properties (roots/leaves, DAG, depth, fan-out, balance,
+Only hierarchical properties (roots/leaves, DAG, depth, fan-out, leaf-depth variance,
 ancestry, spanning tree) are tested here. Paper-aligned graph measures
 (Zloch et al. 2019) are covered in ``test_extended_graph_analysis.py`` and
 ``test_extended_graph_analysis_random.py``.
@@ -143,14 +143,14 @@ class TestFanOutMetrics:
         assert ha.avg_branch_out <= ha.max_fan_out
 
 
-class TestBalance:
-    """Tests for the balance property."""
+class TestLeafDepthVariance:
+    """Tests for the leaf_depth_variance property."""
 
-    def test_balance_in_unit_interval(self, ha: ExtendedGraphAnalysis) -> None:
-        """Balance is a float in [0, 1]."""
-        balance = ha.balance
-        assert isinstance(balance, float)
-        assert 0.0 <= balance <= 1.0
+    def test_leaf_depth_variance_non_negative(self, ha: ExtendedGraphAnalysis) -> None:
+        """Leaf-depth variance is a non-negative float."""
+        leaf_depth_variance = ha.leaf_depth_variance
+        assert isinstance(leaf_depth_variance, float)
+        assert leaf_depth_variance >= 0.0
 
 
 class TestAncestryQueries:
@@ -252,6 +252,6 @@ class TestSpanningTree:
         tree = ha.spanning_tree(mode="bfs")
         assert isinstance(tree.root_nodes, frozenset)
         assert isinstance(tree.leaf_nodes, frozenset)
-        assert isinstance(tree.balance, float)
+        assert isinstance(tree.leaf_depth_variance, float)
         assert isinstance(tree.avg_fan_out, float)
         assert isinstance(tree.max_fan_out, int)

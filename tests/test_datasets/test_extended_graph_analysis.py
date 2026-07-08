@@ -173,7 +173,7 @@ def test_levels_alias_chain() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Task 4: avg_fan_out, max_fan_out, balance
+# Task 4: avg_fan_out, max_fan_out, leaf_depth_variance
 # ---------------------------------------------------------------------------
 
 
@@ -198,24 +198,62 @@ def test_fan_out_star() -> None:
     assert ha.avg_fan_out == pytest.approx(0.75)
 
 
+def test_leaf_depth_variance_range(nations: Nations) -> None:
+    """Leaf-depth variance is a non-negative float."""
+    b = ExtendedGraphAnalysis(nations).leaf_depth_variance
+    assert isinstance(b, float)
+    assert b >= 0.0
+
+
+def test_leaf_depth_variance_in_range_star() -> None:
+    """Star graph: all leaves share depth 1, so variance of leaf depths is 0.0."""
+    assert ExtendedGraphAnalysis(_star_dataset()).leaf_depth_variance == 0.0
+
+
+def test_leaf_depth_variance_uniform_depths() -> None:
+    """Graph with no edges: every leaf has depth 0, so variance is 0.0."""
+    triples = torch.zeros((0, 3), dtype=torch.long)
+    tf = CoreTriplesFactory.create(mapped_triples=triples, num_entities=3, num_relations=1)
+    ds = EagerDataset(training=tf, testing=tf)
+    assert ExtendedGraphAnalysis(ds).leaf_depth_variance == 0.0
+
+
 def test_balance_range(nations: Nations) -> None:
-    """Balance is a float in [0, 1]."""
+    """J¹ balance is a float in [0, 1]."""
     b = ExtendedGraphAnalysis(nations).balance
     assert isinstance(b, float)
     assert 0.0 <= b <= 1.0
 
 
-def test_balance_in_range_star() -> None:
-    """Balance of a star graph is in [0, 1]."""
-    assert 0.0 <= ExtendedGraphAnalysis(_star_dataset()).balance <= 1.0
+def test_balance_star() -> None:
+    """Star 0→{1,2,3}: fully symmetric, so J¹ balance is 1.0."""
+    assert ExtendedGraphAnalysis(_star_dataset()).balance == pytest.approx(1.0)
 
 
-def test_balance_uniform_depths() -> None:
-    """Graph with no edges: all depths are 0, so balance is 1.0."""
+def test_balance_chain() -> None:
+    """Chain 0→1→2→3: fully linear, so J¹ balance is 0.0."""
+    assert ExtendedGraphAnalysis(_chain_dataset()).balance == pytest.approx(0.0)
+
+
+def test_balance_empty() -> None:
+    """Graph with no edges has no internal nodes, so J¹ balance is 0.0."""
     triples = torch.zeros((0, 3), dtype=torch.long)
     tf = CoreTriplesFactory.create(mapped_triples=triples, num_entities=3, num_relations=1)
     ds = EagerDataset(training=tf, testing=tf)
-    assert ExtendedGraphAnalysis(ds).balance == 1.0
+    assert ExtendedGraphAnalysis(ds).balance == 0.0
+
+
+def test_balance_symmetric_beats_caterpillar() -> None:
+    """A balanced binary tree on 4 leaves scores higher than a caterpillar with the same leaves."""
+    # Balanced: 0→{1,2}, 1→{3,4}, 2→{5,6} (leaves 3,4,5,6).
+    balanced = _make_dataset(
+        [[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [2, 0, 5], [2, 0, 6]], num_entities=7
+    )
+    # Caterpillar: 0→{1,2}, 2→{3,4}, 4→{5,6} (leaves 1,3,5,6).
+    caterpillar = _make_dataset(
+        [[0, 0, 1], [0, 0, 2], [2, 0, 3], [2, 0, 4], [4, 0, 5], [4, 0, 6]], num_entities=7
+    )
+    assert ExtendedGraphAnalysis(balanced).balance > ExtendedGraphAnalysis(caterpillar).balance
 
 
 # ---------------------------------------------------------------------------
@@ -742,3 +780,30 @@ def test_hierarchy_relation_filters_edges() -> None:
     assert ha.root_nodes == frozenset({0})
     assert ha.leaf_nodes == frozenset({2})
     assert ha.min_branch_out <= ha.avg_branch_out <= ha.max_branch_out
+
+
+# ---------------------------------------------------------------------------
+# num_entities / num_relations
+# ---------------------------------------------------------------------------
+
+
+def test_num_entities_matches_factory(nations: Nations) -> None:
+    """Num_entities matches the training factory's entity count."""
+    ha = ExtendedGraphAnalysis(nations, split="train")
+    assert ha.num_entities == nations.training.num_entities
+
+
+def test_num_relations_matches_factory(nations: Nations) -> None:
+    """Num_relations matches the training factory's relation count."""
+    ha = ExtendedGraphAnalysis(nations, split="train")
+    assert ha.num_relations == nations.training.num_relations
+
+
+def test_num_entities_star() -> None:
+    """Star dataset has 4 entities."""
+    assert ExtendedGraphAnalysis(_star_dataset()).num_entities == 4
+
+
+def test_num_relations_star() -> None:
+    """Star dataset has 1 relation."""
+    assert ExtendedGraphAnalysis(_star_dataset()).num_relations == 1

@@ -257,7 +257,7 @@ if __name__ == "__main__":
     print(f"Hierarchical Relation: {data.hierarchical_relation}")
     print(f"Number of root nodes: {len(ea.root_nodes)}")
     print(f"Number of leaf nodes: {len(ea.leaf_nodes)}")
-    print(f"Balance: {ea.balance}")
+    print(f"Leaf-depth variance: {ea.leaf_depth_variance}")
     print(f"Max Hierarchy Depth: {ea.max_hierarchy_depth}")
     print(f"Min Hierarchy Depth: {ea.min_hierarchy_depth}")
     print(f"Avg Hierarchy Depth: {ea.avg_hierarchy_depth}")
