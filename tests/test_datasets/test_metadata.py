@@ -10,7 +10,13 @@ import pandas as pd
 import pytest
 
 from pykeen.datasets.base import EagerDataset
-from pykeen.datasets.metadata import MetadataDataset, SingleFileRemoteMetadataDataset, _load_metadata_file
+from pykeen.datasets.metadata import (
+    HierarchicalGraph,
+    MetadataDataset,
+    SingleFileRemoteMetadataDataset,
+    _load_metadata_file,
+    resolve_hierarchy_relation,
+)
 from pykeen.triples import TriplesFactory
 
 # ---------------------------------------------------------------------------
@@ -296,3 +302,58 @@ class TestSingleFileSingleFileRemoteMetadataDataset:
         ds = ds_class(cache_root=tmp_path)
         total = ds.training.num_triples + ds.testing.num_triples + ds.validation.num_triples
         assert total == len(_TRIPLES)
+
+
+# ---------------------------------------------------------------------------
+# resolve_hierarchy_relation
+# ---------------------------------------------------------------------------
+
+
+class TestResolveHierarchyRelation:
+    """Resolution + fallback behaviour of resolve_hierarchy_relation."""
+
+    def _dataset(self) -> EagerDataset:
+        """Return a plain (non-hierarchical) dataset over the labeled test triples."""
+        factory = _make_factory()
+        return EagerDataset(training=factory, testing=factory, validation=factory)
+
+    def test_none_when_not_hierarchical_and_unspecified(self) -> None:
+        """A non-HierarchicalGraph dataset with no explicit relation resolves to None (all edges)."""
+        assert resolve_hierarchy_relation(self._dataset(), None) is None
+
+    def test_explicit_label_resolves_to_id(self) -> None:
+        """A string label is mapped to its relation id via the training factory."""
+        dataset = self._dataset()
+        expected = dataset.training.relations_to_ids(["rel2"])[0]
+        assert resolve_hierarchy_relation(dataset, "rel2") == expected
+
+    def test_explicit_id_passthrough(self) -> None:
+        """An int relation id is returned unchanged."""
+        assert resolve_hierarchy_relation(self._dataset(), 1) == 1
+
+    def test_unknown_label_raises(self) -> None:
+        """An unknown label raises KeyError naming the missing hierarchy relation."""
+        with pytest.raises(KeyError, match="hierarchy relation"):
+            resolve_hierarchy_relation(self._dataset(), "does_not_exist")
+
+    def test_hierarchical_graph_relation_used(self) -> None:
+        """A HierarchicalGraph dataset's hierarchical_relation is used when none is passed."""
+        factory = _make_factory()
+
+        class _HierDataset(HierarchicalGraph, EagerDataset):
+            hierarchical_relation = "rel1"
+
+        dataset = _HierDataset(training=factory, testing=factory, validation=factory)
+        expected = factory.relations_to_ids(["rel1"])[0]
+        assert resolve_hierarchy_relation(dataset, None) == expected
+
+    def test_explicit_relation_overrides_hierarchical_graph(self) -> None:
+        """An explicit relation wins over the dataset's hierarchical_relation."""
+        factory = _make_factory()
+
+        class _HierDataset(HierarchicalGraph, EagerDataset):
+            hierarchical_relation = "rel1"
+
+        dataset = _HierDataset(training=factory, testing=factory, validation=factory)
+        expected = factory.relations_to_ids(["rel2"])[0]
+        assert resolve_hierarchy_relation(dataset, "rel2") == expected

@@ -721,4 +721,24 @@ def test_max_branch_out_equals_max_fan_out(nations: Nations) -> None:
     """The largest-out-degree node is always a parent, so max_branch_out == max_fan_out."""
     ha = ExtendedGraphAnalysis(nations)
     assert ha.max_branch_out == ha.max_fan_out
+
+
+# ---------------------------------------------------------------------------
+# hierarchy_relation filtering
+# ---------------------------------------------------------------------------
+
+
+def _mixed_relation_dataset() -> EagerDataset:
+    """Return a chain 0->1->2 on relation 0, plus an unrelated cycle-closing edge 2->0 on relation 1."""
+    return _make_dataset([[0, 0, 1], [1, 0, 2], [2, 1, 0]], num_entities=3, num_relations=2)
+
+
+def test_hierarchy_relation_filters_edges() -> None:
+    """Restricting to relation 0 drops the relation-1 edge that turns the chain into a cycle."""
+    ds = _mixed_relation_dataset()
+    assert not ExtendedGraphAnalysis(ds).is_dag
+    ha = ExtendedGraphAnalysis(ds, hierarchy_relation=0)
+    assert ha.is_dag
+    assert ha.root_nodes == frozenset({0})
+    assert ha.leaf_nodes == frozenset({2})
     assert ha.min_branch_out <= ha.avg_branch_out <= ha.max_branch_out

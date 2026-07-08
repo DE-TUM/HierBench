@@ -227,13 +227,13 @@ class LorentzEmbedding(Representation):
             return
         with torch.no_grad():
             # Build tangent vector at origin: time component must be 0
-            v = torch.zeros(self.max_id, self._internal_dim)
+            v = torch.zeros_like(self._embeddings.data)
             if self.initializer is not None:
                 # Initializer operates on (max_id, d) spatial coordinates
-                spatial = self.initializer(torch.zeros(self.max_id, self._internal_dim - 1))
+                spatial = self.initializer(torch.zeros_like(self._embeddings.data[:, 1:]))
                 v[:, 1:] = spatial
             else:
-                v[:, 1:] = torch.randn(self.max_id, self._internal_dim - 1) * 1e-3
+                v[:, 1:] = torch.randn_like(self._embeddings.data[:, 1:]) * 1e-3
             self._embeddings.data.copy_(self.manifold.expmap0(v))
 
     def post_parameter_update(self) -> None:  # noqa: D102

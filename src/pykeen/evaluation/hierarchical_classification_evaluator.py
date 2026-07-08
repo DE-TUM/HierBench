@@ -157,7 +157,7 @@ class HierarchicalClassificationEvaluator(Evaluator[HierarchicalMetricKey]):
     """An evaluator computing hierarchical precision/recall/F1 over ancestor paths.
 
     :param ancestors: a mapping from entity id to its inclusive ancestor set. Build it
-        with :func:`pykeen.pipeline.hierarchy.build_ancestor_paths`.
+        with :func:`pykeen.pipeline.hierarchical_helper.build_ancestor_paths`.
     """
 
     metric_result_cls = HierarchicalMetricResults

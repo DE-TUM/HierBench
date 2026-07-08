@@ -10,7 +10,7 @@ Usage::
     from pykeen.datasets import Nations
     from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 
-    ha = ExtendedGraphAnalysis(Nations(), split="train")
+    ha = ExtendedGraphAnalysis(Nations(), split="train", hierarchy_relation="accusation")
     ha.max_hierarchy_depth
     ha.density
     ha.pagerank_max
@@ -31,6 +31,7 @@ import networkx as nx
 import numpy as np
 import torch
 
+from .metadata import resolve_hierarchy_relation
 from ..triples import CoreTriplesFactory
 
 if TYPE_CHECKING:
@@ -52,7 +53,12 @@ class ExtendedGraphAnalysis:
     many metrics on the same instance is cheap.
     """
 
-    def __init__(self, dataset: Dataset, split: Split = "train") -> None:
+    def __init__(
+        self,
+        dataset: Dataset,
+        split: Split = "train",
+        hierarchy_relation: int | str | None = None,
+    ) -> None:
         """Initialize the analysis for a dataset split.
 
         :param dataset: The dataset to analyse. Only ``training`` and ``merged()``
@@ -60,10 +66,17 @@ class ExtendedGraphAnalysis:
         :param split: Which subset to analyse: ``"train"`` (default) or ``"full"``
             (all triples merged). Test and validation splits share the same entity
             vocabulary as training and are not meaningful for graph analysis.
+        :param hierarchy_relation: Restrict the analysis to edges of this relation (id or
+            label). Defaults to the dataset's
+            :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when it is
+            a :class:`~pykeen.datasets.metadata.HierarchicalGraph`; otherwise all edges are used.
+            Multi-relational datasets mix unrelated relations into the "hierarchy" edges when this
+            is left unset, which can turn a true DAG into a graph with cycles.
         """
         self._factory: CoreTriplesFactory = self._resolve_factory(dataset, split)
         self._num_entities: int = self._factory.num_entities
         self._split: str = split
+        self._hierarchy_relation: int | None = resolve_hierarchy_relation(dataset, hierarchy_relation)
 
     @staticmethod
     def _resolve_factory(dataset: Dataset, split: Split) -> CoreTriplesFactory:
@@ -93,6 +106,8 @@ class ExtendedGraphAnalysis:
         graph.add_nodes_from(range(self._num_entities))
         triples = self._factory.mapped_triples
         for head, relation, tail in triples.tolist():
+            if self._hierarchy_relation is not None and relation != self._hierarchy_relation:
+                continue
             graph.add_edge(int(head), int(tail), key=int(relation), relation=int(relation))
         return graph
 
@@ -102,6 +117,8 @@ class ExtendedGraphAnalysis:
         graph = nx.DiGraph()
         graph.add_nodes_from(range(self._num_entities))
         triples = self._factory.mapped_triples
+        if self._hierarchy_relation is not None:
+            triples = triples[triples[:, 1] == self._hierarchy_relation]
         if triples.numel():
             graph.add_edges_from(triples[:, [0, 2]].tolist())
         return graph
