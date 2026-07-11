@@ -17,8 +17,9 @@ Each configuration trains **once** and is re-scored under the hard negative sett
 
 from __future__ import annotations
 
-from pykeen.datasets import NASA, DOID, Cora, ACMCCS, WN18RR
+from pykeen import datasets
 from pykeen.datasets.metadata import resolve_hierarchy_relation
+from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 from pykeen.models import HyperbolicCones, LorentzE, PoincareE
 from pykeen.nn.hyperbolic import LorentzEmbedding
 from pykeen.pipeline.subsumption import subsumption_prediction_metrics, subsumption_prediction_pipeline
@@ -26,7 +27,7 @@ from pykeen.pipeline.subsumption import subsumption_prediction_metrics, subsumpt
 # --- Shared experiment settings ----------------------------------------------------------
 #: torch device for all pipeline runs.
 DEVICE = "cpu"
-DATASET = WN18RR()
+DATASET = datasets.WN18RR()
 HIERARCHY_RELATION = getattr(DATASET, "hierarchical_relation", None)
 EPOCHS = 200
 EMBEDDING_DIM = 64
@@ -230,3 +231,11 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    # data = datasets.WN18RR()
+    # ea = ExtendedGraphAnalysis(data, split="full", hierarchy_relation=data.hierarchical_relation)
+    # print(ea.balance)
+    # print(ea.leaf_depth_variance)
+
+
+# metrics
+

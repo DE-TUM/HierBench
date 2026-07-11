@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 from pykeen.losses import MarginRankingLoss
 from pykeen.models.nbase import ERModel
 from pykeen.nn.hyperbolic import HyperbolicConesEmbedding
 from pykeen.nn.modules import HyperbolicConesInteraction
-from pykeen.typing import FloatTensor
+from pykeen.typing import FloatTensor, Hint, Initializer
 
 __all__ = ["HyperbolicCones"]
 
@@ -53,6 +56,8 @@ class HyperbolicCones(ERModel[FloatTensor, tuple[()], FloatTensor]):
         k: float = 0.1,
         curvature: float = 1.0,
         trainable_curvature: bool = False,
+        entity_initializer: Hint[Initializer] = None,
+        entity_initializer_kwargs: Mapping[str, Any] | None = None,
         **kwargs,
     ) -> None:
         """Initialise the model.
@@ -67,6 +72,14 @@ class HyperbolicCones(ERModel[FloatTensor, tuple[()], FloatTensor]):
             Curvature ``c`` of the Poincaré ball (must be positive).
         :param trainable_curvature:
             Whether to learn the curvature jointly with the embeddings.
+        :param entity_initializer:
+            Tangent-space initializer for the embeddings (lifted to the ball via ``expmap0``).
+            Defaults to a small random tangent vector. Ganea et al. (2018 §5) instead warm-start
+            from a pretrained Poincaré model (see :class:`pykeen.models.PoincareE`), rescaled by
+            0.7 and mapped to tangent space via ``manifold.logmap0`` before wrapping in
+            :class:`pykeen.nn.init.PretrainedInitializer`.
+        :param entity_initializer_kwargs:
+            Additional keyword arguments for the entity initializer.
         :param kwargs:
             Additional keyword arguments forwarded to :class:`pykeen.models.ERModel`.
         """
@@ -79,6 +92,8 @@ class HyperbolicCones(ERModel[FloatTensor, tuple[()], FloatTensor]):
                 "curvature": curvature,
                 "trainable_curvature": trainable_curvature,
                 "k": k,
+                "initializer": entity_initializer,
+                "initializer_kwargs": entity_initializer_kwargs,
             },
             relation_representations=[],
             **kwargs,
