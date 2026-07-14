@@ -41,6 +41,11 @@ class HierarchicalGraph:
     #: Name of the relation forming the parent/child hierarchy edges.
     hierarchical_relation: ClassVar[str]
 
+    #: Whether the hierarchy edges point child->parent (e.g. WN18RR's ``_hypernym``) instead of the
+    #: canonical parent->child (``narrower``, ``has_subclass``). Closure-based splits flip inverted
+    #: edges so that heads are always ancestors, keeping metrics comparable across datasets.
+    hierarchy_inverted: ClassVar[bool] = False
+
 
 def resolve_hierarchy_relation(dataset: Dataset, hierarchy_relation: int | str | None) -> int | None:
     """Resolve the hierarchy relation to a relation id.

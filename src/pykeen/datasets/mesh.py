@@ -10,7 +10,7 @@ __all__ = [
     "MeSH",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fi3K4YDeddSRQqrTFLC6nt/MeSH/"
+_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/mesh/"
 
 
 @parse_docdata

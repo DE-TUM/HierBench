@@ -70,6 +70,8 @@ class WN18RR(TarFileRemoteDataset, HierarchicalGraph):
     """
 
     hierarchical_relation = "_hypernym"
+    # _hypernym points child->parent; closure-based splits canonicalize to parent->child.
+    hierarchy_inverted = True
 
     def __init__(self, **kwargs):
         """Initialize the WordNet-18 (RR) dataset.
