@@ -31,6 +31,7 @@ from pykeen.evaluation.evaluator import (
 from pykeen.evaluation.hierarchical_classification_evaluator import (
     HierarchicalClassificationEvaluator,
     HierarchicalMetricResults,
+    _hierarchical_scores,
 )
 from pykeen.evaluation.rank_based_evaluator import (
     MacroRankBasedEvaluator,
@@ -848,6 +849,37 @@ class ClassificationMetricResultsTests(cases.MetricResultTestCase):
         )
         kwargs["data"] = evaluator.finalize().data
         return kwargs
+
+
+def test_hierarchical_scores_values() -> None:
+    """Verify (hP, hR, hF1) on a hand-computable chain hierarchy (Kosmopoulos et al. 2015)."""
+    from pykeen.pipeline.hierarchical_helper import build_ancestor_paths
+
+    # chain 0->1->2->3 plus sibling 4 under 1 (edges parent->child)
+    triples = torch.tensor([[0, 0, 1], [1, 0, 2], [2, 0, 3], [1, 0, 4]])
+    ancestors = build_ancestor_paths(triples, num_entities=5)
+    assert ancestors[3] == frozenset({0, 1, 2, 3})
+    assert ancestors[4] == frozenset({0, 1, 4})
+    assert ancestors[0] == frozenset({0})
+
+    y_true = numpy.array([0, 0, 0, 1, 0])
+    # top-1 = entity 2, the parent of the truth: Yhat_aug={0,1,2}, Y_aug={0,1,2,3}
+    hp, hr, hf1 = _hierarchical_scores(
+        y_true=y_true, y_score=numpy.array([0.1, 0.2, 0.9, 0.3, 0.0]), ancestors=ancestors
+    )
+    assert (hp, hr) == (1.0, 0.75)
+    assert hf1 == pytest.approx(6 / 7)
+    # top-1 = sibling 4: Yhat_aug={0,1,4}, intersection={0,1}
+    hp, hr, _ = _hierarchical_scores(
+        y_true=y_true, y_score=numpy.array([0.1, 0.2, 0.0, 0.3, 0.9]), ancestors=ancestors
+    )
+    assert (hp, hr) == (pytest.approx(2 / 3), 0.5)
+    # exact hit
+    assert _hierarchical_scores(
+        y_true=y_true, y_score=numpy.array([0.0, 0.0, 0.0, 1.0, 0.0]), ancestors=ancestors
+    ) == (1.0, 1.0, 1.0)
+    # no positives -> None
+    assert _hierarchical_scores(y_true=numpy.zeros(5), y_score=numpy.ones(5), ancestors=ancestors) is None
 
 
 class HierarchicalMetricResultsTests(cases.MetricResultTestCase):

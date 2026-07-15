@@ -627,6 +627,75 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
         for factory_a, factory_b in zip(first, second, strict=True):
             assert factory_a.mapped_triples.tolist() == factory_b.mapped_triples.tolist()
 
+    def test_hierarchy_inverted_canonicalizes_orientation(self):
+        """Assert an inverted dataset (child->parent edges, e.g. WN18RR) yields the canonical closure."""
+        from pykeen.pipeline.hierarchical_helper import _closure_pool
+
+        dataset = _make_balanced_tree_dataset()
+        inverted_rows = [[t, r, h] for h, r, t in dataset.training.mapped_triples.tolist()]
+        train = CoreTriplesFactory(
+            mapped_triples=torch.tensor(inverted_rows, dtype=torch.long), num_entities=15, num_relations=1
+        )
+        inverted = EagerDataset(training=train, testing=train, validation=train)
+        inverted.hierarchy_inverted = True
+
+        for expected, actual in zip(_closure_pool(dataset, 0), _closure_pool(inverted, 0), strict=True):
+            assert expected == actual
+
+    def test_predefined_closure_split_uses_dataset_files(self):
+        """A predefined-split dataset keeps its own train/val/test rows; nothing is re-derived."""
+        from pykeen.pipeline.subsumption import _subsumption_split
+
+        # training: chain 0->1->2 plus the in-training closure shortcut 0->2 (as in Ganea's maxn
+        # 50% files); held-out closure pairs live only in the fixed val/test factories.
+        train_rows = [[0, 0, 1], [1, 0, 2], [0, 0, 2], [2, 0, 3]]
+        train = CoreTriplesFactory(
+            mapped_triples=torch.tensor(train_rows, dtype=torch.long), num_entities=4, num_relations=1
+        )
+        val = CoreTriplesFactory(
+            mapped_triples=torch.tensor([[1, 0, 3]], dtype=torch.long), num_entities=4, num_relations=1
+        )
+        test = CoreTriplesFactory(
+            mapped_triples=torch.tensor([[0, 0, 3]], dtype=torch.long), num_entities=4, num_relations=1
+        )
+        dataset = EagerDataset(training=train, testing=test, validation=val)
+        dataset.predefined_closure_split = True
+
+        out_train, out_val, out_test, paths, direct = _subsumption_split(
+            dataset, closure_ratio=0.9, eval_ratio=0.4, seed=42, hierarchy_relation=0
+        )
+        # training rows are kept verbatim (incl. the shortcut - no transitive reduction, no
+        # re-held-out closure edges) and eval rows come from the dataset's own files.
+        assert out_train == train_rows
+        assert out_val == [[1, 0, 3]]
+        assert out_test == [[0, 0, 3]]
+        assert direct == {(0, 1), (1, 2), (0, 2), (2, 3)}
+        # ancestor paths span the full closure of the training graph (false-negative filtering)
+        assert paths[3] == frozenset({0, 1, 2, 3})
+
+    def test_basic_edges_are_transitive_reduction(self):
+        """Assert a redundant shortcut edge is demoted from basic (training) to the eval pool."""
+        from pykeen.pipeline.hierarchical_helper import _closure_pool
+
+        # 0->1->2 plus the redundant shortcut 0->2; the reduction drops 0->2.
+        rows = torch.tensor([[0, 0, 1], [1, 0, 2], [0, 0, 2]], dtype=torch.long)
+        train = CoreTriplesFactory(mapped_triples=rows, num_entities=3, num_relations=1)
+        dataset = EagerDataset(training=train, testing=train, validation=train)
+
+        paths, _all_rows, direct, pool = _closure_pool(dataset, 0)
+        assert direct == {(0, 1), (1, 2)}
+        assert (0, 2) in pool
+        assert paths[2] == frozenset({0, 1, 2})
+
+    def test_clean_tree_reduction_is_asserted_edges(self):
+        """Assert a shortcut-free tree is unchanged: its reduction equals the asserted edges."""
+        from pykeen.pipeline.hierarchical_helper import _closure_pool
+
+        dataset = _make_balanced_tree_dataset()
+        asserted = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+        _paths, _all_rows, direct, _pool = _closure_pool(dataset, 0)
+        assert direct == asserted
+
     def test_hard_negatives_prefer_siblings(self):
         """Hard negatives pair an entity with its own sibling first, then top up with random."""
         from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
@@ -661,6 +730,45 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
         assert len(negatives) == 8
         for h, _r, t in negatives:
             assert h not in paths[t]
+
+    def test_two_sided_negatives(self):
+        """Two-sided sampling corrupts both slots evenly and stays outside the closure (Ganea et al. 2018 §5)."""
+        from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
+
+        dataset = _make_balanced_tree_dataset()
+        paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
+        positives = [[1, 0, 7], [2, 0, 11]]
+        negatives = _sample_negatives(
+            positives, paths, num_entities=15, rng=np.random.default_rng(0), num_negatives=10, two_sided=True
+        )
+        assert len(negatives) == 20
+        for h, r, t in negatives:
+            assert r == 0
+            assert h not in paths[t]
+        # negatives come back grouped per positive; a valid corruption never reproduces the
+        # original slot (the positive is a closure pair), so the 5/5 counts are exact
+        for i, (head, _, tail) in enumerate(positives):
+            rows = negatives[10 * i : 10 * (i + 1)]
+            assert sum(1 for h, _r, t in rows if h == head) == 5  # tail-corrupted
+            assert sum(1 for h, _r, t in rows if t == tail) == 5  # head-corrupted
+
+    def test_negatives_deduped_per_positive(self):
+        """Negatives are drawn without replacement: no pair repeats for one positive (issues.md §6)."""
+        from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
+        from pykeen.pipeline.subsumption import _sibling_map
+
+        dataset = _make_balanced_tree_dataset()
+        paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
+        direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+        siblings = _sibling_map(direct)
+
+        # eight valid tail-corruptions exist for (1, 7); requesting all eight forces collisions
+        # under with-replacement sampling, so distinctness proves the dedupe
+        for kwargs in ({}, {"two_sided": True}, {"siblings": siblings}):
+            negatives = _sample_negatives(
+                [[1, 0, 7]], paths, num_entities=15, rng=np.random.default_rng(0), num_negatives=8, **kwargs
+            )
+            assert len({tuple(n) for n in negatives}) == len(negatives)
 
     def test_pipeline_runs(self):
         """Pipeline completes and reports thresholded P/R/F1 plus mAP/AUROC."""

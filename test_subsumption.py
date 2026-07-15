@@ -38,11 +38,12 @@ CLOSURE_RATIO = 0.0  # fraction of non-direct closure pairs added to training (G
 EVAL_RATIO = 0.05  # two 5% portions of the indirect subsumptions as val/test (He et al. 2024 §4.2)
 NUM_NEGATIVES = 50  # 1:50 positive:negative ratio (both papers use 1:10)
 
-#: Nickel & Kiela (2017) Eq. 8: severity of the norm (depth) penalty. Must satisfy
-#: α·|‖h‖-‖t‖| < 1 so the multiplier stays positive — otherwise the score flips sign and
-#: *rewards* distance, inverting the ranking (AUROC < 0.5). N&K's α=10³ was for graded HyperLex
-#: ranking, not binary classification; Ganea et al. (2018 §5) tune α on validation instead.
-ISA_ALPHA = 1.0
+#: Nickel & Kiela (2017) Eq. 8: severity of the norm (depth) penalty. N&K's α=10³ was for graded
+#: HyperLex ranking, not binary classification; Ganea et al. (2018 §5) tune α on validation
+#: instead, which is what we do — per config and negative setting, maximizing validation F1.
+#: α·|‖h‖-‖t‖| > 1 flips the multiplier's sign for some pairs; validation F1 judges that too.
+#: Must reach N&K's alpha=1000 direction-gate regime; see benchmark_subsumption.ISA_ALPHAS.
+ISA_ALPHAS = (0.1, 1.0, 10.0, 100.0, 1000.0)
 
 
 def _ball_norm(emb, indices):
@@ -54,7 +55,7 @@ def _ball_norm(emb, indices):
     return x.norm(dim=-1)
 
 
-def hyperbolic_isa_score(model, batch):
+def make_hyperbolic_isa_score(alpha=1.0):
     """Directional is-a score for symmetric-distance hyperbolic models (Nickel & Kiela 2017, Eq. 8).
 
     ``score(h is-ancestor-of t) = -(1 + α(‖h‖-‖t‖))·d(h,t)``: raw hyperbolic distance is symmetric
@@ -66,17 +67,21 @@ def hyperbolic_isa_score(model, batch):
     parent->child (NASA ``has_subclass``) or child->parent (WN18RR ``_hypernym``), so whichever edge
     end sits closer to the origin on average (the general end) gets the "ancestor" role.
     """
-    emb = model.entity_representations[0]
-    h, t = emb(batch[:, 0]), emb(batch[:, 2])
-    dist = emb.manifold.dist(h, t)
-    edges = DATASET.training.mapped_triples
-    rel = resolve_hierarchy_relation(DATASET, HIERARCHY_RELATION)
-    if rel is not None:
-        edges = edges[edges[:, 1] == rel]
-    head_depth = _ball_norm(emb, edges[:, 0].to(batch.device)).mean()
-    tail_depth = _ball_norm(emb, edges[:, 2].to(batch.device)).mean()
-    sign = 1.0 if head_depth <= tail_depth else -1.0
-    return -(1 + sign * ISA_ALPHA * (_ball_norm(emb, batch[:, 0]) - _ball_norm(emb, batch[:, 2]))) * dist
+
+    def score(model, batch):
+        emb = model.entity_representations[0]
+        h, t = emb(batch[:, 0]), emb(batch[:, 2])
+        dist = emb.manifold.dist(h, t)
+        edges = DATASET.training.mapped_triples
+        rel = resolve_hierarchy_relation(DATASET, HIERARCHY_RELATION)
+        if rel is not None:
+            edges = edges[edges[:, 1] == rel]
+        head_depth = _ball_norm(emb, edges[:, 0].to(batch.device)).mean()
+        tail_depth = _ball_norm(emb, edges[:, 2].to(batch.device)).mean()
+        sign = 1.0 if head_depth <= tail_depth else -1.0
+        return -(1 + sign * alpha * (_ball_norm(emb, batch[:, 0]) - _ball_norm(emb, batch[:, 2]))) * dist
+
+    return score
 
 
 # --- Configurations to compare ----------------------------------------------------------
@@ -94,7 +99,7 @@ CONFIGS: list[tuple[str, object, dict, dict]] = [
             "loss": "crossentropy",  # paper Eq. 6 softmax ranking loss
             "negative_sampler_kwargs": {"num_negs_per_pos": 50},  # paper §4.1
             # paper Eq. 8 directional is-a scoring for the (symmetric) distance at eval time
-            "eval_score_fn": hyperbolic_isa_score,
+            "eval_score_factory": make_hyperbolic_isa_score,
         },
     ),
     (
@@ -108,7 +113,7 @@ CONFIGS: list[tuple[str, object, dict, dict]] = [
             "optimizer_kwargs": {"lr": 0.3},
             "loss": "crossentropy",  # paper Eq. 12 softmax ranking loss
             "negative_sampler_kwargs": {"num_negs_per_pos": 50},  # paper §4.1
-            "eval_score_fn": hyperbolic_isa_score,
+            "eval_score_factory": make_hyperbolic_isa_score,
         },
     ),
     # (
@@ -153,7 +158,7 @@ COLUMNS = [
 def _evaluate_config(model: object, model_kwargs: dict, extra: dict) -> dict[str, float]:
     """Train one configuration, then score the held-out subsumptions under both negative settings."""
     extra = dict(extra)
-    eval_score_fn = extra.pop("eval_score_fn", None)
+    score_factory = extra.pop("eval_score_factory", None)
     result = subsumption_prediction_pipeline(
         DATASET,
         model=model,
@@ -166,22 +171,39 @@ def _evaluate_config(model: object, model_kwargs: dict, extra: dict) -> dict[str
         random_seed=SEED,
         hierarchy_relation=HIERARCHY_RELATION,
         negative_sampler="basic",
-        eval_score_fn=eval_score_fn,
         device=DEVICE,
         **extra,
     )
-    random_scores = result.ancestor_descendant_metric_results
-    hard_scores = subsumption_prediction_metrics(
-        result.model,
-        DATASET,
-        closure_ratio=CLOSURE_RATIO,
-        eval_ratio=EVAL_RATIO,
-        num_negatives=NUM_NEGATIVES,
-        hard_negatives=True,
-        seed=SEED,
-        hierarchy_relation=HIERARCHY_RELATION,
-        eval_score_fn=eval_score_fn,
-    )
+
+    def _score_pass(hard_negatives: bool):
+        """Score one negative setting; with a factory, tune alpha on validation (Ganea et al. §5)."""
+
+        def run(eval_score_fn=None, return_raw=False):
+            return subsumption_prediction_metrics(
+                result.model,
+                DATASET,
+                closure_ratio=CLOSURE_RATIO,
+                eval_ratio=EVAL_RATIO,
+                num_negatives=NUM_NEGATIVES,
+                hard_negatives=hard_negatives,
+                seed=SEED,
+                hierarchy_relation=HIERARCHY_RELATION,
+                eval_score_fn=eval_score_fn,
+                return_raw=return_raw,
+            )
+
+        if score_factory is None:
+            return run()
+        # ponytail: rescores dist+norms per alpha; decompose Δnorm/dist once if the sweep ever dominates
+        best = max(
+            ((alpha, *run(score_factory(alpha), return_raw=True)) for alpha in ISA_ALPHAS),
+            key=lambda item: item[2]["val_f1"] if item[2] else float("-inf"),
+        )
+        print(f"    tuned alpha ({'hrd' if hard_negatives else 'rnd'}): {best[0]}")
+        return best[1]
+
+    random_scores = _score_pass(hard_negatives=False)
+    hard_scores = _score_pass(hard_negatives=True)
 
     def _get(results, key):
         """Look up a metric, or NaN when the results (or the whole pass) are missing."""
@@ -230,11 +252,14 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
-    # data = datasets.WN18RR()
-    # ea = ExtendedGraphAnalysis(data, split="full", hierarchy_relation=data.hierarchical_relation)
-    # print(ea.balance)
-    # print(ea.leaf_depth_variance)
+    # main()
+    data = datasets.MeSH()
+    ea = ExtendedGraphAnalysis(data, split="full", hierarchy_relation=data.hierarchical_relation)
+    print(ea.balance)
+    print(ea.leaf_depth_variance)
+    print(f"Number of root nodes: {len(ea.root_nodes)}")
+    print(f"Number of leaf nodes: {len(ea.leaf_nodes)}")
+    print(ea.is_dag)
 
 
 # metrics

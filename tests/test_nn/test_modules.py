@@ -492,7 +492,7 @@ class HyperbolicConesInteractionTests(cases.InteractionTestCase):
         return self._to_cone_ball(h), r, self._to_cone_ball(t)
 
     def _exp_score(self, h, r, t) -> torch.FloatTensor:
-        """Return the expected score: -relu(child_angle - cone_angle)."""
+        """Return the expected score: cone_angle - child_angle (signed membership margin)."""
         assert not r
         k = 0.1
         eps = 1e-5
@@ -506,11 +506,12 @@ class HyperbolicConesInteractionTests(cases.InteractionTestCase):
         g = (1.0 + h_norm_sq * t_norm_sq - 2.0 * dot_ht).clamp(min=eps)
         cos_child = (dot_ht * (1.0 + h_norm_sq) - h_norm_sq * (1.0 + t_norm_sq)) / (h_norm * diff_norm * g.sqrt())
         child_angle = cos_child.clamp(-1.0 + eps, 1.0 - eps).arccos()
-        return -torch.relu(child_angle - cone_angle)
+        return cone_angle - child_angle
 
     def _additional_score_checks(self, scores):
-        """Scores are always non-positive (energy is non-negative)."""
-        assert (scores <= 0).all()
+        """Scores are bounded by the angle range: ψ ∈ (0, π/2), Ξ ∈ (0, π)."""
+        assert (scores > -torch.pi).all()
+        assert (scores < torch.pi / 2).all()
 
 
 class PairRETests(cases.TranslationalInteractionTests):

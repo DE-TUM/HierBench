@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, cast
 import networkx as nx
 import numpy as np
 import torch
+from scipy import sparse
 
 from .api import PipelineResult, pipeline
 from ..datasets.base import Dataset
@@ -83,12 +84,27 @@ def build_ancestor_paths(
 
     :returns: A mapping from entity id to its inclusive ancestor set.
     """
-    graph = nx.DiGraph()
-    graph.add_nodes_from(range(num_entities))
-    graph.add_edges_from(
-        (h, t) for h, r, t in mapped_triples.tolist() if hierarchy_relation is None or r == hierarchy_relation
+    if hierarchy_relation is not None:
+        mapped_triples = mapped_triples[mapped_triples[:, 1] == hierarchy_relation]
+    # Reachability via repeated squaring of the sparse adjacency matrix: R <- R | R@R covers paths
+    # of length 2^k after k rounds, so a hierarchy of depth d converges in ceil(log2(d)) C-level
+    # sparse matmuls — orders of magnitude faster than per-node networkx BFS at WordNet scale.
+    heads = mapped_triples[:, 0].numpy()
+    tails = mapped_triples[:, 2].numpy()
+    reach = sparse.csr_matrix(
+        (np.ones(len(heads), dtype=np.int64), (heads, tails)), shape=(num_entities, num_entities)
     )
-    return {n: frozenset(nx.ancestors(graph, n)) | {n} for n in graph.nodes}
+    reach.data[:] = 1  # collapse duplicate edges
+    while True:
+        nxt = reach @ reach + reach
+        nxt.data[:] = 1  # path counts -> booleans, also prevents overflow across rounds
+        if nxt.nnz == reach.nnz:
+            break
+        reach = nxt
+    # ancestors of n = rows that reach column n -> slice columns via CSC
+    reach = reach.tocsc()
+    indptr, indices = reach.indptr, reach.indices
+    return {n: frozenset(indices[indptr[n] : indptr[n + 1]].tolist()) | {n} for n in range(num_entities)}
 
 
 @dataclass
@@ -100,6 +116,10 @@ class HierarchicalPipelineResult(PipelineResult):
     #: mAP/AUROC (and, for subsumption, thresholded precision/recall/F1) over transitive-closure
     #: positives vs. corrupted-descendant negatives (Bai et al. 2021), or ``None`` if not computed.
     ancestor_descendant_metric_results: PairClassificationMetricResults | None = None
+    #: Raw per-pair test ``rows``/``labels``/``scores``/``predictions``/``threshold`` behind the
+    #: ancestor-descendant metrics, populated only when the pipeline is called with ``return_raw=True``.
+    #: A carry field for opted-in callers; deliberately excluded from ``_get_results()``/``to_dict()``.
+    ancestor_descendant_raw_predictions: dict | None = None
 
     def _get_results(self) -> Mapping[str, Any]:
         """Extend the serialized results with the hierarchical metrics."""
@@ -278,6 +298,26 @@ def _default_hierarchy_sampler(kwargs: dict[str, Any], hierarchy_relation: int |
     return kwargs
 
 
+def _canonical_rows(
+    mapped_triples: MappedTriples,
+    dataset: Dataset,
+    hierarchy_relation: int | None,
+) -> list[list[int]]:
+    """Return the triples as row lists in canonical parent->child orientation.
+
+    Hierarchy-relation edges are flipped when the dataset declares
+    :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchy_inverted`, so heads are always
+    ancestors regardless of the dataset's raw edge direction.
+    """
+    rows = mapped_triples.tolist()
+    if getattr(dataset, "hierarchy_inverted", False):
+        rows = [
+            [t, r, h] if hierarchy_relation is None or r == hierarchy_relation else [h, r, t]
+            for h, r, t in rows
+        ]
+    return rows
+
+
 def _closure_pool(
     dataset: Dataset,
     hierarchy_relation: int | None,
@@ -285,7 +325,16 @@ def _closure_pool(
     """Compute ``(ancestor paths, all training rows, direct edge set, non-direct closure pool)``.
 
     Shared by the closure-based splits. Warns when the dataset is multi-relational but no hierarchy
-    relation was resolved (all edges are then treated as hierarchy edges).
+    relation was resolved (all edges are then treated as hierarchy edges). When the dataset declares
+    :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchy_inverted`, hierarchy edges are
+    flipped to the canonical parent->child orientation before anything is built, so heads are always
+    ancestors regardless of the dataset's raw edge direction.
+
+    The ``direct`` edge set is the *transitive reduction* of the hierarchy (Ganea et al. 2018 §5's
+    "basic edges"), not the raw asserted edges: a redundant asserted shortcut (``A->C`` when
+    ``A->B->C`` already implies it) is a non-basic closure edge and joins the eval ``pool`` instead
+    of being pinned into training. Falls back to the asserted edges (with a warning) when the
+    hierarchy is not a DAG, since the transitive reduction is only defined on acyclic graphs.
     """
     if hierarchy_relation is None and dataset.num_relations > 1:
         warnings.warn(
@@ -294,13 +343,62 @@ def _closure_pool(
             "the hierarchy to one relation.",
             stacklevel=4,
         )
-    paths = build_ancestor_paths(dataset.training.mapped_triples, dataset.num_entities, hierarchy_relation)
-    all_rows = dataset.training.mapped_triples.tolist()
-    direct = {(h, t) for h, r, t in all_rows if hierarchy_relation is None or r == hierarchy_relation}
+    all_rows = _canonical_rows(dataset.training.mapped_triples, dataset, hierarchy_relation)
+    paths = build_ancestor_paths(torch.as_tensor(all_rows), dataset.num_entities, hierarchy_relation)
+    # Ganea et al. (2018 §5): basic edges = transitive reduction of the closure. Asserted redundant
+    # (shortcut) edges are non-basic and must be eligible for the eval pool, not pinned into training.
+    asserted = {(h, t) for h, r, t in all_rows if hierarchy_relation is None or r == hierarchy_relation}
+    graph = nx.DiGraph()
+    graph.add_nodes_from(range(dataset.num_entities))
+    graph.add_edges_from(asserted)
+    if nx.is_directed_acyclic_graph(graph):
+        # ponytail: transitive_reduction is ~O(V·E); run once per split, dwarfed by the closure
+        # enumeration below. Fine to WN18RR/MeSH scale; revisit only if a split build becomes a bottleneck.
+        direct = set(nx.transitive_reduction(graph).edges())
+    else:
+        warnings.warn(
+            "hierarchy is not a DAG (contains a cycle); transitive reduction is undefined, falling back "
+            "to asserted edges as basic edges",
+            stacklevel=4,
+        )
+        direct = asserted
     # ponytail: enumerates the full transitive closure; fine up to MeSH scale (~200k pairs). Switch
     # to per-node descendant sampling without enumeration if WordNet-scale closures ever hurt.
     pool = sorted({(a, n) for n, ancestors in paths.items() for a in ancestors if a != n} - direct)
     return paths, all_rows, direct, pool
+
+
+def _draw_negative(
+    head: int,
+    tail: int,
+    relation: int,
+    corrupt_head: bool,
+    paths: Mapping[int, frozenset[int]],
+    num_entities: int,
+    rng: np.random.Generator,
+    seen: set[tuple[int, int, int]],
+) -> int | None:
+    """Draw an entity replacing one slot of ``(head, tail)`` such that the pair leaves the closure.
+
+    A tail candidate ``t'`` is valid iff ``head`` is not among its inclusive ancestors (covering
+    both non-closure pairs and ``t' == head``); a head candidate ``h'`` is valid iff it is not
+    among ``tail``'s inclusive ancestors. Candidates whose resulting row is already in ``seen`` are
+    also rejected, so negatives are drawn without replacement per positive. Rejection-samples up to
+    :data:`_MAX_ATTEMPTS_FACTOR` times, then falls back to an exact scan; returns ``None`` when no
+    valid, not-yet-emitted entity exists.
+    """
+
+    def valid(entity: int) -> bool:
+        if corrupt_head:
+            return entity not in paths[tail] and (entity, relation, tail) not in seen
+        return head not in paths[entity] and (head, relation, entity) not in seen
+
+    for _ in range(_MAX_ATTEMPTS_FACTOR):
+        candidate = int(rng.integers(num_entities))
+        if valid(candidate):
+            return candidate
+    pool = [e for e in range(num_entities) if valid(e)]
+    return int(rng.choice(pool)) if pool else None
 
 
 def _sample_negatives(
@@ -311,43 +409,53 @@ def _sample_negatives(
     *,
     num_negatives: int = 1,
     siblings: Mapping[int, Sequence[int]] | None = None,
+    two_sided: bool = False,
 ) -> list[list[int]]:
-    """Sample ``num_negatives`` corrupted-descendant negatives ``[h, r, t']`` per positive ``[h, r, t]``.
+    """Sample ``num_negatives`` non-closure negatives per positive ``[h, r, t]``.
 
-    The ancestor is kept fixed (Bai et al. 2021), which blocks models from scoring high-level nodes
-    uniformly high. A candidate ``t'`` is valid iff ``h`` is not among its inclusive ancestors —
-    this covers both non-closure pairs and ``t' == h``. Positives whose head is an ancestor-or-self
-    of every entity are skipped with a warning.
+    By default only the tail is corrupted (``[h, r, t']``): the head entity is kept fixed
+    (Bai et al. 2021), which blocks models from scoring high-level nodes uniformly high — note
+    this reads "ancestor kept fixed" only for parent->child hierarchy relations (see issues.md,
+    edge orientation). With ``two_sided=True`` the budget alternates between tail- and
+    head-corruption (``[h', r, t]``), following Ganea et al. (2018 §5): five ``(u', v)`` and five
+    ``(u, v')`` per positive at the default 10. Positives with no valid corruption left are
+    skipped with a warning.
 
     When ``siblings`` is given (hard negatives, He et al. 2024 §4.1), a hard negative pairs an
     entity with its own sibling — the pairs hardest to tell apart. Hierarchy relations may point
     either way, so either end may be replaced by a sibling of the other end, keeping whichever
     corruption falls outside the closure; positives lacking enough valid siblings are topped up
-    with random corrupted-descendant negatives to keep the positive:negative ratio.
+    with random negatives to keep the positive:negative ratio.
     """
     negatives: list[list[int]] = []
     for head, relation, tail in positives:
         rows: list[list[int]] = []
+        seen: set[tuple[int, int, int]] = set()  # emitted rows, to draw without replacement per positive
         if siblings is not None:
             hard = [[head, relation, s] for s in siblings.get(head, ()) if head not in paths[s]]
             hard += [[s, relation, tail] for s in siblings.get(tail, ()) if s not in paths[tail]]
             rng.shuffle(hard)
-            rows.extend(hard[:num_negatives])
+            for row in hard:
+                if len(rows) >= num_negatives:
+                    break
+                if tuple(row) not in seen:
+                    seen.add(tuple(row))
+                    rows.append(row)
         while len(rows) < num_negatives:
-            tail_new = None
-            for _ in range(_MAX_ATTEMPTS_FACTOR):
-                candidate = int(rng.integers(num_entities))
-                if head not in paths[candidate]:
-                    tail_new = candidate
-                    break
-            if tail_new is None:
-                valid = [e for e in range(num_entities) if head not in paths[e]]
-                if not valid:
-                    warnings.warn(
-                        f"entity {head} is an ancestor of every entity; skipping its negative pair", stacklevel=2
-                    )
-                    break
-                tail_new = int(rng.choice(valid))
-            rows.append([head, relation, tail_new])
+            corrupt_head = two_sided and len(rows) % 2 == 1
+            candidate = _draw_negative(head, tail, relation, corrupt_head, paths, num_entities, rng, seen)
+            if candidate is None and two_sided:
+                # one slot may be uncorruptable (e.g. the root as ancestor); use the other side
+                corrupt_head = not corrupt_head
+                candidate = _draw_negative(head, tail, relation, corrupt_head, paths, num_entities, rng, seen)
+            if candidate is None:
+                warnings.warn(
+                    f"no valid negative corruption for pair ({head}, {tail}); skipping its remaining negatives",
+                    stacklevel=2,
+                )
+                break
+            row = [candidate, relation, tail] if corrupt_head else [head, relation, candidate]
+            seen.add(tuple(row))
+            rows.append(row)
         negatives.extend(rows)
     return negatives

@@ -46,6 +46,13 @@ class HierarchicalGraph:
     #: edges so that heads are always ancestors, keeping metrics comparable across datasets.
     hierarchy_inverted: ClassVar[bool] = False
 
+    #: Whether the dataset ships its own train/validation/test closure split (e.g. the
+    #: WordNetNoun* ``maxn`` splits of Ganea et al. 2018). Closure-based splits then use the
+    #: dataset's fixed validation/testing triples as eval positives and the training triples
+    #: verbatim, instead of re-deriving a split from the training graph's transitive closure
+    #: (which would leak closure edges already present in training back into evaluation).
+    predefined_closure_split: ClassVar[bool] = False
+
 
 def resolve_hierarchy_relation(dataset: Dataset, hierarchy_relation: int | str | None) -> int | None:
     """Resolve the hierarchy relation to a relation id.

@@ -34,11 +34,13 @@ from sklearn.metrics import (
 
 from .hierarchical_helper import (
     HierarchicalPipelineResult,
+    _canonical_rows,
     _closure_pool,
     _default_hierarchy_sampler,
     _factory_from_rows,
     _sample_negatives,
     _train_and_score_hierarchical,
+    build_ancestor_paths,
 )
 from ..datasets.base import Dataset
 from ..datasets.metadata import resolve_hierarchy_relation
@@ -81,6 +83,16 @@ def _sibling_map(direct: set[tuple[int, int]]) -> dict[int, list[int]]:
     return {node: sorted(sibs) for node, sibs in siblings.items()}
 
 
+#: cache of the last few computed splits, keyed by dataset identity and split parameters. The split
+#: is deterministic in its arguments but expensive (ancestor map over the full hierarchy), and
+#: re-scoring one trained model under several settings (e.g. an alpha sweep, or random vs. hard
+#: negatives) re-derives the identical split each time. The dataset is pinned in the value both to
+#: guard against ``id()`` reuse and to validate the hit. Callers must not mutate the returned
+#: objects (all current callers are read-only).
+_SPLIT_CACHE: dict[tuple, tuple[Dataset, tuple]] = {}
+_SPLIT_CACHE_SIZE = 2
+
+
 def _subsumption_split(
     dataset: Dataset,
     *,
@@ -88,17 +100,67 @@ def _subsumption_split(
     eval_ratio: float,
     seed: int,
     hierarchy_relation: int | None,
-    train_on_hierarchy_only: bool = True,
 ) -> tuple[
     list[list[int]], list[list[int]], list[list[int]], dict[int, frozenset[int]], set[tuple[int, int]]
 ]:
-    """Split the non-direct transitive closure into train-extra/val/test (multi-hop inference).
+    """Split the non-direct transitive closure into train-extra/val/test (cached; multi-hop inference).
 
     Shared body of :func:`subsumption_prediction_split`, :func:`subsumption_prediction_pipeline`,
     and :func:`subsumption_prediction_metrics`. The same ``seed`` always reproduces the same split,
     so a trained model can be re-evaluated (e.g. with hard negatives) without re-training.
     Additionally returns the inclusive ancestor map and the direct edge set for negative sampling.
+    Results are memoized in :data:`_SPLIT_CACHE`.
     """
+    key = (id(dataset), closure_ratio, eval_ratio, seed, hierarchy_relation)
+    hit = _SPLIT_CACHE.get(key)
+    if hit is not None and hit[0] is dataset:
+        return hit[1]
+    result = _compute_subsumption_split(
+        dataset,
+        closure_ratio=closure_ratio,
+        eval_ratio=eval_ratio,
+        seed=seed,
+        hierarchy_relation=hierarchy_relation,
+    )
+    while len(_SPLIT_CACHE) >= _SPLIT_CACHE_SIZE:
+        _SPLIT_CACHE.pop(next(iter(_SPLIT_CACHE)))
+    _SPLIT_CACHE[key] = (dataset, result)
+    return result
+
+
+def _compute_subsumption_split(
+    dataset: Dataset,
+    *,
+    closure_ratio: float,
+    eval_ratio: float,
+    seed: int,
+    hierarchy_relation: int | None,
+) -> tuple[
+    list[list[int]], list[list[int]], list[list[int]], dict[int, frozenset[int]], set[tuple[int, int]]
+]:
+    """Compute the split behind :func:`_subsumption_split` (uncached body).
+
+    Datasets declaring :attr:`~pykeen.datasets.metadata.HierarchicalGraph.predefined_closure_split`
+    (e.g. the WordNetNoun* ``maxn`` splits) already encode the closure split in their files: their
+    training triples are used verbatim and their fixed validation/testing triples become the eval
+    positives, while ``closure_ratio``/``eval_ratio``/``seed`` are ignored for splitting (the seed
+    still drives negative sampling downstream). Re-deriving a split here would leak the closure
+    edges already present in training back into evaluation.
+    """
+    if getattr(dataset, "predefined_closure_split", False):
+
+        def hierarchy_rows(factory: CoreTriplesFactory) -> list[list[int]]:
+            rows = _canonical_rows(factory.mapped_triples, dataset, hierarchy_relation)
+            return [row for row in rows if hierarchy_relation is None or row[1] == hierarchy_relation]
+
+        train_rows = hierarchy_rows(dataset.training)
+        val_rows = hierarchy_rows(dataset.validation)
+        test_rows = hierarchy_rows(dataset.testing)
+        # No transitive reduction here: it is O(V*E) (intractable at WordNet scale) and only the
+        # asserted edges are needed — ``direct`` merely feeds negative sampling and the sibling map.
+        paths = build_ancestor_paths(torch.as_tensor(train_rows), dataset.num_entities, hierarchy_relation)
+        direct = {(h, t) for h, _r, t in train_rows}
+        return train_rows, val_rows, test_rows, paths, direct
     if not 0 <= closure_ratio <= 1 or not 0 <= eval_ratio <= 0.5 or closure_ratio + 2 * eval_ratio > 1:
         raise ValueError(
             f"closure_ratio ({closure_ratio}) plus twice eval_ratio ({eval_ratio}) must not exceed 1, "
@@ -124,9 +186,10 @@ def _subsumption_split(
     extra_pairs = pool[2 * n_eval : 2 * n_eval + n_extra]
 
     hierarchy_id = hierarchy_relation if hierarchy_relation is not None else 0
-    # train_on_hierarchy_only handling mirrors _closure_split: restrict to the hierarchy relation's
-    # direct edges unless disabled or no relation resolved.
-    if train_on_hierarchy_only and hierarchy_relation is not None:
+    # Training is always restricted to the hierarchy relation's direct edges: triples of other
+    # relations would pull the embeddings in non-hierarchical directions while only the hierarchy
+    # geometry is evaluated.
+    if hierarchy_relation is not None:
         train_rows = [[h, hierarchy_relation, t] for h, t in sorted(direct)]
     else:
         train_rows = list(all_rows)
@@ -143,7 +206,6 @@ def subsumption_prediction_split(
     eval_ratio: float = 0.05,
     seed: int = 42,
     hierarchy_relation: int | str | None = None,
-    train_on_hierarchy_only: bool = True,
 ) -> tuple[CoreTriplesFactory, CoreTriplesFactory, CoreTriplesFactory]:
     """Build ``(train, val, test)`` factories for multi-hop subsumption prediction.
 
@@ -163,9 +225,6 @@ def subsumption_prediction_split(
     :param hierarchy_relation: Relation id or label whose edges define the hierarchy. Defaults to the
         dataset's :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when it is a
         :class:`~pykeen.datasets.metadata.HierarchicalGraph`; otherwise all training edges are used.
-    :param train_on_hierarchy_only: Restrict the training triples to the hierarchy relation's direct
-        edges (default); triples of other relations would otherwise pull the embeddings in
-        non-hierarchical directions while only the hierarchy geometry is evaluated.
 
     :returns: A ``(train, val, test)`` tuple of :class:`~pykeen.triples.CoreTriplesFactory` instances.
     """
@@ -176,7 +235,6 @@ def subsumption_prediction_split(
         eval_ratio=eval_ratio,
         seed=seed,
         hierarchy_relation=hierarchy_relation,
-        train_on_hierarchy_only=train_on_hierarchy_only,
     )
     return (
         _factory_from_rows(train_rows, dataset),
@@ -197,37 +255,48 @@ def _subsumption_pair_metrics(
     hard_negatives: bool,
     seed: int,
     score_fn: Callable[[Model, MappedTriples], torch.Tensor] | None = None,
-) -> PairClassificationMetricResults | None:
+    return_raw: bool = False,
+) -> PairClassificationMetricResults | None | tuple[PairClassificationMetricResults | None, dict | None]:
     """Score subsumption pairs against 1:``num_negatives`` negatives and threshold on validation.
 
-    Implements the shared evaluation of Ganea et al. (2018 §5) and He et al. (2024 §3/§4.1): the
-    score threshold maximising F1 is picked on the validation pairs and applied to the test pairs,
-    yielding precision/recall/F1; mAP/AUROC come from the same test scores for free.
+    Implements the shared evaluation of Ganea et al. (2018 §5) and He et al. (2024 §3/§4.1):
+    random negatives corrupt both slots evenly (Ganea et al.'s five ``(u', v)`` plus five
+    ``(u, v')`` at the default 10), the score threshold maximising F1 is picked on the validation
+    pairs and applied to the test pairs, yielding precision/recall/F1; mAP/AUROC come from the
+    same test scores for free.
+
+    :param return_raw: When ``True``, additionally return a dict of the raw per-pair test
+        ``rows``/``labels``/``scores``/``predictions``, the ``threshold``, and the ``val_f1``
+        achieved at that threshold on validation (``None`` when nothing was scored), for error
+        analysis, plotting, and validation-based hyperparameter selection.
     """
     if not val_rows or not test_rows:
         warnings.warn("empty validation or test subsumption pairs; skipping threshold metrics", stacklevel=2)
-        return None
+        return (None, None) if return_raw else None
     siblings = _sibling_map(direct) if hard_negatives else None
     rng = np.random.default_rng(seed)
 
-    def _score(rows: list[list[int]]) -> tuple[np.ndarray, np.ndarray] | None:
-        negatives = _sample_negatives(rows, paths, num_entities, rng, num_negatives=num_negatives, siblings=siblings)
+    def _score(rows: list[list[int]]) -> tuple[np.ndarray, np.ndarray, list[list[int]]] | None:
+        negatives = _sample_negatives(
+            rows, paths, num_entities, rng, num_negatives=num_negatives, siblings=siblings, two_sided=True
+        )
         if not negatives:
             return None
-        batch = torch.tensor(rows + negatives, dtype=torch.long).to(model.device)
+        pairs = rows + negatives
+        batch = torch.tensor(pairs, dtype=torch.long).to(model.device)
         with torch.inference_mode():
             raw = model.predict_hrt(batch) if score_fn is None else score_fn(model, batch)
         scores = raw.squeeze(-1).detach().cpu().numpy()
         labels = np.concatenate([np.ones(len(rows)), np.zeros(len(negatives))])
-        return scores, labels
+        return scores, labels, pairs
 
     val = _score(val_rows)
     test = _score(test_rows)
     if val is None or test is None:
         warnings.warn("no valid negative pairs could be sampled; skipping threshold metrics", stacklevel=2)
-        return None
-    val_scores, val_labels = val
-    test_scores, test_labels = test
+        return (None, None) if return_raw else None
+    val_scores, val_labels, _ = val
+    test_scores, test_labels, test_pairs = test
 
     precision, recall, thresholds = precision_recall_curve(val_labels, val_scores)
     denominator = precision + recall
@@ -235,7 +304,7 @@ def _subsumption_pair_metrics(
     # the last precision/recall point (1, 0) has no threshold, hence f1[:-1]
     threshold = float(thresholds[int(np.argmax(f1[:-1]))]) if len(thresholds) else float(val_scores.min())
     predictions = test_scores >= threshold
-    return PairClassificationMetricResults(
+    results = PairClassificationMetricResults(
         data={
             "precision": float(precision_score(test_labels, predictions, zero_division=0)),
             "recall": float(recall_score(test_labels, predictions, zero_division=0)),
@@ -245,6 +314,17 @@ def _subsumption_pair_metrics(
             "roc_auc": _ROC_AUC(test_labels, test_scores),
         }
     )
+    if not return_raw:
+        return results
+    raw = {
+        "rows": test_pairs,
+        "labels": test_labels.tolist(),
+        "scores": test_scores.tolist(),
+        "predictions": predictions.tolist(),
+        "threshold": threshold,
+        "val_f1": float(f1[:-1].max()) if len(thresholds) else 0.0,
+    }
+    return results, raw
 
 
 def subsumption_prediction_metrics(
@@ -258,7 +338,8 @@ def subsumption_prediction_metrics(
     seed: int = 42,
     hierarchy_relation: int | str | None = None,
     eval_score_fn: Callable[[Model, MappedTriples], torch.Tensor] | None = None,
-) -> PairClassificationMetricResults | None:
+    return_raw: bool = False,
+) -> PairClassificationMetricResults | None | tuple[PairClassificationMetricResults | None, dict | None]:
     """Evaluate a trained model on the (seed-deterministic) subsumption split.
 
     Rebuilds the same split as :func:`subsumption_prediction_pipeline` (given identical
@@ -283,6 +364,9 @@ def subsumption_prediction_metrics(
     :param eval_score_fn: Optional ``(model, batch) -> scores`` override of ``model.predict_hrt``;
         needed for symmetric-distance models (e.g. Poincaré embeddings), whose raw distance cannot
         tell ancestor from descendant.
+    :param return_raw: When ``True``, return ``(metrics, raw)`` where ``raw`` carries the per-pair
+        test ``rows``/``labels``/``scores``/``predictions``/``threshold`` (``None`` when nothing was
+        evaluated).
 
     :returns: ``{"precision", "recall", "f1", "threshold", "average_precision", "roc_auc"}`` on the
         test pairs, or ``None`` when there is nothing to evaluate.
@@ -306,6 +390,7 @@ def subsumption_prediction_metrics(
         hard_negatives=hard_negatives,
         seed=seed,
         score_fn=eval_score_fn,
+        return_raw=return_raw,
     )
 
 
@@ -322,8 +407,8 @@ def subsumption_prediction_pipeline(
     seed: int = 42,
     hierarchical: bool = True,
     hierarchy_relation: int | str | None = None,
-    train_on_hierarchy_only: bool = True,
     eval_score_fn: Callable[[Model, MappedTriples], torch.Tensor] | None = None,
+    return_raw: bool = False,
     **pipeline_kwargs,
 ) -> HierarchicalPipelineResult:
     """Train on the direct edges (plus optional closure fraction) and predict held-out subsumptions.
@@ -352,12 +437,12 @@ def subsumption_prediction_pipeline(
     :param hierarchical: Whether to compute the hierarchical metrics (an extra evaluation pass).
     :param hierarchy_relation: Relation id or label defining the hierarchy; defaults to the dataset's
         :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when available.
-    :param train_on_hierarchy_only: Restrict the training triples to the hierarchy relation's direct
-        edges (default); triples of other relations would otherwise pull the embeddings in
-        non-hierarchical directions while only the hierarchy geometry is evaluated.
     :param eval_score_fn: Optional ``(model, batch) -> scores`` override of ``model.predict_hrt``
         for the pair scorer; needed for symmetric-distance models (e.g. Poincaré embeddings), whose
         raw distance cannot tell ancestor from descendant.
+    :param return_raw: When ``True``, the per-pair test ``rows``/``labels``/``scores``/
+        ``predictions``/``threshold`` are stashed on ``ancestor_descendant_raw_predictions`` of the
+        returned result for error analysis and plotting.
     :param pipeline_kwargs: Additional kwargs forwarded to :func:`pykeen.pipeline.pipeline`. Under
         sLCWA the negative sampler defaults to :class:`~pykeen.sampling.HierarchyNegativeSampler`
         (same-depth hard negatives); pass ``negative_sampler="pseudotyped"`` / ``"basic"`` to override.
@@ -372,7 +457,6 @@ def subsumption_prediction_pipeline(
         eval_ratio=eval_ratio,
         seed=seed,
         hierarchy_relation=hierarchy_relation,
-        train_on_hierarchy_only=train_on_hierarchy_only,
     )
     train_factory = _factory_from_rows(train_rows, dataset)
     val_factory = _factory_from_rows(val_rows, dataset)
@@ -391,7 +475,7 @@ def subsumption_prediction_pipeline(
         ancestors=paths,
         **pipeline_kwargs,
     )
-    result.ancestor_descendant_metric_results = _subsumption_pair_metrics(
+    pair_metrics = _subsumption_pair_metrics(
         result.model,
         val_rows,
         test_rows,
@@ -402,5 +486,10 @@ def subsumption_prediction_pipeline(
         hard_negatives=hard_negatives,
         seed=seed,
         score_fn=eval_score_fn,
+        return_raw=return_raw,
     )
+    if return_raw:
+        result.ancestor_descendant_metric_results, result.ancestor_descendant_raw_predictions = pair_metrics
+    else:
+        result.ancestor_descendant_metric_results = pair_metrics
     return result

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from pykeen.losses import MarginRankingLoss
+from pykeen.losses import PointwiseHingeLoss
 from pykeen.models.nbase import ERModel
 from pykeen.nn.hyperbolic import HyperbolicConesEmbedding
 from pykeen.nn.modules import HyperbolicConesInteraction
@@ -21,9 +21,10 @@ class HyperbolicCones(ERModel[FloatTensor, tuple[()], FloatTensor]):
     how far the child lies outside the parent's angular entailment cone.
 
     Each parent entity ``h`` defines a cone of half-angle
-    ``ψ(h) = arcsin(K(1−‖h‖²)/‖h‖)``. A child ``t`` is scored by how much
-    its exterior angle ``Ξ(h,t)`` exceeds ``ψ(h)``; a zero penalty means ``t``
-    lies inside the cone.
+    ``ψ(h) = arcsin(K(1−‖h‖²)/‖h‖)``. A child ``t`` is scored by the signed margin
+    ``ψ(h) − Ξ(h,t)`` where ``Ξ`` is its exterior angle; a non-negative score means
+    ``t`` lies inside the cone. The paper's relu'd cone energy is recovered by the
+    default :class:`pykeen.losses.PointwiseHingeLoss`.
 
     Designed for hierarchical datasets; best paired with
     :func:`pykeen.pipeline.hierarchy.hierarchy_completion_pipeline` and a
@@ -40,7 +41,10 @@ class HyperbolicCones(ERModel[FloatTensor, tuple[()], FloatTensor]):
        for learning hierarchical embeddings <https://arxiv.org/abs/1804.01882>`_. ICML 2018.
     """
 
-    loss_default = MarginRankingLoss
+    #: Ganea et al. (2018) Eq. 32 is a *pointwise* hinge: positives are unconditionally driven to
+    #: zero energy, negatives to energy >= margin. A pairwise margin-ranking loss saturates almost
+    #: immediately here (energies are angles in radians vs a 0.01 margin) and yields no gradient.
+    loss_default = PointwiseHingeLoss
     loss_default_kwargs = {"margin": 0.01, "reduction": "mean"}
 
     hpo_default = {

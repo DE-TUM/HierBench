@@ -609,6 +609,10 @@ class TrainingLoop(Generic[BatchType], ABC):
 
             # Create new optimizer
             optimizer_kwargs = _get_optimizer_kwargs(self.optimizer)
+            if self.lr_scheduler is not None:
+                # schedulers may scale the optimizer's lr in-place at construction (e.g. ConstantLR),
+                # so clone from the unscaled base_lrs to keep repeated rebuilds idempotent
+                optimizer_kwargs = {**optimizer_kwargs, "lr": self.lr_scheduler.base_lrs[0]}
             self.optimizer = self.optimizer.__class__(
                 params=self.model.get_grad_params(),
                 **optimizer_kwargs,
