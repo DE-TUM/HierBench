@@ -1,7 +1,7 @@
-"""Multi-hop subsumption prediction (Ganea et al. 2018; He et al. 2024).
+"""Multi-hop transitive ancestor-descendant prediction (Ganea et al. 2018; He et al. 2024).
 
 The model trains on all direct hierarchy edges (plus an optional fraction of the non-direct
-transitive closure) and is evaluated on held-out indirect subsumptions, following the shared
+transitive closure) and is evaluated on held-out indirect ancestor-descendant pairs, following the shared
 Multi-hop Inference protocol of Ganea et al. (2018, Hyperbolic Entailment Cones,
 https://arxiv.org/abs/1804.01882, §5) and He et al. (2024, Language Models as Hierarchy Encoders,
 https://arxiv.org/abs/2401.11374, §4.1).
@@ -9,11 +9,11 @@ https://arxiv.org/abs/2401.11374, §4.1).
 The public surface mirrors the other hierarchical tasks (shared internals in
 :mod:`pykeen.pipeline.hierarchical_helper`):
 
-* :func:`subsumption_prediction_split` is pure data preparation — it returns standard
+* :func:`transitive_ancestor_descendant_prediction_split` is pure data preparation — it returns standard
   ``(train, val, test)`` :class:`~pykeen.triples.CoreTriplesFactory` instances.
-* :func:`subsumption_prediction_pipeline` trains and additionally reports the thresholded
+* :func:`transitive_ancestor_descendant_prediction_pipeline` trains and additionally reports the thresholded
   precision/recall/F1 plus mAP/AUROC.
-* :func:`subsumption_prediction_metrics` re-scores an already-trained model on the
+* :func:`transitive_ancestor_descendant_prediction_metrics` re-scores an already-trained model on the
   (seed-deterministic) split, so one training run can be evaluated under both the random and the
   hard (sibling) negative settings without re-training.
 """
@@ -52,9 +52,9 @@ from ..triples import CoreTriplesFactory
 from ..typing import MappedTriples
 
 __all__ = [
-    "subsumption_prediction_split",
-    "subsumption_prediction_pipeline",
-    "subsumption_prediction_metrics",
+    "transitive_ancestor_descendant_prediction_split",
+    "transitive_ancestor_descendant_prediction_pipeline",
+    "transitive_ancestor_descendant_prediction_metrics",
 ]
 
 #: stateless, reused metric instances (mirrors AveragePrecisionScore/AreaUnderTheReceiverOperatingCharacteristicCurve
@@ -93,20 +93,19 @@ _SPLIT_CACHE: dict[tuple, tuple[Dataset, tuple]] = {}
 _SPLIT_CACHE_SIZE = 2
 
 
-def _subsumption_split(
+def _transitive_ancestor_descendant_split(
     dataset: Dataset,
     *,
     closure_ratio: float,
     eval_ratio: float,
     seed: int,
     hierarchy_relation: int | None,
-) -> tuple[
-    list[list[int]], list[list[int]], list[list[int]], dict[int, frozenset[int]], set[tuple[int, int]]
-]:
+) -> tuple[list[list[int]], list[list[int]], list[list[int]], dict[int, frozenset[int]], set[tuple[int, int]]]:
     """Split the non-direct transitive closure into train-extra/val/test (cached; multi-hop inference).
 
-    Shared body of :func:`subsumption_prediction_split`, :func:`subsumption_prediction_pipeline`,
-    and :func:`subsumption_prediction_metrics`. The same ``seed`` always reproduces the same split,
+    Shared body of :func:`transitive_ancestor_descendant_prediction_split`,
+    :func:`transitive_ancestor_descendant_prediction_pipeline`,
+    and :func:`transitive_ancestor_descendant_prediction_metrics`. The same ``seed`` always reproduces the same split,
     so a trained model can be re-evaluated (e.g. with hard negatives) without re-training.
     Additionally returns the inclusive ancestor map and the direct edge set for negative sampling.
     Results are memoized in :data:`_SPLIT_CACHE`.
@@ -115,7 +114,7 @@ def _subsumption_split(
     hit = _SPLIT_CACHE.get(key)
     if hit is not None and hit[0] is dataset:
         return hit[1]
-    result = _compute_subsumption_split(
+    result = _compute_transitive_ancestor_descendant_split(
         dataset,
         closure_ratio=closure_ratio,
         eval_ratio=eval_ratio,
@@ -128,17 +127,15 @@ def _subsumption_split(
     return result
 
 
-def _compute_subsumption_split(
+def _compute_transitive_ancestor_descendant_split(
     dataset: Dataset,
     *,
     closure_ratio: float,
     eval_ratio: float,
     seed: int,
     hierarchy_relation: int | None,
-) -> tuple[
-    list[list[int]], list[list[int]], list[list[int]], dict[int, frozenset[int]], set[tuple[int, int]]
-]:
-    """Compute the split behind :func:`_subsumption_split` (uncached body).
+) -> tuple[list[list[int]], list[list[int]], list[list[int]], dict[int, frozenset[int]], set[tuple[int, int]]]:
+    """Compute the split behind :func:`_transitive_ancestor_descendant_split` (uncached body).
 
     Datasets declaring :attr:`~pykeen.datasets.metadata.HierarchicalGraph.predefined_closure_split`
     (e.g. the WordNetNoun* ``maxn`` splits) already encode the closure split in their files: their
@@ -199,7 +196,7 @@ def _compute_subsumption_split(
     return train_rows, val_rows, test_rows, paths, direct
 
 
-def subsumption_prediction_split(
+def transitive_ancestor_descendant_prediction_split(
     dataset: Dataset,
     *,
     closure_ratio: float = 0.0,
@@ -207,7 +204,7 @@ def subsumption_prediction_split(
     seed: int = 42,
     hierarchy_relation: int | str | None = None,
 ) -> tuple[CoreTriplesFactory, CoreTriplesFactory, CoreTriplesFactory]:
-    """Build ``(train, val, test)`` factories for multi-hop subsumption prediction.
+    """Build ``(train, val, test)`` factories for multi-hop transitive ancestor-descendant prediction.
 
     Follows the Multi-hop Inference protocol shared by Ganea et al. (2018,
     https://arxiv.org/abs/1804.01882, §5) and He et al. (2024,
@@ -229,7 +226,7 @@ def subsumption_prediction_split(
     :returns: A ``(train, val, test)`` tuple of :class:`~pykeen.triples.CoreTriplesFactory` instances.
     """
     hierarchy_relation = resolve_hierarchy_relation(dataset, hierarchy_relation)
-    train_rows, val_rows, test_rows, _paths, _direct = _subsumption_split(
+    train_rows, val_rows, test_rows, _paths, _direct = _transitive_ancestor_descendant_split(
         dataset,
         closure_ratio=closure_ratio,
         eval_ratio=eval_ratio,
@@ -243,7 +240,7 @@ def subsumption_prediction_split(
     )
 
 
-def _subsumption_pair_metrics(
+def _transitive_ancestor_descendant_pair_metrics(
     model: Model,
     val_rows: list[list[int]],
     test_rows: list[list[int]],
@@ -257,7 +254,7 @@ def _subsumption_pair_metrics(
     score_fn: Callable[[Model, MappedTriples], torch.Tensor] | None = None,
     return_raw: bool = False,
 ) -> PairClassificationMetricResults | None | tuple[PairClassificationMetricResults | None, dict | None]:
-    """Score subsumption pairs against 1:``num_negatives`` negatives and threshold on validation.
+    """Score ancestor-descendant pairs against 1:``num_negatives`` negatives and threshold on validation.
 
     Implements the shared evaluation of Ganea et al. (2018 §5) and He et al. (2024 §3/§4.1):
     random negatives corrupt both slots evenly (Ganea et al.'s five ``(u', v)`` plus five
@@ -271,7 +268,7 @@ def _subsumption_pair_metrics(
         analysis, plotting, and validation-based hyperparameter selection.
     """
     if not val_rows or not test_rows:
-        warnings.warn("empty validation or test subsumption pairs; skipping threshold metrics", stacklevel=2)
+        warnings.warn("empty validation or test ancestor-descendant pairs; skipping threshold metrics", stacklevel=2)
         return (None, None) if return_raw else None
     siblings = _sibling_map(direct) if hard_negatives else None
     rng = np.random.default_rng(seed)
@@ -327,7 +324,7 @@ def _subsumption_pair_metrics(
     return results, raw
 
 
-def subsumption_prediction_metrics(
+def transitive_ancestor_descendant_prediction_metrics(
     model: Model,
     dataset: Dataset,
     *,
@@ -340,21 +337,21 @@ def subsumption_prediction_metrics(
     eval_score_fn: Callable[[Model, MappedTriples], torch.Tensor] | None = None,
     return_raw: bool = False,
 ) -> PairClassificationMetricResults | None | tuple[PairClassificationMetricResults | None, dict | None]:
-    """Evaluate a trained model on the (seed-deterministic) subsumption split.
+    """Evaluate a trained model on the (seed-deterministic) transitive ancestor-descendant split.
 
-    Rebuilds the same split as :func:`subsumption_prediction_pipeline` (given identical
+    Rebuilds the same split as :func:`transitive_ancestor_descendant_prediction_pipeline` (given identical
     ``closure_ratio``/``eval_ratio``/``seed``/``hierarchy_relation``), samples ``num_negatives``
     negatives per positive, tunes the F1-optimal score threshold on validation, and returns test
     metrics. This lets one training run be scored under both the random and hard (sibling) negative
     settings, mirroring the side-by-side tables of He et al. (2024, Table 2) and Ganea et al.
     (2018, Table 1), without re-training.
 
-    :param model: A trained model (e.g. from :func:`subsumption_prediction_pipeline`).
+    :param model: A trained model (e.g. from :func:`transitive_ancestor_descendant_prediction_pipeline`).
     :param dataset: The hierarchical dataset the model was trained on.
     :param closure_ratio: Must match the value used for training; see
-        :func:`subsumption_prediction_split`.
+        :func:`transitive_ancestor_descendant_prediction_split`.
     :param eval_ratio: Must match the value used for training; see
-        :func:`subsumption_prediction_split`.
+        :func:`transitive_ancestor_descendant_prediction_split`.
     :param num_negatives: Negatives sampled per positive pair. Default 10 (both papers).
     :param hard_negatives: Draw negatives from the kept entity's siblings first (an entity paired
         with its own sibling), topping up with random entities — He et al.'s hard negative setting.
@@ -372,14 +369,14 @@ def subsumption_prediction_metrics(
         test pairs, or ``None`` when there is nothing to evaluate.
     """
     hierarchy_relation = resolve_hierarchy_relation(dataset, hierarchy_relation)
-    _train_rows, val_rows, test_rows, paths, direct = _subsumption_split(
+    _train_rows, val_rows, test_rows, paths, direct = _transitive_ancestor_descendant_split(
         dataset,
         closure_ratio=closure_ratio,
         eval_ratio=eval_ratio,
         seed=seed,
         hierarchy_relation=hierarchy_relation,
     )
-    return _subsumption_pair_metrics(
+    return _transitive_ancestor_descendant_pair_metrics(
         model,
         val_rows,
         test_rows,
@@ -394,7 +391,7 @@ def subsumption_prediction_metrics(
     )
 
 
-def subsumption_prediction_pipeline(
+def transitive_ancestor_descendant_prediction_pipeline(
     dataset: Dataset,
     *,
     model: type[ERModel] | str | None = None,
@@ -410,11 +407,11 @@ def subsumption_prediction_pipeline(
     return_raw: bool = False,
     **pipeline_kwargs,
 ) -> HierarchicalPipelineResult:
-    """Train on the direct edges (plus optional closure fraction) and predict held-out subsumptions.
+    """Train on the direct edges (plus optional closure fraction) and predict held-out ancestor-descendant pairs.
 
-    Multi-hop subsumption prediction following Ganea et al. (2018, Hyperbolic Entailment Cones, §5)
+    Multi-hop transitive ancestor-descendant prediction following Ganea et al. (2018, Hyperbolic Entailment Cones, §5)
     and He et al. (2024, Language Models as Hierarchy Encoders, §4.1 Multi-hop Inference): the split
-    comes from :func:`subsumption_prediction_split`, each held-out positive is paired with
+    comes from :func:`transitive_ancestor_descendant_prediction_split`, each held-out positive is paired with
     ``num_negatives`` negatives (random, or hard sibling negatives), and the F1-optimal score
     threshold is tuned on validation and applied to test. The resulting
     precision/recall/F1/threshold plus mAP/AUROC land on ``ancestor_descendant_metric_results``.
@@ -445,10 +442,10 @@ def subsumption_prediction_pipeline(
         (same-depth hard negatives); pass ``negative_sampler="pseudotyped"`` / ``"basic"`` to override.
 
     :returns: A :class:`~pykeen.pipeline.hierarchical_helper.HierarchicalPipelineResult` with
-        ``ancestor_descendant_metric_results`` set to the thresholded subsumption metrics.
+        ``ancestor_descendant_metric_results`` set to the thresholded ancestor-descendant metrics.
     """
     hierarchy_relation = resolve_hierarchy_relation(dataset, hierarchy_relation)
-    train_rows, val_rows, test_rows, paths, direct = _subsumption_split(
+    train_rows, val_rows, test_rows, paths, direct = _transitive_ancestor_descendant_split(
         dataset,
         closure_ratio=closure_ratio,
         eval_ratio=eval_ratio,
@@ -468,7 +465,7 @@ def subsumption_prediction_pipeline(
         epochs=epochs,
         **pipeline_kwargs,
     )
-    pair_metrics = _subsumption_pair_metrics(
+    pair_metrics = _transitive_ancestor_descendant_pair_metrics(
         result.model,
         val_rows,
         test_rows,

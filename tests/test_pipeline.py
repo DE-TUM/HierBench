@@ -570,18 +570,18 @@ def _is_tree_ancestor(ancestor: int, node: int) -> bool:
     return False
 
 
-class TestSubsumptionPredictionPipeline(unittest.TestCase):
-    """Tests for multi-hop subsumption prediction (Ganea et al. 2018; He et al. 2024)."""
+class TestTransitiveAncestorDescendantPredictionPipeline(unittest.TestCase):
+    """Tests for multi-hop transitive ancestor-descendant prediction (Ganea et al. 2018; He et al. 2024)."""
 
     def test_split_train_direct_and_heldout_indirect(self):
         """Training keeps all direct edges; val/test are disjoint non-direct closure pairs."""
-        from pykeen.pipeline.subsumption import subsumption_prediction_split
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_split
 
         dataset = _make_balanced_tree_dataset()
         direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
 
         # the balanced tree has 20 non-direct closure pairs -> 5 val + 5 test
-        train, val, test = subsumption_prediction_split(dataset, eval_ratio=0.25, seed=42)
+        train, val, test = transitive_ancestor_descendant_prediction_split(dataset, eval_ratio=0.25, seed=42)
         assert sorted(train.mapped_triples.tolist()) == sorted(dataset.training.mapped_triples.tolist())
         val_rows = [tuple(row) for row in val.mapped_triples.tolist()]
         test_rows = [tuple(row) for row in test.mapped_triples.tolist()]
@@ -594,13 +594,15 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
 
     def test_closure_ratio_adds_pairs_to_train(self):
         """``closure_ratio`` moves indirect closure pairs into training, disjoint from val/test."""
-        from pykeen.pipeline.subsumption import subsumption_prediction_split
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_split
 
         dataset = _make_balanced_tree_dataset()
         direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
 
         # 20 indirect pairs: 5 val + 5 test + 25% of 20 = 5 extra training pairs
-        train, val, test = subsumption_prediction_split(dataset, closure_ratio=0.25, eval_ratio=0.25, seed=42)
+        train, val, test = transitive_ancestor_descendant_prediction_split(
+            dataset, closure_ratio=0.25, eval_ratio=0.25, seed=42
+        )
         extra = [(h, t) for h, _, t in train.mapped_triples.tolist() if (h, t) not in direct]
         assert len(extra) == 5
         held = {(h, t) for h, _, t in val.mapped_triples.tolist() + test.mapped_triples.tolist()}
@@ -610,19 +612,19 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
 
     def test_invalid_ratios_raise(self):
         """Ratios that overrun the closure pool are rejected."""
-        from pykeen.pipeline.subsumption import subsumption_prediction_split
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_split
 
         dataset = _make_balanced_tree_dataset()
         with pytest.raises(ValueError, match="closure_ratio"):
-            subsumption_prediction_split(dataset, closure_ratio=0.5, eval_ratio=0.3, seed=42)
+            transitive_ancestor_descendant_prediction_split(dataset, closure_ratio=0.5, eval_ratio=0.3, seed=42)
 
     def test_determinism(self):
         """The same seed yields identical splits."""
-        from pykeen.pipeline.subsumption import subsumption_prediction_split
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_split
 
         dataset = _make_balanced_tree_dataset()
-        first = subsumption_prediction_split(dataset, eval_ratio=0.25, seed=7)
-        second = subsumption_prediction_split(dataset, eval_ratio=0.25, seed=7)
+        first = transitive_ancestor_descendant_prediction_split(dataset, eval_ratio=0.25, seed=7)
+        second = transitive_ancestor_descendant_prediction_split(dataset, eval_ratio=0.25, seed=7)
         for factory_a, factory_b in zip(first, second, strict=True):
             assert factory_a.mapped_triples.tolist() == factory_b.mapped_triples.tolist()
 
@@ -643,7 +645,7 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
 
     def test_predefined_closure_split_uses_dataset_files(self):
         """A predefined-split dataset keeps its own train/val/test rows; nothing is re-derived."""
-        from pykeen.pipeline.subsumption import _subsumption_split
+        from pykeen.pipeline.transitive_ancestor_descendant import _transitive_ancestor_descendant_split
 
         # training: chain 0->1->2 plus the in-training closure shortcut 0->2 (as in Ganea's maxn
         # 50% files); held-out closure pairs live only in the fixed val/test factories.
@@ -660,7 +662,7 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
         dataset = EagerDataset(training=train, testing=test, validation=val)
         dataset.predefined_closure_split = True
 
-        out_train, out_val, out_test, paths, direct = _subsumption_split(
+        out_train, out_val, out_test, paths, direct = _transitive_ancestor_descendant_split(
             dataset, closure_ratio=0.9, eval_ratio=0.4, seed=42, hierarchy_relation=0
         )
         # training rows are kept verbatim (incl. the shortcut - no transitive reduction, no
@@ -698,7 +700,7 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
     def test_hard_negatives_prefer_siblings(self):
         """Hard negatives pair an entity with its own sibling first, then top up with random."""
         from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
-        from pykeen.pipeline.subsumption import _sibling_map
+        from pykeen.pipeline.transitive_ancestor_descendant import _sibling_map
 
         dataset = _make_balanced_tree_dataset()
         paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
@@ -754,7 +756,7 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
     def test_negatives_deduped_per_positive(self):
         """Negatives are drawn without replacement: no pair repeats for one positive (issues.md §6)."""
         from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
-        from pykeen.pipeline.subsumption import _sibling_map
+        from pykeen.pipeline.transitive_ancestor_descendant import _sibling_map
 
         dataset = _make_balanced_tree_dataset()
         paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
@@ -771,10 +773,12 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
 
     def test_pipeline_runs(self):
         """Pipeline completes and reports thresholded P/R/F1 plus mAP/AUROC."""
-        from pykeen.pipeline.subsumption import subsumption_prediction_pipeline
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_pipeline
 
         dataset = _make_balanced_tree_dataset()
-        result = subsumption_prediction_pipeline(dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0)
+        result = transitive_ancestor_descendant_prediction_pipeline(
+            dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0
+        )
         mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
         assert 0.0 <= mrr <= 1.0
         metrics = result.ancestor_descendant_metric_results
@@ -783,12 +787,17 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
             assert 0.0 <= metrics.get_metric(key) <= 1.0
 
     def test_metrics_reevaluate_trained_model(self):
-        """``subsumption_prediction_metrics`` re-scores a trained model, e.g. with hard negatives."""
-        from pykeen.pipeline.subsumption import subsumption_prediction_metrics, subsumption_prediction_pipeline
+        """``transitive_ancestor_descendant_prediction_metrics`` re-scores a trained model, e.g. with hard negatives."""
+        from pykeen.pipeline.transitive_ancestor_descendant import (
+            transitive_ancestor_descendant_prediction_metrics,
+            transitive_ancestor_descendant_prediction_pipeline,
+        )
 
         dataset = _make_balanced_tree_dataset()
-        result = subsumption_prediction_pipeline(dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0)
-        metrics = subsumption_prediction_metrics(
+        result = transitive_ancestor_descendant_prediction_pipeline(
+            dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0
+        )
+        metrics = transitive_ancestor_descendant_prediction_metrics(
             result.model, dataset, eval_ratio=0.25, num_negatives=3, hard_negatives=True, seed=0
         )
         assert metrics is not None
@@ -797,7 +806,7 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
 
     def test_perfect_scorer_yields_perfect_f1(self):
         """A scorer that recognises true ancestor pairs gives F1 = mAP = AUROC = 1."""
-        from pykeen.pipeline.subsumption import subsumption_prediction_pipeline
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_pipeline
 
         dataset = _make_balanced_tree_dataset()
 
@@ -805,7 +814,7 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
             """Score 1 for true ancestor-descendant pairs, 0 otherwise (scale-consistent val/test)."""
             return torch.tensor([float(_is_tree_ancestor(h, t)) for h, _r, t in batch.tolist()])
 
-        result = subsumption_prediction_pipeline(
+        result = transitive_ancestor_descendant_prediction_pipeline(
             dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0, eval_score_fn=perfect_scorer
         )
         metrics = result.ancestor_descendant_metric_results
@@ -838,8 +847,6 @@ def test_build_ancestor_paths_relation_filter():
     # without the filter, the relation-1 edge would make 3 an ancestor of 0
     unfiltered = build_ancestor_paths(triples, num_entities=4)
     assert 3 in unfiltered[0]
-
-
 
 
 def test_hpo_pipeline_refits_best_trial():

@@ -1,12 +1,14 @@
-"""Pairwise classification metrics for ancestor-descendant / subsumption prediction.
+"""Pairwise classification metrics for transitive ancestor-descendant prediction.
 
-Wraps the scores of :func:`pykeen.pipeline.subsumption.subsumption_prediction_pipeline` — held-out ``(h, t)`` pairs
-scored against sampled negatives — in the standard :class:`~pykeen.evaluation.evaluator.MetricResults`
-contract, so all hierarchical-task metrics expose the same ``.to_dict()``/``.get_metric()`` API.
+Wraps the scores of
+:func:`pykeen.pipeline.transitive_ancestor_descendant.transitive_ancestor_descendant_prediction_pipeline` —
+held-out ``(h, t)`` pairs scored against sampled negatives — in the standard
+:class:`~pykeen.evaluation.evaluator.MetricResults` contract, so all hierarchical-task metrics expose the
+same ``.to_dict()``/``.get_metric()`` API.
 
 mAP and AUROC reuse pykeen's existing :class:`~pykeen.metrics.classification.AveragePrecisionScore`
 and :class:`~pykeen.metrics.classification.AreaUnderTheReceiverOperatingCharacteristicCurve`.
-Precision/recall/F1/threshold (subsumption only) get their own metadata-only
+Precision/recall/F1/threshold (transitive ancestor-descendant prediction only) get their own metadata-only
 :class:`~pykeen.metrics.utils.Metric` placeholders because they are computed with a
 validation-tuned score threshold rather than pykeen's built-in top-``|Y|`` binarization
 (:func:`pykeen.metrics.classification.construct_indicator`).
@@ -99,13 +101,13 @@ PAIR_CLASSIFICATION_METRICS: Mapping[str, type[Metric]] = {
 
 
 class PairClassificationMetricKey(NamedTuple):
-    """A key for pairwise ancestor-descendant / subsumption classification metrics."""
+    """A key for pairwise ancestor-descendant classification metrics."""
 
     metric: str
 
 
 class PairClassificationMetricResults(MetricResults[PairClassificationMetricKey]):
-    """Results from scoring held-out ancestor-descendant / subsumption pairs against negatives."""
+    """Results from scoring held-out ancestor-descendant pairs against negatives."""
 
     metrics = PAIR_CLASSIFICATION_METRICS
 

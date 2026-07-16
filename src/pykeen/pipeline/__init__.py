@@ -19,16 +19,16 @@ from .hierarchy import (
     hpo_hierarchy_completion_pipeline,
 )
 from .plot_utils import plot, plot_early_stopping, plot_er, plot_losses
-from .subsumption import (
-    subsumption_prediction_metrics,
-    subsumption_prediction_pipeline,
-    subsumption_prediction_split,
+from .transitive_ancestor_descendant import (
+    transitive_ancestor_descendant_prediction_metrics,
+    transitive_ancestor_descendant_prediction_pipeline,
+    transitive_ancestor_descendant_prediction_split,
 )
 
 __all__ = [
-    "subsumption_prediction_pipeline",
-    "subsumption_prediction_split",
-    "subsumption_prediction_metrics",
+    "transitive_ancestor_descendant_prediction_pipeline",
+    "transitive_ancestor_descendant_prediction_split",
+    "transitive_ancestor_descendant_prediction_metrics",
     "hierarchy_completion_pipeline",
     "hierarchy_completion_split",
     "hpo_hierarchy_completion_pipeline",

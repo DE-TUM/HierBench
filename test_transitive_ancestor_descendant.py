@@ -1,4 +1,4 @@
-"""Benchmark multi-hop subsumption prediction (Ganea et al. 2018; He et al. 2024) across configs.
+"""Benchmark multi-hop transitive ancestor-descendant prediction (Ganea et al. 2018; He et al. 2024) across configs.
 
 Follows the shared evaluation protocol of Hyperbolic Entailment Cones (Ganea et al. 2018, §5) and
 Language Models as Hierarchy Encoders (He et al. 2024, §4.1 Multi-hop Inference):
@@ -12,7 +12,7 @@ Language Models as Hierarchy Encoders (He et al. 2024, §4.1 Multi-hop Inference
   alongside mAP/AUROC (random negatives) and the rank-based MRR.
 
 Each configuration trains **once** and is re-scored under the hard negative setting via
-:func:`subsumption_prediction_metrics` (same seed -> same held-out pairs).
+:func:`transitive_ancestor_descendant_prediction_metrics` (same seed -> same held-out pairs).
 """
 
 from __future__ import annotations
@@ -22,7 +22,10 @@ from pykeen.datasets.metadata import resolve_hierarchy_relation
 from pykeen.datasets.extended_graph_analysis import ExtendedGraphAnalysis
 from pykeen.models import HyperbolicCones, LorentzE, PoincareE
 from pykeen.nn.hyperbolic import LorentzEmbedding
-from pykeen.pipeline.subsumption import subsumption_prediction_metrics, subsumption_prediction_pipeline
+from pykeen.pipeline.transitive_ancestor_descendant import (
+    transitive_ancestor_descendant_prediction_metrics,
+    transitive_ancestor_descendant_prediction_pipeline,
+)
 
 # --- Shared experiment settings ----------------------------------------------------------
 #: torch device for all pipeline runs.
@@ -35,14 +38,14 @@ SEED = 42
 
 # --- Task settings (both papers) ---------------------------------------------------------
 CLOSURE_RATIO = 0.0  # fraction of non-direct closure pairs added to training (Ganea et al. 2018 §5)
-EVAL_RATIO = 0.05  # two 5% portions of the indirect subsumptions as val/test (He et al. 2024 §4.2)
+EVAL_RATIO = 0.05  # two 5% portions of the indirect ancestor-descendant pairs as val/test (He et al. 2024 §4.2)
 NUM_NEGATIVES = 50  # 1:50 positive:negative ratio (both papers use 1:10)
 
 #: Nickel & Kiela (2017) Eq. 8: severity of the norm (depth) penalty. N&K's α=10³ was for graded
 #: HyperLex ranking, not binary classification; Ganea et al. (2018 §5) tune α on validation
 #: instead, which is what we do — per config and negative setting, maximizing validation F1.
 #: α·|‖h‖-‖t‖| > 1 flips the multiplier's sign for some pairs; validation F1 judges that too.
-#: Must reach N&K's alpha=1000 direction-gate regime; see benchmark_subsumption.ISA_ALPHAS.
+#: Must reach N&K's alpha=1000 direction-gate regime; see benchmark_transitive_ancestor_descendant.ISA_ALPHAS.
 ISA_ALPHAS = (0.1, 1.0, 10.0, 100.0, 1000.0)
 
 
@@ -144,7 +147,7 @@ CONFIGS: list[tuple[str, object, dict, dict]] = [
     ),
 ]
 
-#: printed column -> key in the metrics dict returned by the subsumption evaluation
+#: printed column -> key in the metrics dict returned by the transitive ancestor-descendant evaluation
 PAIR_METRICS = {"Prec": "precision", "Rec": "recall", "F1": "f1"}
 COLUMNS = [
     *(f"{name}·rnd" for name in PAIR_METRICS),
@@ -156,10 +159,10 @@ COLUMNS = [
 
 
 def _evaluate_config(model: object, model_kwargs: dict, extra: dict) -> dict[str, float]:
-    """Train one configuration, then score the held-out subsumptions under both negative settings."""
+    """Train one configuration, then score the held-out ancestor-descendant pairs under both negative settings."""
     extra = dict(extra)
     score_factory = extra.pop("eval_score_factory", None)
-    result = subsumption_prediction_pipeline(
+    result = transitive_ancestor_descendant_prediction_pipeline(
         DATASET,
         model=model,
         model_kwargs=model_kwargs,
@@ -179,7 +182,7 @@ def _evaluate_config(model: object, model_kwargs: dict, extra: dict) -> dict[str
         """Score one negative setting; with a factory, tune alpha on validation (Ganea et al. §5)."""
 
         def run(eval_score_fn=None, return_raw=False):
-            return subsumption_prediction_metrics(
+            return transitive_ancestor_descendant_prediction_metrics(
                 result.model,
                 DATASET,
                 closure_ratio=CLOSURE_RATIO,
@@ -218,9 +221,9 @@ def _evaluate_config(model: object, model_kwargs: dict, extra: dict) -> dict[str
 
 
 def main() -> None:
-    """Run every configuration and print a side-by-side subsumption-prediction comparison."""
+    """Run every configuration and print a side-by-side transitive ancestor-descendant prediction comparison."""
     print("=" * 104)
-    print(f"Dataset: {type(DATASET).__name__}  task: multi-hop subsumption prediction")
+    print(f"Dataset: {type(DATASET).__name__}  task: multi-hop transitive ancestor-descendant prediction")
     print(
         f"  hierarchy_relation={HIERARCHY_RELATION!r}  closure_ratio={CLOSURE_RATIO}  "
         f"eval_ratio={EVAL_RATIO}  negatives/positive={NUM_NEGATIVES}  epochs={EPOCHS}"
@@ -238,7 +241,7 @@ def main() -> None:
         rows.append((label, scores))
 
     print("\n" + "=" * 104)
-    print(f"{'Multi-hop subsumption prediction (threshold tuned on validation)':^104}")
+    print(f"{'Multi-hop transitive ancestor-descendant prediction (threshold tuned on validation)':^104}")
     print("=" * 104)
     print(f"{'':<32}{'random negatives':>24}{'hard negatives':>24}")
     header = f"{'Configuration':<32}" + "".join(f"{name:>8}" for name in COLUMNS)

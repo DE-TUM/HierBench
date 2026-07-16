@@ -238,7 +238,8 @@ def _resolve_kfold_dataset(
 def _flat_metrics(result: PipelineResult) -> dict[str, Any]:
     """Flatten a fold result's rank-based metrics plus any task-specific metrics.
 
-    Task pipelines (e.g. :func:`~pykeen.pipeline.subsumption.subsumption_prediction_pipeline`)
+    Task pipelines (e.g.
+    :func:`~pykeen.pipeline.transitive_ancestor_descendant.transitive_ancestor_descendant_prediction_pipeline`)
     return a :class:`~pykeen.pipeline.hierarchical_helper.HierarchicalPipelineResult` carrying an
     extra ``ancestor_descendant_metric_results``; its metrics are merged under an
     ``ancestor_descendant.`` prefix so they aggregate alongside the standard ones.
@@ -297,7 +298,7 @@ def cross_validation_pipeline(
     Splits *dataset* into *k* folds and calls *pipeline* once per fold — passing each fold as
     ``dataset=`` — then aggregates the metric results across folds.  Any pipeline that accepts a
     :class:`~pykeen.datasets.Dataset` works: the stock :func:`~pykeen.pipeline.pipeline` (default),
-    :func:`~pykeen.pipeline.subsumption.subsumption_prediction_pipeline`,
+    :func:`~pykeen.pipeline.transitive_ancestor_descendant.transitive_ancestor_descendant_prediction_pipeline`,
     :func:`~pykeen.pipeline.hierarchy.hierarchy_completion_pipeline`, etc.  All pipeline-specific
     settings (``model``, ``epochs``, ``training_kwargs``, ``closure_ratio``, …) are forwarded via
     *pipeline_kwargs*.

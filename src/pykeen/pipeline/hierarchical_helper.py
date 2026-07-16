@@ -6,7 +6,8 @@ HPO-refit bodies, the default hierarchy negative sampler, and the closure/negati
 The task pipelines themselves live in the sibling modules:
 
 * :mod:`pykeen.pipeline.hierarchy` — hierarchy completion.
-* :mod:`pykeen.pipeline.subsumption` — multi-hop subsumption prediction (Ganea et al. 2018; He et al. 2024).
+* :mod:`pykeen.pipeline.transitive_ancestor_descendant` — multi-hop transitive ancestor-descendant prediction
+  (Ganea et al. 2018; He et al. 2024).
 """
 
 from __future__ import annotations
@@ -87,9 +88,7 @@ def build_ancestor_paths(
     # sparse matmuls — orders of magnitude faster than per-node networkx BFS at WordNet scale.
     heads = mapped_triples[:, 0].numpy()
     tails = mapped_triples[:, 2].numpy()
-    reach = sparse.csr_matrix(
-        (np.ones(len(heads), dtype=np.int64), (heads, tails)), shape=(num_entities, num_entities)
-    )
+    reach = sparse.csr_matrix((np.ones(len(heads), dtype=np.int64), (heads, tails)), shape=(num_entities, num_entities))
     reach.data[:] = 1  # collapse duplicate edges
     while True:
         nxt = reach @ reach + reach
@@ -107,8 +106,8 @@ def build_ancestor_paths(
 class HierarchicalPipelineResult(PipelineResult):
     """A :class:`PipelineResult` that additionally carries hierarchical-task metrics."""
 
-    #: mAP/AUROC (and, for subsumption, thresholded precision/recall/F1) over transitive-closure
-    #: positives vs. corrupted-descendant negatives (Bai et al. 2021), or ``None`` if not computed.
+    #: mAP/AUROC (and, for transitive ancestor-descendant prediction, thresholded precision/recall/F1) over
+    #: transitive-closure positives vs. corrupted-descendant negatives (Bai et al. 2021), or ``None`` if not computed.
     ancestor_descendant_metric_results: PairClassificationMetricResults | None = None
     #: Raw per-pair test ``rows``/``labels``/``scores``/``predictions``/``threshold`` behind the
     #: ancestor-descendant metrics, populated only when the pipeline is called with ``return_raw=True``.
@@ -261,10 +260,7 @@ def _canonical_rows(
     """
     rows = mapped_triples.tolist()
     if getattr(dataset, "hierarchy_inverted", False):
-        rows = [
-            [t, r, h] if hierarchy_relation is None or r == hierarchy_relation else [h, r, t]
-            for h, r, t in rows
-        ]
+        rows = [[t, r, h] if hierarchy_relation is None or r == hierarchy_relation else [h, r, t] for h, r, t in rows]
     return rows
 
 

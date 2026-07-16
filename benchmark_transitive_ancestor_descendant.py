@@ -1,10 +1,10 @@
-"""Benchmark every subsumption baseline (incl. HyperbolicCones) across every hierarchical dataset.
+"""Benchmark every transitive ancestor-descendant baseline (incl. HyperbolicCones) across every hierarchical dataset.
 
-Extends ``test_subsumption.py``'s single-dataset sweep (Ganea et al. 2018; He et al. 2024 protocol,
-see that module's docstring) to every dataset in this repo implementing
+Extends ``test_transitive_ancestor_descendant.py``'s single-dataset sweep (Ganea et al. 2018; He et al. 2024
+protocol, see that module's docstring) to every dataset in this repo implementing
 :class:`pykeen.datasets.metadata.HierarchicalGraph`, adds a working ``HyperbolicCones`` baseline
 (warm-started from a pretrained Poincaré model, per Ganea et al. 2018 §5), and persists per-run
-results plus a cross-run summary under ``results/subsumption/``.
+results plus a cross-run summary under ``results/transitive-ancestor-descendant/<run_stamp>/``.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from __future__ import annotations
 import csv
 import json
 import time
+from datetime import datetime
 from functools import partial
 from pathlib import Path
 
@@ -20,7 +21,10 @@ from pykeen.datasets.metadata import HierarchicalGraph, resolve_hierarchy_relati
 from pykeen.models import HyperbolicCones, LorentzE, PoincareE
 from pykeen.nn.hyperbolic import LorentzEmbedding
 from pykeen.nn.init import PretrainedInitializer
-from pykeen.pipeline.subsumption import subsumption_prediction_metrics, subsumption_prediction_pipeline
+from pykeen.pipeline.transitive_ancestor_descendant import (
+    transitive_ancestor_descendant_prediction_metrics,
+    transitive_ancestor_descendant_prediction_pipeline,
+)
 
 DEVICE = "cpu"
 EPOCHS = 200
@@ -79,7 +83,7 @@ DATASET_CLASSES = [
     datasets.WordNetNoun0Percent,
 ]
 
-RESULTS_DIR = Path(__file__).parent / "results" / "subsumption"
+RESULTS_DIR = Path(__file__).parent / "results" / "transitive-ancestor-descendant"
 
 PAIR_METRICS = {"Prec": "precision", "Rec": "recall", "F1": "f1"}
 COLUMNS = [
@@ -102,7 +106,7 @@ def _ball_norm(emb: object, indices: object) -> object:
 def _make_hyperbolic_isa_score(dataset: object, hierarchy_relation: int | None, alpha: float = 1.0):
     """Build a directional is-a score (Nickel & Kiela 2017, Eq. 8) closed over one dataset/relation.
 
-    Per-dataset closure over ``test_subsumption.py``'s ``make_hyperbolic_isa_score``, which instead
+    Per-dataset closure over ``test_transitive_ancestor_descendant.py``'s ``make_hyperbolic_isa_score``, which instead
     reads module-level ``DATASET``/``HIERARCHY_RELATION`` globals — not reusable across a dataset
     sweep. ``alpha`` weights the norm (depth) penalty and is tuned on validation by ``_tune_alpha``.
     """
@@ -140,7 +144,7 @@ def _tune_alpha(
     # ponytail: rescores dist+norms per alpha; decompose Δnorm/dist once if the sweep ever dominates
     best = None
     for alpha in ISA_ALPHAS:
-        metrics, raw = subsumption_prediction_metrics(
+        metrics, raw = transitive_ancestor_descendant_prediction_metrics(
             model,
             dataset,
             closure_ratio=closure_ratio,
@@ -169,7 +173,7 @@ def _pretrain_poincare_initializer(
     the pretrained ball embeddings are rescaled by 0.7 (they collapse toward the border) then mapped
     back to tangent space with ``manifold.logmap0`` before being used as a tangent-space initializer.
     """
-    result = subsumption_prediction_pipeline(
+    result = transitive_ancestor_descendant_prediction_pipeline(
         dataset,
         model=PoincareE,
         model_kwargs={"embedding_dim": embedding_dim, "curvature": 1.0},
@@ -277,7 +281,7 @@ def _evaluate_config(
     model_kwargs: dict,
     extra: dict,
 ) -> tuple[dict[str, float], dict]:
-    """Train one configuration, then score the held-out subsumptions under both negative settings.
+    """Train one configuration, then score the held-out ancestor-descendant pairs under both negative settings.
 
     Returns the flat metrics dict plus a ``{"rnd", "hrd"}`` dict of the raw per-pair predictions
     (each ``None`` when that pass produced no metrics) for persistence. Configs carrying an
@@ -285,7 +289,7 @@ def _evaluate_config(
     """
     extra = dict(extra)
     score_factory = extra.pop("eval_score_factory", None)
-    result = subsumption_prediction_pipeline(
+    result = transitive_ancestor_descendant_prediction_pipeline(
         dataset,
         model=model,
         model_kwargs=model_kwargs,
@@ -304,7 +308,7 @@ def _evaluate_config(
     if score_factory is None:
         random_scores = result.ancestor_descendant_metric_results
         random_raw = result.ancestor_descendant_raw_predictions
-        hard_scores, hard_raw = subsumption_prediction_metrics(
+        hard_scores, hard_raw = transitive_ancestor_descendant_prediction_metrics(
             result.model,
             dataset,
             closure_ratio=closure_ratio,
@@ -336,6 +340,7 @@ def _evaluate_config(
 
 
 def _write_run_result(
+    run_stamp: str,
     dataset_name: str,
     closure_ratio: float,
     label: str,
@@ -344,12 +349,13 @@ def _write_run_result(
     error: str | None,
     raw: dict | None = None,
 ) -> None:
-    """Persist one run's full metrics plus metadata as JSON under results/subsumption/<dataset>/<closure%>/.
+    """Persist one run's full metrics plus metadata as JSON under
+    results/transitive-ancestor-descendant/<run_stamp>/<dataset>/<closure%>/.
 
     When ``raw`` carries per-pair predictions and the run succeeded, they are written to a separate
     ``<config>.predictions.json`` in the same directory, keeping the metrics file/summary unchanged.
     """
-    out_dir = RESULTS_DIR / dataset_name / f"closure_{int(closure_ratio * 100)}"
+    out_dir = RESULTS_DIR / run_stamp / dataset_name / f"closure_{int(closure_ratio * 100)}"
     out_dir.mkdir(parents=True, exist_ok=True)
     safe_label = label.split(" (")[0].replace(" ", "_")
     payload = {
@@ -371,10 +377,11 @@ def _write_run_result(
         (out_dir / f"{safe_label}.predictions.json").write_text(json.dumps(raw, indent=2))
 
 
-def _write_summary(rows: list[tuple[str, float, str, dict[str, float]]]) -> None:
+def _write_summary(run_stamp: str, rows: list[tuple[str, float, str, dict[str, float]]]) -> None:
     """Write one aggregated CSV: rows = dataset x closure_ratio x config, columns = all metrics."""
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with (RESULTS_DIR / "summary.csv").open("w", newline="") as fh:
+    out_dir = RESULTS_DIR / run_stamp
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with (out_dir / "summary.csv").open("w", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow(["dataset", "closure_ratio", "config", *COLUMNS])
         for dataset_name, closure_ratio, label, scores in rows:
@@ -383,6 +390,7 @@ def _write_summary(rows: list[tuple[str, float, str, dict[str, float]]]) -> None
 
 def main() -> None:
     """Run every configuration against every hierarchical dataset and closure ratio, print/persist results."""
+    run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     all_rows: list[tuple[str, float, str, dict[str, float]]] = []
     for dataset_class in DATASET_CLASSES:
         dataset = dataset_class()
@@ -393,7 +401,7 @@ def main() -> None:
 
         for closure_ratio in CLOSURE_RATIOS:
             print("=" * 104)
-            print(f"Dataset: {dataset_name}  task: multi-hop subsumption prediction")
+            print(f"Dataset: {dataset_name}  task: multi-hop transitive ancestor-descendant prediction")
             print(
                 f"  hierarchy_relation={hierarchy_relation!r}  closure_ratio={closure_ratio}  "
                 f"eval_ratio={EVAL_RATIO}  negatives/positive={NUM_NEGATIVES}  epochs={EPOCHS}"
@@ -418,7 +426,7 @@ def main() -> None:
                 duration = time.time() - start
                 rows.append((label, scores))
                 all_rows.append((dataset_name, closure_ratio, label, scores))
-                _write_run_result(dataset_name, closure_ratio, label, scores, duration, error, raw)
+                _write_run_result(run_stamp, dataset_name, closure_ratio, label, scores, duration, error, raw)
 
             print("\n" + "-" * 104)
             header = f"{'Configuration':<32}" + "".join(f"{name:>8}" for name in COLUMNS)
@@ -429,9 +437,9 @@ def main() -> None:
                 print(f"{label:<32}{cells}")
             print("-" * 104)
 
-    _write_summary(all_rows)
-    print(f"\nDetailed per-run results written to {RESULTS_DIR}/<dataset>/<config>.json")
-    print(f"Summary table written to {RESULTS_DIR}/summary.csv")
+    _write_summary(run_stamp, all_rows)
+    print(f"\nDetailed per-run results written to {RESULTS_DIR}/{run_stamp}/<dataset>/<config>.json")
+    print(f"Summary table written to {RESULTS_DIR}/{run_stamp}/summary.csv")
 
 
 if __name__ == "__main__":

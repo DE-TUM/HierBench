@@ -9,7 +9,7 @@ The public surface mirrors PyKEEN's function-style pipeline API:
   reports task-specific metrics.
 
 The shared internals live in :mod:`pykeen.pipeline.hierarchical_helper`; the sibling task is
-:mod:`pykeen.pipeline.subsumption` (Ganea et al. 2018; He et al. 2024).
+:mod:`pykeen.pipeline.transitive_ancestor_descendant` (Ganea et al. 2018; He et al. 2024).
 """
 
 from __future__ import annotations
