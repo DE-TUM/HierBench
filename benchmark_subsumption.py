@@ -49,6 +49,13 @@ NUM_NEGATIVES = 10
 #: Ganea et al. (2018 §5): 10 training negatives per positive — applied to *every* config so the
 #: baselines get equal training budgets.
 TRAIN_NEGATIVES = 10
+#: Ganea et al. (2018 §5): batch size 10 for *all* models. Critical for the SGD baselines
+#: (PoincareE/LorentzE): pykeen's pipeline defaults to batch_size=256, and with mean-reduced
+#: cross-entropy the per-step gradient shrinks ~25x, so 200 epochs deliver far too little training —
+#: embeddings never disentangle, norms carry no depth signal, and alpha-tuning collapses to the grid
+#: minimum (score degenerates to symmetric distance). RiemannianAdam (HyperbolicCones) is roughly
+#: batch-size-invariant and keeps its own lr.
+TRAIN_BATCH_SIZE = 10
 
 #: Nickel & Kiela (2017) Eq. 8: severity of the norm (depth) penalty. Tuned per config on the
 #: validation set (max val F1), following Ganea et al. (2018 §5). N&K use alpha=1000: since ball
@@ -205,6 +212,7 @@ def build_configs(
                 "lr_scheduler_kwargs": {"factor": 0.1, "total_iters": BURN_IN_EPOCHS},
                 "loss": "crossentropy",
                 "negative_sampler_kwargs": {"num_negs_per_pos": TRAIN_NEGATIVES},
+                "training_kwargs": {"batch_size": TRAIN_BATCH_SIZE},
                 "eval_score_factory": isa_score_factory,
             },
         ),
@@ -219,6 +227,7 @@ def build_configs(
                 "lr_scheduler_kwargs": {"factor": 0.1, "total_iters": BURN_IN_EPOCHS},
                 "loss": "crossentropy",
                 "negative_sampler_kwargs": {"num_negs_per_pos": TRAIN_NEGATIVES},
+                "training_kwargs": {"batch_size": TRAIN_BATCH_SIZE},
                 "eval_score_factory": isa_score_factory,
             },
         ),
