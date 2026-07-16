@@ -5,7 +5,7 @@ Shared protocol for all configs (Ganea et al. 2018, §5; He et al. 2024, §4.1),
 non-direct transitive closure), hold out two `EVAL_RATIO` portions of the remaining closure pairs as
 validation/test, pair each held-out positive with `NUM_NEGATIVES` negatives, tune an F1-optimal score
 threshold on validation, and report Precision/Recall/F1 on test (random and hard/sibling negatives),
-plus mAP/AUROC (random negatives), rank-based MRR, and hierarchical P/R/F1 (Kosmopoulos et al. 2015).
+plus mAP/AUROC (random negatives) and rank-based MRR.
 
 Shared settings across all baselines: `embedding_dim=64`, `epochs=200`, `seed=42`, `closure_ratio=0.0`,
 `eval_ratio=0.05`, `num_negatives=50`, CPU device.

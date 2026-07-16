@@ -134,15 +134,13 @@ def hierarchy_completion_pipeline(
     epochs: int = 100,
     test_ratio: float = 0.1,
     seed: int = 42,
-    hierarchical: bool = True,
     hierarchy_relation: int | str | None = None,
     **pipeline_kwargs,
 ) -> HierarchicalPipelineResult:
     """Remove direct hierarchy edges, train on the rest, and predict the removed edges.
 
     Convenience wrapper that mirrors :func:`pykeen.pipeline.pipeline`: it builds the split with
-    :func:`hierarchy_completion_split`, trains the model, and (unless ``hierarchical`` is ``False``)
-    additionally reports hierarchical precision/recall/F1 alongside the rank-based metrics.
+    :func:`hierarchy_completion_split` and trains and scores the model on it.
 
     :param dataset: A hierarchical dataset.
     :param model: Model class, string alias, or instance forwarded to
@@ -152,15 +150,13 @@ def hierarchy_completion_pipeline(
     :param epochs: Number of training epochs.
     :param test_ratio: Fraction of removable hierarchy edges to hold out. Default 0.1.
     :param seed: Random seed for reproducible removal and val/test splits.
-    :param hierarchical: Whether to compute the hierarchical metrics (an extra evaluation pass).
     :param hierarchy_relation: Relation id or label defining the hierarchy; defaults to the dataset's
         :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when available.
     :param pipeline_kwargs: Additional kwargs forwarded to :func:`pykeen.pipeline.pipeline`. Under
         sLCWA the negative sampler defaults to :class:`~pykeen.sampling.HierarchyNegativeSampler`
         (same-depth hard negatives); pass ``negative_sampler="pseudotyped"`` / ``"basic"`` to override.
 
-    :returns: A :class:`~pykeen.pipeline.hierarchical_helper.HierarchicalPipelineResult`; its
-        ``hierarchical_metric_results`` is ``None`` when ``hierarchical`` is ``False``.
+    :returns: A :class:`~pykeen.pipeline.hierarchical_helper.HierarchicalPipelineResult`.
     """
     hierarchy_relation = resolve_hierarchy_relation(dataset, hierarchy_relation)
     train_factory, val_factory, test_factory = hierarchy_completion_split(
@@ -168,15 +164,12 @@ def hierarchy_completion_pipeline(
     )
     pipeline_kwargs = _default_hierarchy_sampler(pipeline_kwargs, hierarchy_relation)
     return _train_and_score_hierarchical(
-        dataset,
         train_factory,
         val_factory,
         test_factory,
         model=model,
         embedding_dim=embedding_dim,
         epochs=epochs,
-        hierarchical=hierarchical,
-        hierarchy_relation=hierarchy_relation,
         **pipeline_kwargs,
     )
 
@@ -188,14 +181,12 @@ def hpo_hierarchy_completion_pipeline(
     test_ratio: float = 0.1,
     seed: int = 42,
     hierarchy_relation: int | str | None = None,
-    hierarchical: bool = True,
     **hpo_kwargs,
 ) -> HpoHierarchicalResult:
     """Run HPO on the hierarchy-completion task, then re-fit and score the best trial.
 
     Builds the split with :func:`hierarchy_completion_split`, runs :func:`pykeen.hpo.hpo_pipeline`
-    over it, and (unless ``hierarchical`` is ``False``) re-trains the winning configuration on the
-    same split and reports its hierarchical precision/recall/F1.
+    over it, and re-trains the winning configuration on the same split.
 
     :param dataset: A hierarchical dataset. Its training edges define the hierarchy.
     :param model: Model class, string alias, or ``None`` (defaults to
@@ -204,13 +195,11 @@ def hpo_hierarchy_completion_pipeline(
     :param seed: Random seed for reproducible removal and val/test splits.
     :param hierarchy_relation: Relation id or label defining the hierarchy; defaults to the dataset's
         :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when available.
-    :param hierarchical: Whether to re-fit the best trial and compute the hierarchical metrics.
     :param hpo_kwargs: Additional kwargs forwarded to :func:`pykeen.hpo.hpo_pipeline`. Under sLCWA the
         negative sampler defaults to :class:`~pykeen.sampling.HierarchyNegativeSampler` (same-depth
         hard negatives); pass ``negative_sampler="pseudotyped"`` / ``"basic"`` to override.
 
-    :returns: A :class:`~pykeen.pipeline.hierarchical_helper.HpoHierarchicalResult`; its ``result`` is
-        ``None`` when ``hierarchical`` is ``False``.
+    :returns: A :class:`~pykeen.pipeline.hierarchical_helper.HpoHierarchicalResult`.
     """
     hierarchy_relation = resolve_hierarchy_relation(dataset, hierarchy_relation)
     train_factory, val_factory, test_factory = hierarchy_completion_split(
@@ -226,6 +215,5 @@ def hpo_hierarchy_completion_pipeline(
         split_kwargs={"test_ratio": test_ratio, "seed": seed},
         model=model,
         hierarchy_relation=hierarchy_relation,
-        hierarchical=hierarchical,
         **hpo_kwargs,
     )

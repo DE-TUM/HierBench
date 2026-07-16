@@ -5,10 +5,6 @@ from class_resolver import ClassResolver
 from .classification_evaluator import ClassificationEvaluator, ClassificationMetricResults
 from .evaluation_loop import LCWAEvaluationLoop
 from .evaluator import Evaluator, MetricResults
-from .hierarchical_classification_evaluator import (
-    HierarchicalClassificationEvaluator,
-    HierarchicalMetricResults,
-)
 from .ogb_evaluator import OGBEvaluator
 from .rank_based_evaluator import (
     MacroRankBasedEvaluator,
@@ -28,8 +24,6 @@ __all__ = [
     "OGBEvaluator",
     "ClassificationEvaluator",
     "ClassificationMetricResults",
-    "HierarchicalClassificationEvaluator",
-    "HierarchicalMetricResults",
     "evaluator_resolver",
     "metric_resolver",
 ]

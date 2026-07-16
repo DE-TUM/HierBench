@@ -14,7 +14,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 import numpy as np
@@ -23,17 +23,13 @@ from scipy import sparse
 
 from .api import PipelineResult, pipeline
 from ..datasets.base import Dataset
-from ..evaluation.hierarchical_classification_evaluator import (
-    HierarchicalClassificationEvaluator,
-    HierarchicalMetricResults,
-)
 from ..evaluation.pair_classification_evaluator import PairClassificationMetricResults
 from ..models.nbase import ERModel
 from ..models.unimodal import PoincareE
 from ..sampling import HierarchyNegativeSampler
 from ..training import SLCWATrainingLoop, training_loop_resolver
 from ..triples import CoreTriplesFactory
-from ..typing import LABEL_HEAD, LABEL_TAIL, MappedTriples
+from ..typing import MappedTriples
 
 if TYPE_CHECKING:
     # imported lazily inside _hpo_and_refit to avoid a circular import
@@ -109,10 +105,8 @@ def build_ancestor_paths(
 
 @dataclass
 class HierarchicalPipelineResult(PipelineResult):
-    """A :class:`PipelineResult` that additionally carries hierarchical classification metrics."""
+    """A :class:`PipelineResult` that additionally carries hierarchical-task metrics."""
 
-    #: The hierarchical precision/recall/F1 metrics, or ``None`` if not computed.
-    hierarchical_metric_results: HierarchicalMetricResults | None = None
     #: mAP/AUROC (and, for subsumption, thresholded precision/recall/F1) over transitive-closure
     #: positives vs. corrupted-descendant negatives (Bai et al. 2021), or ``None`` if not computed.
     ancestor_descendant_metric_results: PairClassificationMetricResults | None = None
@@ -122,10 +116,8 @@ class HierarchicalPipelineResult(PipelineResult):
     ancestor_descendant_raw_predictions: dict | None = None
 
     def _get_results(self) -> Mapping[str, Any]:
-        """Extend the serialized results with the hierarchical metrics."""
+        """Extend the serialized results with the hierarchical-task metrics."""
         results = dict(super()._get_results())
-        if self.hierarchical_metric_results is not None:
-            results["hierarchical_metrics"] = self.hierarchical_metric_results.to_dict()
         if self.ancestor_descendant_metric_results is not None:
             results["ancestor_descendant_metrics"] = self.ancestor_descendant_metric_results.to_dict()
         return results
@@ -137,17 +129,16 @@ class HpoHierarchicalResult:
 
     Bundles the standard HPO study with the best trial re-fitted on the same split, so the full HPO
     surface (``hpo_result.study``, ``hpo_result.save_to_directory(...)``) stays available alongside the
-    best configuration's rank-based and hierarchical metrics on ``result``.
+    best configuration's metrics on ``result``.
     """
 
     #: The :class:`~pykeen.hpo.HpoPipelineResult` from the search (optuna study, serialization, ...).
     hpo_result: HpoPipelineResult
-    #: The best trial re-trained on the split, or ``None`` when ``hierarchical=False``.
+    #: The best trial re-trained on the split.
     result: HierarchicalPipelineResult | None = None
 
 
 def _train_and_score_hierarchical(
-    dataset: Dataset,
     train_factory: CoreTriplesFactory,
     val_factory: CoreTriplesFactory,
     test_factory: CoreTriplesFactory,
@@ -155,17 +146,12 @@ def _train_and_score_hierarchical(
     model: type[ERModel] | str | None,
     embedding_dim: int,
     epochs: int,
-    hierarchical: bool,
-    hierarchy_relation: int | None,
-    ancestors: dict[int, frozenset[int]] | None = None,
     **pipeline_kwargs,
 ) -> HierarchicalPipelineResult:
-    """Train on ``train_factory`` and score ``test_factory``, optionally with hierarchical metrics.
+    """Train on ``train_factory`` and score ``test_factory``.
 
     Shared body of the task-specific pipelines (e.g. :func:`~pykeen.pipeline.hierarchy.hierarchy_completion_pipeline`),
-    which differ only in how they build the split. Ground-truth ancestor paths for the hierarchical
-    pass come from the full, pre-split hierarchy (``dataset.training``); pass ``ancestors`` when the
-    caller already computed them to avoid a second pass.
+    which differ only in how they build the split.
     """
     resolved_model = model if model is not None else _DEFAULT_MODEL
     # copy so we never mutate a dict the caller still holds a reference to
@@ -181,40 +167,8 @@ def _train_and_score_hierarchical(
         epochs=epochs,
         **pipeline_kwargs,
     )
-
-    hierarchical_metric_results = None
-    if hierarchical:
-        # direct instantiation → the big ancestors dict never enters the logged config
-        ancestors = ancestors or build_ancestor_paths(
-            dataset.training.mapped_triples, dataset.num_entities, hierarchy_relation
-        )
-        # mirror the pipeline's evaluation settings on the hierarchical pass (evaluation_kwargs are the
-        # .evaluate()-time params; evaluator_kwargs is the constructor, used as a fallback for batch_size)
-        eval_source = {
-            **pipeline_kwargs.get("evaluator_kwargs", {}),
-            **pipeline_kwargs.get("evaluation_kwargs", {}),
-        }
-        eval_kwargs = {
-            key: eval_source[key]
-            for key in ("batch_size", "slice_size", "device", "use_tqdm", "tqdm_kwargs")
-            if key in eval_source
-        }
-        hierarchical_metric_results = cast(
-            HierarchicalMetricResults,
-            HierarchicalClassificationEvaluator(ancestors=ancestors).evaluate(
-                model=result.model,
-                mapped_triples=test_factory.mapped_triples,
-                targets=(LABEL_HEAD, LABEL_TAIL),
-                **eval_kwargs,
-                # [] (not None) -> Y reflects the held-out targets only, no training triples added,
-                # while skipping prepare_filter_triples()'s "did you forget training triples?" warning
-                additional_filter_triples=[],
-            ),
-        )
-
     return HierarchicalPipelineResult(
         **{field.name: getattr(result, field.name) for field in fields(result)},
-        hierarchical_metric_results=hierarchical_metric_results,
     )
 
 
@@ -228,7 +182,6 @@ def _hpo_and_refit(
     split_kwargs: Mapping[str, Any],
     model: type[ERModel] | str | None,
     hierarchy_relation: int | None,
-    hierarchical: bool,
     **hpo_kwargs,
 ) -> HpoHierarchicalResult:
     """Run HPO over a fixed split, then re-fit and score the best trial via ``refit``.
@@ -251,30 +204,27 @@ def _hpo_and_refit(
         **hpo_kwargs,
     )
 
-    result = None
-    if hierarchical:
-        # reconstruct the winning configuration (preset + optimized kwargs, early-stopped epochs)
-        # ponytail: rides the private `_get_best_study_config()` -> {"pipeline": {...}}; no public API
-        # returns the best config inline. If pykeen renames it, update here (see pykeen.hpo.hpo).
-        config = dict(hpo_result._get_best_study_config()["pipeline"])
-        for key in _NON_PIPELINE_CONFIG_KEYS:
-            config.pop(key, None)
-        best_model = config.pop("model", resolved_model)
-        # an explicit `epochs` overrides training_kwargs["num_epochs"], so route it through `epochs`
-        training_kwargs = dict(config.pop("training_kwargs", {}))
-        best_epochs = training_kwargs.pop("num_epochs", None)
-        if training_kwargs:
-            config["training_kwargs"] = training_kwargs
-        epoch_kwargs = {"epochs": best_epochs} if best_epochs is not None else {}
-        result = refit(
-            dataset,
-            model=best_model,
-            hierarchy_relation=hierarchy_relation,
-            hierarchical=True,
-            **split_kwargs,
-            **epoch_kwargs,
-            **config,
-        )
+    # reconstruct the winning configuration (preset + optimized kwargs, early-stopped epochs)
+    # ponytail: rides the private `_get_best_study_config()` -> {"pipeline": {...}}; no public API
+    # returns the best config inline. If pykeen renames it, update here (see pykeen.hpo.hpo).
+    config = dict(hpo_result._get_best_study_config()["pipeline"])
+    for key in _NON_PIPELINE_CONFIG_KEYS:
+        config.pop(key, None)
+    best_model = config.pop("model", resolved_model)
+    # an explicit `epochs` overrides training_kwargs["num_epochs"], so route it through `epochs`
+    training_kwargs = dict(config.pop("training_kwargs", {}))
+    best_epochs = training_kwargs.pop("num_epochs", None)
+    if training_kwargs:
+        config["training_kwargs"] = training_kwargs
+    epoch_kwargs = {"epochs": best_epochs} if best_epochs is not None else {}
+    result = refit(
+        dataset,
+        model=best_model,
+        hierarchy_relation=hierarchy_relation,
+        **split_kwargs,
+        **epoch_kwargs,
+        **config,
+    )
 
     return HpoHierarchicalResult(hpo_result=hpo_result, result=result)
 

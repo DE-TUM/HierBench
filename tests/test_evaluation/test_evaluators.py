@@ -28,11 +28,6 @@ from pykeen.evaluation.evaluator import (
     get_candidate_set_size,
     prepare_filter_triples,
 )
-from pykeen.evaluation.hierarchical_classification_evaluator import (
-    HierarchicalClassificationEvaluator,
-    HierarchicalMetricResults,
-    _hierarchical_scores,
-)
 from pykeen.evaluation.rank_based_evaluator import (
     MacroRankBasedEvaluator,
     RankBasedMetricKey,
@@ -186,25 +181,6 @@ class ClassificationEvaluatorTest(cases.EvaluatorTestCase):
 
         for (side, metric_name), value in result.data.items():
             assert side in SIDES
-            assert isinstance(metric_name, str)
-            assert isinstance(value, (float, int))
-
-
-class HierarchicalClassificationEvaluatorTest(cases.EvaluatorTestCase):
-    """Unittest for the HierarchicalClassificationEvaluator."""
-
-    cls = HierarchicalClassificationEvaluator
-    # identity ancestors (each node its own root) -> well-defined hierarchical sets;
-    # covers all 14 Nations entities.
-    kwargs = {"ancestors": {i: frozenset({i}) for i in range(14)}}
-
-    def _validate_result(
-        self,
-        result: MetricResults,
-        data: dict[str, torch.Tensor],
-    ):
-        assert isinstance(result, HierarchicalMetricResults)
-        for (_side, metric_name), value in result.data.items():
             assert isinstance(metric_name, str)
             assert isinstance(value, (float, int))
 
@@ -841,59 +817,6 @@ class ClassificationMetricResultsTests(cases.MetricResultTestCase):
         kwargs = super()._pre_instantiation_hook(kwargs)
         # Populate with real results.
         evaluator = ClassificationEvaluator()
-        evaluator.process_scores_(
-            hrt_batch=torch.randint(self.num_entities, size=(self.num_triples, 3)),
-            target=LABEL_TAIL,
-            scores=torch.rand(self.num_triples, self.num_entities),
-            dense_positive_mask=torch.rand(self.num_triples, self.num_entities) < 0.5,
-        )
-        kwargs["data"] = evaluator.finalize().data
-        return kwargs
-
-
-def test_hierarchical_scores_values() -> None:
-    """Verify (hP, hR, hF1) on a hand-computable chain hierarchy (Kosmopoulos et al. 2015)."""
-    from pykeen.pipeline.hierarchical_helper import build_ancestor_paths
-
-    # chain 0->1->2->3 plus sibling 4 under 1 (edges parent->child)
-    triples = torch.tensor([[0, 0, 1], [1, 0, 2], [2, 0, 3], [1, 0, 4]])
-    ancestors = build_ancestor_paths(triples, num_entities=5)
-    assert ancestors[3] == frozenset({0, 1, 2, 3})
-    assert ancestors[4] == frozenset({0, 1, 4})
-    assert ancestors[0] == frozenset({0})
-
-    y_true = numpy.array([0, 0, 0, 1, 0])
-    # top-1 = entity 2, the parent of the truth: Yhat_aug={0,1,2}, Y_aug={0,1,2,3}
-    hp, hr, hf1 = _hierarchical_scores(
-        y_true=y_true, y_score=numpy.array([0.1, 0.2, 0.9, 0.3, 0.0]), ancestors=ancestors
-    )
-    assert (hp, hr) == (1.0, 0.75)
-    assert hf1 == pytest.approx(6 / 7)
-    # top-1 = sibling 4: Yhat_aug={0,1,4}, intersection={0,1}
-    hp, hr, _ = _hierarchical_scores(
-        y_true=y_true, y_score=numpy.array([0.1, 0.2, 0.0, 0.3, 0.9]), ancestors=ancestors
-    )
-    assert (hp, hr) == (pytest.approx(2 / 3), 0.5)
-    # exact hit
-    assert _hierarchical_scores(
-        y_true=y_true, y_score=numpy.array([0.0, 0.0, 0.0, 1.0, 0.0]), ancestors=ancestors
-    ) == (1.0, 1.0, 1.0)
-    # no positives -> None
-    assert _hierarchical_scores(y_true=numpy.zeros(5), y_score=numpy.ones(5), ancestors=ancestors) is None
-
-
-class HierarchicalMetricResultsTests(cases.MetricResultTestCase):
-    """Tests for hierarchical metric results."""
-
-    cls = HierarchicalMetricResults
-    num_entities: int = 7
-    num_triples: int = 13
-
-    def _pre_instantiation_hook(self, kwargs: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
-        kwargs = super()._pre_instantiation_hook(kwargs)
-        evaluator = HierarchicalClassificationEvaluator(
-            ancestors={i: frozenset({i}) for i in range(self.num_entities)},
-        )
         evaluator.process_scores_(
             hrt_batch=torch.randint(self.num_entities, size=(self.num_triples, 3)),
             target=LABEL_TAIL,

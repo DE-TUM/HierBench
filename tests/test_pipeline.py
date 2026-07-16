@@ -541,7 +541,7 @@ class TestHierarchyCompletionPipeline(unittest.TestCase):
             assert tuple(ctx) in train_edges
 
     def test_pipeline_runs(self):
-        """Pipeline completes, returns a valid MRR, and reports hierarchical metrics."""
+        """Pipeline completes and returns a valid MRR."""
         from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
 
         dataset = _make_bipartite_dataset()
@@ -549,7 +549,6 @@ class TestHierarchyCompletionPipeline(unittest.TestCase):
         assert result.metric_results is not None
         mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
         assert 0.0 <= mrr <= 1.0
-        assert result.hierarchical_metric_results is not None
 
     def test_negative_sampler_selectable(self):
         """The hierarchy default is a setdefault: pseudotyped/basic can be chosen instead."""
@@ -778,7 +777,6 @@ class TestSubsumptionPredictionPipeline(unittest.TestCase):
         result = subsumption_prediction_pipeline(dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0)
         mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
         assert 0.0 <= mrr <= 1.0
-        assert result.hierarchical_metric_results is not None
         metrics = result.ancestor_descendant_metric_results
         assert metrics is not None
         for key in ("precision", "recall", "f1", "average_precision", "roc_auc"):
@@ -842,99 +840,10 @@ def test_build_ancestor_paths_relation_filter():
     assert 3 in unfiltered[0]
 
 
-def test_hierarchical_scores_paper_example():
-    """Reproduce Kosmopoulos et al. (2015), Fig. 11 / Table 3 (root included, per-query scores)."""
-    from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
-    from pykeen.pipeline.hierarchical_helper import build_ancestor_paths
-
-    # 0=Arts, 1=Music, 2=Theater, 3=Pop, 4=Rock, 5=Classical
-    triples = torch.tensor([[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [1, 0, 5]], dtype=torch.long)
-    ancestors = build_ancestor_paths(triples, num_entities=6)
-    y_true = np.array([0, 0, 0, 1, 0, 0])  # true class is Pop
-
-    # case (a): predicted Rock → hP = hR = hF1 = 2/3 (shared path {Arts, Music})
-    case_a = _hierarchical_scores(y_true=y_true, y_score=np.array([0, 0, 0, 0, 1.0, 0]), ancestors=ancestors)
-    assert case_a == pytest.approx((2 / 3, 2 / 3, 2 / 3))
-
-    # case (b): predicted Theater → hP = 1/2, hR = 1/3, hF1 = 0.4 (only Arts shared)
-    case_b = _hierarchical_scores(y_true=y_true, y_score=np.array([0, 0, 1.0, 0, 0, 0]), ancestors=ancestors)
-    assert case_b == pytest.approx((1 / 2, 1 / 3, 0.4))
-
-
-def test_hierarchical_scores_disjoint_and_empty():
-    """Disjoint branches score 0.0; an empty positive mask yields None."""
-    from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
-
-    # two disjoint chains 0→1 and 2→3
-    ancestors = {0: frozenset({0}), 1: frozenset({0, 1}), 2: frozenset({2}), 3: frozenset({2, 3})}
-    disjoint = _hierarchical_scores(
-        y_true=np.array([0, 1, 0, 0]), y_score=np.array([0.0, 0.0, 0.0, 1.0]), ancestors=ancestors
-    )
-    assert disjoint == pytest.approx((0.0, 0.0, 0.0))
-
-    empty = _hierarchical_scores(
-        y_true=np.array([0, 0, 0, 0]), y_score=np.array([0.1, 0.2, 0.3, 0.4]), ancestors=ancestors
-    )
-    assert empty is None
-
-
-def test_hierarchical_aggregate_averages_per_query():
-    """Aggregation averages the per-query scores (Kosmopoulos et al. 2015), not micro-pooled counts."""
-    from pykeen.evaluation.hierarchical_classification_evaluator import (
-        HierarchicalClassificationEvaluator,
-        HierarchicalMetricKey,
-    )
-
-    values = [(0.5, 0.25, 1 / 3), (1.0, 1.0, 1.0)]
-    result = HierarchicalClassificationEvaluator._aggregate(side="tail", values=values)
-    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_precision")] == pytest.approx(0.75)
-    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_recall")] == pytest.approx(0.625)
-    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_f1")] == pytest.approx(2 / 3)
-
-    # no queries → all zeros
-    zeros = HierarchicalClassificationEvaluator._aggregate(side="tail", values=[])
-    assert all(value == 0.0 for value in zeros.values())
-
-
-def test_hierarchical_evaluator_requires_ancestors():
-    """The hierarchical evaluator raises when no ancestors map is given."""
-    from pykeen.evaluation import HierarchicalClassificationEvaluator
-
-    with pytest.raises(ValueError, match="ancestors"):
-        HierarchicalClassificationEvaluator()
-
-
-def test_pipeline_reports_hierarchical_metrics():
-    """The hierarchy-completion pipeline attaches hierarchical metrics in [0, 1] when enabled."""
-    from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
-
-    dataset = _make_balanced_tree_dataset()
-    result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0)
-    assert result.hierarchical_metric_results is not None
-    h_f1 = result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
-    assert 0.0 <= h_f1 <= 1.0
-
-    disabled = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0, hierarchical=False)
-    assert disabled.hierarchical_metric_results is None
-
-
-def test_pipeline_persists_hierarchical_metrics():
-    """save_to_directory writes the hierarchical metrics into results.json."""
-    import json
-
-    from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
-
-    dataset = _make_balanced_tree_dataset()
-    result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0)
-    with tempfile.TemporaryDirectory() as directory:
-        result.save_to_directory(directory)
-        with pathlib.Path(directory, "results.json").open() as file:
-            saved = json.load(file)
-    assert "hierarchical_metrics" in saved
 
 
 def test_hpo_pipeline_refits_best_trial():
-    """The hierarchy-completion HPO pipeline runs a study and re-fits the best trial's hierarchical metrics."""
+    """The hierarchy-completion HPO pipeline runs a study and re-fits the best trial."""
     from pykeen.pipeline.hierarchy import hpo_hierarchy_completion_pipeline
 
     dataset = _make_balanced_tree_dataset()
@@ -943,5 +852,5 @@ def test_hpo_pipeline_refits_best_trial():
     )
     assert outcome.hpo_result.study is not None
     assert outcome.result is not None
-    h_f1 = outcome.result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
-    assert 0.0 <= h_f1 <= 1.0
+    mrr = outcome.result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+    assert 0.0 <= mrr <= 1.0

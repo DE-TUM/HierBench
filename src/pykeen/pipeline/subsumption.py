@@ -405,7 +405,6 @@ def subsumption_prediction_pipeline(
     num_negatives: int = 10,
     hard_negatives: bool = False,
     seed: int = 42,
-    hierarchical: bool = True,
     hierarchy_relation: int | str | None = None,
     eval_score_fn: Callable[[Model, MappedTriples], torch.Tensor] | None = None,
     return_raw: bool = False,
@@ -419,7 +418,6 @@ def subsumption_prediction_pipeline(
     ``num_negatives`` negatives (random, or hard sibling negatives), and the F1-optimal score
     threshold is tuned on validation and applied to test. The resulting
     precision/recall/F1/threshold plus mAP/AUROC land on ``ancestor_descendant_metric_results``.
-    Unless ``hierarchical`` is ``False``, hierarchical precision/recall/F1 are reported as well.
 
     :param dataset: A hierarchical dataset.
     :param model: Model class, string alias, or instance forwarded to
@@ -434,7 +432,6 @@ def subsumption_prediction_pipeline(
     :param num_negatives: Negatives sampled per held-out positive. Default 10 (both papers).
     :param hard_negatives: Use He et al.'s hard negative setting (siblings first, random top-up).
     :param seed: Random seed for reproducible splitting and negative generation.
-    :param hierarchical: Whether to compute the hierarchical metrics (an extra evaluation pass).
     :param hierarchy_relation: Relation id or label defining the hierarchy; defaults to the dataset's
         :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when available.
     :param eval_score_fn: Optional ``(model, batch) -> scores`` override of ``model.predict_hrt``
@@ -463,16 +460,12 @@ def subsumption_prediction_pipeline(
     test_factory = _factory_from_rows(test_rows, dataset)
     pipeline_kwargs = _default_hierarchy_sampler(pipeline_kwargs, hierarchy_relation)
     result = _train_and_score_hierarchical(
-        dataset,
         train_factory,
         val_factory,
         test_factory,
         model=model,
         embedding_dim=embedding_dim,
         epochs=epochs,
-        hierarchical=hierarchical,
-        hierarchy_relation=hierarchy_relation,
-        ancestors=paths,
         **pipeline_kwargs,
     )
     pair_metrics = _subsumption_pair_metrics(

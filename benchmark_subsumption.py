@@ -3,9 +3,8 @@
 Extends ``test_subsumption.py``'s single-dataset sweep (Ganea et al. 2018; He et al. 2024 protocol,
 see that module's docstring) to every dataset in this repo implementing
 :class:`pykeen.datasets.metadata.HierarchicalGraph`, adds a working ``HyperbolicCones`` baseline
-(warm-started from a pretrained Poincaré model, per Ganea et al. 2018 §5), reports the hierarchical
-P/R/F1 (Kosmopoulos et al. 2015) already computed by the pipeline, and persists per-run results plus
-a cross-run summary under ``results/subsumption/``.
+(warm-started from a pretrained Poincaré model, per Ganea et al. 2018 §5), and persists per-run
+results plus a cross-run summary under ``results/subsumption/``.
 """
 
 from __future__ import annotations
@@ -76,14 +75,12 @@ DATASET_CLASSES = [
 RESULTS_DIR = Path(__file__).parent / "results" / "subsumption"
 
 PAIR_METRICS = {"Prec": "precision", "Rec": "recall", "F1": "f1"}
-HIER_METRICS = {"HierP": "hierarchical_precision", "HierR": "hierarchical_recall", "HierF1": "hierarchical_f1"}
 COLUMNS = [
     *(f"{name}·rnd" for name in PAIR_METRICS),
     *(f"{name}·hrd" for name in PAIR_METRICS),
     "mAP",
     "AUROC",
     "MRR",
-    *HIER_METRICS,
 ]
 
 
@@ -183,7 +180,6 @@ def _pretrain_poincare_initializer(
         loss="crossentropy",
         negative_sampler="basic",
         negative_sampler_kwargs={"num_negs_per_pos": TRAIN_NEGATIVES},
-        hierarchical=False,
         device=DEVICE,
     )
     emb = result.model.entity_representations[0]
@@ -326,9 +322,6 @@ def _evaluate_config(
     scores["mAP"] = _get(random_scores, "average_precision")
     scores["AUROC"] = _get(random_scores, "roc_auc")
     scores["MRR"] = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
-    scores |= {
-        name: _get(result.hierarchical_metric_results, f"both.{key}") for name, key in HIER_METRICS.items()
-    }
     raw = {"rnd": random_raw, "hrd": hard_raw}
     return scores, raw
 

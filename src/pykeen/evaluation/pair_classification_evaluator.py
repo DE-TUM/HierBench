@@ -1,19 +1,15 @@
 """Pairwise classification metrics for ancestor-descendant / subsumption prediction.
 
 Wraps the scores of :func:`pykeen.pipeline.subsumption.subsumption_prediction_pipeline` — held-out ``(h, t)`` pairs
-scored against sampled negatives — in the same :class:`~pykeen.evaluation.evaluator.MetricResults`
-contract used by
-:class:`~pykeen.evaluation.hierarchical_classification_evaluator.HierarchicalMetricResults`, so all
-hierarchical-task metrics expose the same ``.to_dict()``/``.get_metric()`` API.
+scored against sampled negatives — in the standard :class:`~pykeen.evaluation.evaluator.MetricResults`
+contract, so all hierarchical-task metrics expose the same ``.to_dict()``/``.get_metric()`` API.
 
 mAP and AUROC reuse pykeen's existing :class:`~pykeen.metrics.classification.AveragePrecisionScore`
 and :class:`~pykeen.metrics.classification.AreaUnderTheReceiverOperatingCharacteristicCurve`.
 Precision/recall/F1/threshold (subsumption only) get their own metadata-only
 :class:`~pykeen.metrics.utils.Metric` placeholders because they are computed with a
 validation-tuned score threshold rather than pykeen's built-in top-``|Y|`` binarization
-(:func:`pykeen.metrics.classification.construct_indicator`) — the same reason
-:class:`~pykeen.evaluation.hierarchical_classification_evaluator.HierarchicalPrecision` and its
-siblings don't reuse the confusion-matrix metrics either.
+(:func:`pykeen.metrics.classification.construct_indicator`).
 """
 
 from __future__ import annotations

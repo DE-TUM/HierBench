@@ -1,0 +1,174 @@
+%%% HPBench system overview — figure for the 4-page ISWC poster-track paper.
+%%% PyKEEN module pipeline (gray chips) with HPBench contributions (blue chips),
+%%% pluggable task band configuring preprocessing + evaluation.
+\documentclass[tikz,border=0pt]{standalone}
+\usepackage{amsmath,amssymb}
+\usepackage[T1]{fontenc}
+\usetikzlibrary{arrows.meta, positioning, shapes.misc, calc, backgrounds, fit}
+
+% ── Colour palette (project-wide) ───────────────────────────────────────
+\definecolor{varblue}{HTML}{3B82F6}
+\definecolor{uriteal}{HTML}{0D9488}
+\definecolor{wingreen}{HTML}{059669}
+\definecolor{costamber}{HTML}{D97706}
+\definecolor{edgegray}{HTML}{475569}
+\definecolor{titledark}{HTML}{1E293B}
+\definecolor{levelbox}{HTML}{94A3B8}
+\definecolor{blankslate}{HTML}{64748B}
+\definecolor{panelbg}{HTML}{F8FAFC}
+\definecolor{querybg}{HTML}{F1F5F9}
+\definecolor{entcoral}{HTML}{F87171}
+\definecolor{entviolet}{HTML}{8B5CF6}
+\definecolor{entamber}{HTML}{F59E0B}
+
+\begin{document}
+\begin{tikzpicture}[
+    font=\sffamily,
+    >={Stealth[length=5pt, width=4pt]},
+    % ── shared styles ──
+    panel label/.style={font=\footnotesize\sffamily\scshape, text=edgegray},
+    sub label/.style={font=\scriptsize\sffamily, text=titledark},
+    inner box/.style={draw=levelbox!70, line width=0.8pt, rounded corners=3pt,
+        fill=panelbg},
+    module title/.style={font=\small\sffamily\bfseries\scshape, text=titledark},
+    group label/.style={font=\scriptsize\sffamily\scshape, text=titledark},
+    pyk chip/.style={draw=blankslate!60, fill=blankslate!12, rounded corners=3pt,
+        line width=0.7pt, font=\scriptsize\sffamily, text=titledark,
+        align=center, inner ysep=3pt, text width=#1},
+    hp chip/.style={draw=varblue!75!black, fill=varblue!15, rounded corners=3pt,
+        line width=0.9pt, font=\scriptsize\sffamily, text=titledark,
+        align=center, inner ysep=3pt, text width=#1},
+    future chip/.style={draw=varblue!60, dash pattern=on 3pt off 2pt,
+        rounded corners=3pt, line width=0.9pt, font=\scriptsize\sffamily,
+        text=titledark, align=center, inner ysep=3pt, text width=#1},
+    flow arrow/.style={->, draw=edgegray!70, line width=1pt},
+    transition/.style={draw=titledark!55, line width=1.4pt, ->,
+        shorten <=4pt, shorten >=4pt},
+    configures/.style={->, draw=varblue!70, line width=0.9pt,
+        dash pattern=on 3pt off 2pt, shorten <=2pt, shorten >=2pt},
+    tlabel/.style={font=\scriptsize\sffamily, text=titledark, align=center},
+    region/.style={draw=edgegray!75, line width=1pt, dash pattern=on 5pt off 3pt},
+    region title/.style={font=\large\sffamily\bfseries, text=titledark, anchor=west},
+]
+
+% ══════════════════════════════════════════════════════════════════════
+%  DIMENSIONS — four module panels, shared top/bottom
+% ══════════════════════════════════════════════════════════════════════
+\def\panelT{0}    \def\panelB{-6.0}
+\def\DL{0}    \def\DR{4.0}    \def\Dcx{2.0}    % Datasets
+\def\PL{5.0}  \def\PR{8.7}    \def\Pcx{6.85}   % Preprocessing
+\def\LL{9.7}  \def\LR{14.1}   \def\Lcx{11.9}   % Learning
+\def\EL{15.1} \def\ER{19.1}   \def\Ecx{17.1}   % Evaluation
+\def\chipW{3.2cm}                              % chip text width (narrow panels)
+\def\chipWL{3.5cm}                             % chip text width (Learning)
+
+% ══════════════════════════════════════════════════════════════════════
+%  PANEL FRAMES
+% ══════════════════════════════════════════════════════════════════════
+\begin{scope}[on background layer]
+  \draw[inner box] (\DL,\panelB) rectangle (\DR,\panelT);
+  \draw[inner box] (\PL,\panelB) rectangle (\PR,\panelT);
+  \draw[inner box] (\LL,\panelB) rectangle (\LR,\panelT);
+  \draw[inner box] (\EL,\panelB) rectangle (\ER,\panelT);
+\end{scope}
+
+\node[module title] at (\Dcx,-0.40) {Datasets};
+\node[module title] at (\Pcx,-0.40) {Preprocessing};
+\node[module title] at (\Lcx,-0.40) {Learning};
+\node[module title] at (\Ecx,-0.40) {Evaluation};
+
+% ══════════════════════════════════════════════════════════════════════
+%  DATASETS
+% ══════════════════════════════════════════════════════════════════════
+\node[group label] at (\Dcx,-0.85) {pykeen};
+\node[pyk chip=\chipW] at (\Dcx,-1.30) {FB15k-237 $\cdot$ WN18RR $\cdot$ $\cdots$};
+
+\node[group label] at (\Dcx,-2.00) {hpbench};
+\node[hp chip=\chipW] at (\Dcx,-2.90)
+    {8 hierarchical taxonomies\\NASA $\cdot$ DOID $\cdot$ MeSH $\cdot$\\WordNet-Noun $\cdot$ $\cdots$};
+\node[hp chip=\chipW] at (\Dcx,-4.45)
+    {\emph{HierarchicalGraph}\\interface};
+
+% ══════════════════════════════════════════════════════════════════════
+%  PREPROCESSING
+% ══════════════════════════════════════════════════════════════════════
+\node[group label] at (\Pcx,-0.85) {pykeen};
+\node[pyk chip=\chipW] at (\Pcx,-1.30) {random triple split};
+
+\node[group label] at (\Pcx,-2.00) {hpbench};
+\node[hp chip=\chipW] at (\Pcx,-2.65)
+    {transitive closure\\\& reduction};
+\node[hp chip=\chipW] at (\Pcx,-3.75)
+    {hierarchy-aware,\\leakage-safe splits};
+
+% ══════════════════════════════════════════════════════════════════════
+%  LEARNING — models / negative sampling / training
+% ══════════════════════════════════════════════════════════════════════
+\node[group label] at (\Lcx,-0.85) {models};
+\node[pyk chip=\chipWL] at (\Lcx,-1.30) {TransE $\cdot$ RotatE $\cdot$ $\cdots$};
+\node[hp chip=\chipWL]  at (\Lcx,-2.00)
+    {Poincar\'eE $\cdot$ LorentzE $\cdot$\\Hyperbolic Cones};
+
+\node[group label] at (\Lcx,-2.80) {negative sampling};
+\node[pyk chip=\chipWL] at (\Lcx,-3.25) {basic $\cdot$ Bernoulli $\cdot$ $\cdots$};
+\node[hp chip=\chipWL]  at (\Lcx,-3.85) {same-depth sampler};
+
+\node[group label] at (\Lcx,-4.35) {training};
+\node[pyk chip=\chipWL] at (\Lcx,-4.92)
+    {sLCWA / LCWA loops\\losses $\cdot$ optimizers $\cdot$ HPO};
+\node[hp chip=\chipWL] at (\Lcx,-5.55) {$k$-fold cross-validation};
+
+% ══════════════════════════════════════════════════════════════════════
+%  EVALUATION
+% ══════════════════════════════════════════════════════════════════════
+\node[group label] at (\Ecx,-0.85) {pykeen};
+\node[pyk chip=\chipW] at (\Ecx,-1.55)
+    {metrics: MRR $\cdot$ Hits@$k$\\P / R / F1 $\cdot$ mAP $\cdot$ AUROC};
+
+\node[group label] at (\Ecx,-2.55) {hpbench};
+\node[hp chip=\chipW] at (\Ecx,-3.25)
+    {pair-classification protocol\\hard negatives, tuned threshold};
+
+% ══════════════════════════════════════════════════════════════════════
+%  FLOW ARROWS between modules
+% ══════════════════════════════════════════════════════════════════════
+\draw[transition] (\DR,-1.30) -- (\PL,-1.30);
+\node[tlabel] at ({(\DR+\PL)/2},-0.90) {triples};
+\draw[transition] (\PR,-1.30) -- (\LL,-1.30);
+\node[tlabel] at ({(\PR+\LL)/2},-0.90) {splits};
+\draw[transition] (\LR,-1.30) -- (\EL,-1.30);
+\node[tlabel] at ({(\LR+\EL)/2},-0.90) {model};
+
+% ══════════════════════════════════════════════════════════════════════
+%  TASKS BAND (pluggable) — configures preprocessing + evaluation
+% ══════════════════════════════════════════════════════════════════════
+\def\taskT{-6.6} \def\taskB{-7.7}
+\begin{scope}[on background layer]
+  \draw[inner box, fill=querybg] (5.0,\taskB) rectangle (18.9,\taskT);
+\end{scope}
+\node[module title, anchor=west] at (5.3,{(\taskT+\taskB)/2}) {Tasks};
+\node[hp chip=3.2cm, minimum height=0.85cm]     at (9.3,{(\taskT+\taskB)/2})
+    {transitive ancestor-\\descendant task};
+\node[pyk chip=3.2cm, minimum height=0.85cm]    at (13.1,{(\taskT+\taskB)/2})
+    {link prediction};
+\node[future chip=3.2cm, minimum height=0.85cm] at (16.9,{(\taskT+\taskB)/2})
+    {$+$ future tasks $\cdots$};
+
+% each task contributes a split strategy and an evaluation protocol
+\draw[configures] (\Pcx,\taskT) -- (\Pcx,\panelB)
+    node[midway, right, sub label, text=varblue!75!black, xshift=2pt]
+    {split strategy};
+\draw[configures] (\Ecx,\taskT) -- (\Ecx,\panelB)
+    node[midway, right, sub label, text=varblue!75!black, xshift=2pt]
+    {evaluation protocol};
+
+% ══════════════════════════════════════════════════════════════════════
+%  LEGEND
+% ══════════════════════════════════════════════════════════════════════
+\node[pyk chip=1.7cm] at (1.0,-6.85) {\strut};
+\node[sub label, anchor=west] at (2.1,-6.85) {PyKEEN component};
+\node[hp chip=1.7cm] at (1.0,-7.50) {\strut};
+\node[sub label, anchor=west] at (2.1,-7.50) {HPBench contribution};
+
+\end{tikzpicture}
+\end{document}
