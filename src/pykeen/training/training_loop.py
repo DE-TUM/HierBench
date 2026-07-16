@@ -7,6 +7,7 @@ import pathlib
 import pickle
 import random
 import time
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from contextlib import ExitStack
@@ -55,6 +56,27 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 BatchType = TypeVar("BatchType")
+
+
+def _warn_if_manifold_without_riemannian(model: Model, optimizer: Optimizer) -> None:
+    """Warn when a model with geoopt manifold parameters is trained with a non-Riemannian optimizer.
+
+    A Euclidean optimizer step moves manifold points off the manifold; the model then silently
+    projects them back via ``post_parameter_update()`` each step. That fallback works but is
+    suboptimal, so surface it here — where both the model and the resolved optimizer are known.
+    """
+    import geoopt
+
+    has_manifold = any(isinstance(p, geoopt.ManifoldParameter) for p in model.parameters())
+    is_riemannian = isinstance(optimizer, geoopt.optim.mixin.OptimMixin)
+    if has_manifold and not is_riemannian:
+        warnings.warn(
+            f"Model has manifold parameters but is trained with a non-Riemannian optimizer "
+            f"({type(optimizer).__name__}); falling back to manifold projection after each step. "
+            "Consider a geoopt Riemannian optimizer (RiemannianAdam / RiemannianSGD).",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 class NonFiniteLossError(RuntimeError):
@@ -171,6 +193,7 @@ class TrainingLoop(Generic[BatchType], ABC):
         """
         self.model = model
         self.optimizer = optimizer_resolver.make(optimizer, pos_kwargs=optimizer_kwargs, params=model.get_grad_params())
+        _warn_if_manifold_without_riemannian(self.model, self.optimizer)
         self.lr_scheduler = lr_scheduler_resolver.make_safe(
             lr_scheduler, pos_kwargs=lr_scheduler_kwargs, optimizer=self.optimizer
         )

@@ -99,8 +99,10 @@ class TestPoincareProperties:
 
         assert isinstance(emb._embeddings, geoopt.ManifoldParameter)
 
-    def test_warns_about_riemannian_optimizer(self):
-        with pytest.warns(UserWarning, match="Riemannian"):
+    def test_construction_is_silent(self):
+        """Construction no longer warns about optimizers — the check moved to the training loop."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             PoincareEmbedding(max_id=5, embedding_dim=3)
 
     def test_registered_in_resolver(self):
@@ -165,8 +167,10 @@ class TestLorentzProperties:
             emb = LorentzEmbedding(max_id=10, embedding_dim=4, initializer=init)
         assert emb.manifold.check_point_on_manifold(emb._embeddings.data)
 
-    def test_warns_about_riemannian_optimizer(self):
-        with pytest.warns(UserWarning, match="Riemannian"):
+    def test_construction_is_silent(self):
+        """Construction no longer warns about optimizers — the check moved to the training loop."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             LorentzEmbedding(max_id=5, embedding_dim=3)
 
     def test_registered_in_resolver(self):
