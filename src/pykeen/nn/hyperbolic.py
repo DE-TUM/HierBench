@@ -246,10 +246,6 @@ class HyperbolicConesEmbedding(PoincareEmbedding):
     K-ball of radius ``inner_radius = 2K / (1 + sqrt(1 + 4K²))`` (Eq. 25 in [ganea2018]_).
     This guarantees a well-defined cone opening angle ψ(x) = arcsin(K(1−‖x‖²)/‖x‖) for all x.
 
-    .. [ganea2018] Ganea, O.-E., Bécigneul, G., & Hofmann, T. (2018).
-       `Hyperbolic Entailment Cones for Learning Hierarchical Embeddings
-       <https://arxiv.org/abs/1804.01882>`_. ICML 2018.
-
     ---
     name: Hyperbolic Cones Embedding
     """

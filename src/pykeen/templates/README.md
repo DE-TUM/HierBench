@@ -3,21 +3,17 @@
 </p>
 
 <h1 align="center">
-  PyKEEN
+  HPBench
 </h1>
 
 <p align="center">
-  <a href="https://github.com/pykeen/pykeen/actions/workflows/common.yml">
-    <img src="https://github.com/pykeen/pykeen/actions/workflows/common.yml/badge.svg"
+  <a href="https://github.com/DE-TUM/HPBench/actions/workflows/common.yml">
+    <img src="https://github.com/DE-TUM/HPBench/actions/workflows/common.yml/badge.svg"
          alt="GitHub Actions">
   </a>
 
   <a href='https://opensource.org/licenses/MIT'>
     <img src='https://img.shields.io/badge/License-MIT-blue.svg' alt='License'/>
-  </a>
-
-  <a href="https://zenodo.org/badge/latestdoi/242672435">
-    <img src="https://zenodo.org/badge/242672435.svg" alt="DOI">
   </a>
 
   <a href="https://optuna.org">
@@ -38,40 +34,67 @@
 </p>
 
 <p align="center">
-    <b>PyKEEN</b> (<b>P</b>ython <b>K</b>nowl<b>E</b>dge <b>E</b>mbeddi<b>N</b>gs) is a Python package designed to
-    train and evaluate knowledge graph embedding models (incorporating multi-modal information).
+    <b>HPBench</b> (the <b>H</b>eilbronn–<b>P</b>aris <b>Bench</b>mark for Hierarchical Embeddings) is a benchmarking suite for
+    hierarchy-aware knowledge graph embeddings. It is a fork of
+    <a href="https://github.com/pykeen/pykeen">PyKEEN</a> that adds hyperbolic baselines,
+    hierarchical datasets, and hierarchy-specific evaluation tasks.
 </p>
 
 <p align="center">
+  <a href="#what-hpbench-adds">What HPBench Adds</a> •
   <a href="#installation">Installation</a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#datasets">Datasets ({{ n_datasets }})</a> •
   <a href="#inductive-datasets">Inductive Datasets ({{ n_inductive_datasets }})</a> •
   <a href="#models">Models ({{ n_models }})</a> •
-  <a href="#supporters">Support</a> •
   <a href="#citation">Citation</a>
 </p>
 
-## Installation ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pykeen) ![PyPI](https://img.shields.io/pypi/v/pykeen)
+## What HPBench Adds
 
-The latest stable version of PyKEEN requires Python 3.9+. It can be downloaded
-and installed from [PyPI](https://pypi.org/project/pykeen) with:
+<p align="center">
+  <img src="figures/hpbench_overview.png" alt="HPBench overview: PyKEEN components in grey, HPBench contributions in blue, across datasets, preprocessing, learning, and evaluation" width="900">
+</p>
+
+On top of everything PyKEEN provides, HPBench contributes:
+
+- **Hyperbolic baselines** — `PoincareE`, `LorentzE`, and `HyperbolicCones`
+  (`pykeen.models`), built on hyperbolic representations and interactions in
+  `pykeen.nn.hyperbolic`, plus Riemannian optimizers in `pykeen.optimizers`.
+- **Hierarchical datasets** — taxonomy-style graphs (WordNet noun hierarchy, ACM-CCS, DOID, MeSH,
+  EuroSciVoc, NASA taxonomy, …) with transitive-closure and metadata utilities in
+  `pykeen.datasets.metadata` and `pykeen.datasets.extended_graph_analysis`.
+- **Hierarchy evaluation tasks** — subsumption / pair classification metrics
+  (`pykeen.evaluation.pair_classification_evaluator`), transitive ancestor–descendant prediction
+  (`pykeen.pipeline.transitive_ancestor_descendant_prediction_pipeline`), and LCA-based
+  hierarchical precision/recall/F1 (`pykeen.evaluation.LCAClassificationEvaluator`).
+- **Hierarchy-aware training** — a hierarchy negative sampler
+  (`pykeen.sampling.HierarchyNegativeSampler`) and a hierarchy pipeline (`pykeen.pipeline.hierarchy`).
+- **k-fold cross-validation** — `pykeen.cross_validation` with k-fold dataset splits.
+
+The import name stays `pykeen`, so existing PyKEEN code runs unchanged.
+
+## Installation
+
+HPBench requires Python 3.9+. Install it from source:
 
 ```shell
-pip install pykeen
+pip install git+https://github.com/DE-TUM/HPBench.git
 ```
 
-The latest version of PyKEEN can be installed directly from the
-source code on [GitHub](https://github.com/pykeen/pykeen) with:
+For development:
 
 ```shell
-pip install git+https://github.com/pykeen/pykeen.git
+git clone https://github.com/DE-TUM/HPBench.git
+cd HPBench
+pip install -e .
 ```
 
-More information about installation (e.g., development mode, Windows installation, Colab, Kaggle, extras)
+HPBench is not published on PyPI — `pip install pykeen` installs upstream PyKEEN, not this fork.
+More information about installation (e.g., Windows installation, Colab, Kaggle, extras)
 can be found in the [installation documentation](https://pykeen.readthedocs.io/en/latest/installation.html).
 
-## Quickstart [![Documentation Status](https://readthedocs.org/projects/pykeen/badge/?version=latest)](https://pykeen.readthedocs.io/en/latest/?badge=latest)
+## Quickstart
 
 This example shows how to train a model on a dataset and test on another dataset.
 
@@ -97,22 +120,23 @@ on [using your own dataset](https://pykeen.readthedocs.io/en/latest/byo/data.htm
 [understanding the evaluation](https://pykeen.readthedocs.io/en/latest/tutorial/understanding_evaluation.html),
 and [making novel link predictions](https://pykeen.readthedocs.io/en/latest/tutorial/making_predictions.html).
 
-PyKEEN is extensible such that:
+HPBench inherits PyKEEN's extensibility:
 
 - Each model has the same API, so anything from ``pykeen.models`` can be dropped in
 - Each training loop has the same API, so ``pykeen.training.LCWATrainingLoop`` can be dropped in
 - Triples factories can be generated by the user with ``from pykeen.triples.TriplesFactory``
 
-The full documentation can be found at https://pykeen.readthedocs.io.
+Documentation for the inherited functionality can be found at https://pykeen.readthedocs.io;
+links in the tables below point there.
 
 ## Implementation
 
-Below are the models, datasets, training modes, evaluators, and metrics implemented
-in ``pykeen``.
+Below are the models, datasets, training modes, evaluators, and metrics available
+in HPBench (inherited from PyKEEN unless noted in [What HPBench Adds](#what-hpbench-adds)).
 
 ### Datasets 
 
-The following {{ n_datasets }} datasets are built in to PyKEEN. The citation for each dataset corresponds to either the paper
+The following {{ n_datasets }} datasets are built in. The citation for each dataset corresponds to either the paper
 describing the dataset, the first paper published using the dataset with knowledge graph embedding models,
 or the URL for the dataset if neither of the first two are available. If you want to use a custom dataset,
 see the [Bring Your Own Dataset](https://pykeen.readthedocs.io/en/latest/byo/data.html) tutorial. If you
@@ -240,10 +264,14 @@ at https://github.com/pykeen/benchmarking.
 Contributions, whether filing an issue, making a pull request, or forking, are appreciated.
 See [CONTRIBUTING.md](/CONTRIBUTING.md) for more information on getting involved.
 
-If you have questions, please use the GitHub discussions feature at
-https://github.com/pykeen/pykeen/discussions/new.
+If you have questions about HPBench, please open an issue at
+https://github.com/DE-TUM/HPBench/issues. For questions about the upstream library, use the
+PyKEEN GitHub discussions at https://github.com/pykeen/pykeen/discussions/new.
 
 ## Acknowledgements
+
+HPBench is built on [PyKEEN](https://github.com/pykeen/pykeen); the acknowledgements below
+are inherited from that project.
 
 ### Supporters
 
@@ -282,8 +310,8 @@ The PyKEEN logo was designed by [Carina Steinborn](https://www.xing.com/profile/
 
 ## Citation
 
-If you have found PyKEEN useful in your work, please consider citing
-[our article](http://jmlr.org/papers/v22/20-825.html):
+If you have found HPBench useful in your work, please cite the underlying PyKEEN
+[article](http://jmlr.org/papers/v22/20-825.html) and link to this repository:
 
 ```bibtex
 @article{ali2021pykeen,

@@ -36,9 +36,6 @@ class HyperbolicCones(ERModel[FloatTensor, tuple[()], FloatTensor]):
 
         This model uses manifold parameters. For correct Riemannian gradient updates use
         a Riemannian optimiser such as :class:`geoopt.optim.RiemannianAdam`.
-
-    .. [ganea2018] Ganea, O.-E., Bécigneul, G., & Hofmann, T. (2018). `Hyperbolic entailment cones
-       for learning hierarchical embeddings <https://arxiv.org/abs/1804.01882>`_. ICML 2018.
     """
 
     #: Ganea et al. (2018) Eq. 32 is a *pointwise* hinge: positives are unconditionally driven to

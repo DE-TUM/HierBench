@@ -1,5 +1,14 @@
-PyKEEN
-======
+HPBench
+=======
+
+HPBench (the **H**\ eilbronn–**P**\ aris **Bench**\ mark for Hierarchical Embeddings) is a
+benchmarking suite for hierarchy-aware knowledge graph embeddings. It is a fork of
+`PyKEEN <https://github.com/pykeen/pykeen>`_ that adds hyperbolic baselines
+(:class:`pykeen.models.PoincareE`, :class:`pykeen.models.LorentzE`,
+:class:`pykeen.models.HyperbolicCones`), hierarchical datasets, and hierarchy-specific
+evaluation tasks (pair/subsumption classification, transitive ancestor-descendant prediction, and
+LCA-based hierarchical precision/recall/F1). The import name remains ``pykeen``, so existing
+PyKEEN code runs unchanged.
 
 .. automodule:: pykeen
 
@@ -40,7 +49,7 @@ PyKEEN
     byo/interaction
 
 .. toctree::
-    :caption: Extending PyKEEN
+    :caption: Extending HPBench
     :name: extending
     :maxdepth: 2
 

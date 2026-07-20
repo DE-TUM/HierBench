@@ -1,4 +1,10 @@
-"""PyKEEN is a Python package for reproducible, facile knowledge graph embeddings.
+"""HPBench, the Heilbronn-Paris Benchmark for Hierarchical Embeddings.
+
+HPBench is a benchmarking suite for hierarchy-aware knowledge graph embeddings.
+
+It is a fork of `PyKEEN <https://github.com/pykeen/pykeen>`_ that adds hyperbolic baselines,
+hierarchical datasets, and hierarchy-specific evaluation tasks. The import name remains
+``pykeen``, so existing PyKEEN code runs unchanged.
 
 The fastest way to get up and running is to use the :func:`pykeen.pipeline.pipeline`
 function.
