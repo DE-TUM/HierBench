@@ -3,33 +3,21 @@
 from __future__ import annotations
 
 import ftplib
+import inspect
 import json
 import logging
 import pathlib
-from collections.abc import Collection, Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
 import pandas as pd
-from class_resolver.utils import OneOrManyHintOrType, OneOrManyOptionalKwargs
 
 from ..datasets import Dataset, dataset_resolver
 from ..datasets.kfold.base import KFoldDataset, to_kfold
-from ..evaluation import Evaluator
-from ..losses import Loss
-from ..lr_schedulers import LRScheduler
-from ..models import Model
-from ..nn.modules import Interaction
-from ..optimizers import Optimizer
 from ..pipeline import pipeline
 from ..pipeline.api import PipelineResult
-from ..regularizers import Regularizer
-from ..sampling import NegativeSampler
-from ..stoppers import Stopper
-from ..trackers import ResultTracker
-from ..training import TrainingLoop
-from ..typing import DeviceHint, HintType
 from ..utils import Result, fix_dataclass_init_docs, normalize_path
 from ..version import get_git_hash, get_version
 
@@ -93,7 +81,7 @@ class CrossValidationPipelineResult(Result):
 
         :returns: A DataFrame of shape ``(num_folds, num_metrics)``.
         """
-        rows = [fold.metric_results.to_flat_dict() for fold in self.fold_results]
+        rows = [_flat_metrics(fold) for fold in self.fold_results]
         return pd.DataFrame(rows)
 
     def _get_results(self) -> dict[str, Any]:
@@ -247,6 +235,25 @@ def _resolve_kfold_dataset(
     )
 
 
+def _flat_metrics(result: PipelineResult) -> dict[str, Any]:
+    """Flatten a fold result's rank-based metrics plus any task-specific metrics.
+
+    Task pipelines (e.g.
+    :func:`~pykeen.pipeline.transitive_ancestor_descendant.transitive_ancestor_descendant_prediction_pipeline`)
+    return a :class:`~pykeen.pipeline.hierarchical_helper.HierarchicalPipelineResult` carrying an
+    extra ``ancestor_descendant_metric_results``; its metrics are merged under an
+    ``ancestor_descendant.`` prefix so they aggregate alongside the standard ones.
+
+    :param result: A fold's pipeline result.
+    :returns: A flat ``metric name -> value`` dict.
+    """
+    flat = dict(result.metric_results.to_flat_dict())
+    extra = getattr(result, "ancestor_descendant_metric_results", None)
+    if extra is not None:
+        flat.update({f"ancestor_descendant.{k}": v for k, v in extra.to_flat_dict().items()})
+    return flat
+
+
 def _aggregate_fold_metrics(
     fold_results: list[PipelineResult],
 ) -> tuple[dict[str, float], dict[str, float]]:
@@ -256,8 +263,8 @@ def _aggregate_fold_metrics(
         one per fold.
     :returns: A ``(means, stds)`` pair of flat metric dicts.
     """
-    all_flat = [r.metric_results.to_flat_dict() for r in fold_results]
-    keys = list(all_flat[0].keys())
+    all_flat = [_flat_metrics(r) for r in fold_results]
+    keys = sorted({k for d in all_flat for k in d})
     means: dict[str, float] = {}
     stds: dict[str, float] = {}
     for key in keys:
@@ -274,66 +281,27 @@ def _aggregate_fold_metrics(
 
 def cross_validation_pipeline(
     *,
-    # 0. Dataset + K-fold settings
+    # K-fold settings
     dataset: None | str | Dataset | type[Dataset] | KFoldDataset | type[KFoldDataset] = None,
     dataset_kwargs: Mapping[str, Any] | None = None,
     k: int = 5,
     validation_ratio: float = 0.1,
     kfold_random_state: int | None = None,
-    evaluation_entity_whitelist: Collection[str] | None = None,
-    evaluation_relation_whitelist: Collection[str] | None = None,
-    # 1. Model
-    model: None | str | Model | type[Model] = None,
-    model_kwargs: Mapping[str, Any] | None = None,
-    interaction: None | str | Interaction | type[Interaction] = None,
-    interaction_kwargs: Mapping[str, Any] | None = None,
-    dimensions: None | int | Mapping[str, int] = None,
-    # 2. Loss
-    loss: HintType[Loss] = None,
-    loss_kwargs: Mapping[str, Any] | None = None,
-    # 3. Regularizer
-    regularizer: HintType[Regularizer] = None,
-    regularizer_kwargs: Mapping[str, Any] | None = None,
-    # 4. Optimizer
-    optimizer: HintType[Optimizer] = None,
-    optimizer_kwargs: Mapping[str, Any] | None = None,
-    clear_optimizer: bool = True,
-    # 4.1 Learning Rate Scheduler
-    lr_scheduler: HintType[LRScheduler] = None,
-    lr_scheduler_kwargs: Mapping[str, Any] | None = None,
-    # 5. Training Loop
-    training_loop: HintType[TrainingLoop] = None,
-    training_loop_kwargs: Mapping[str, Any] | None = None,
-    negative_sampler: HintType[NegativeSampler] = None,
-    negative_sampler_kwargs: Mapping[str, Any] | None = None,
-    # 6. Training
-    epochs: int | None = None,
-    training_kwargs: Mapping[str, Any] | None = None,
-    stopper: HintType[Stopper] = None,
-    stopper_kwargs: Mapping[str, Any] | None = None,
-    # 7. Evaluation
-    evaluator: HintType[Evaluator] = None,
-    evaluator_kwargs: Mapping[str, Any] | None = None,
-    evaluation_kwargs: Mapping[str, Any] | None = None,
-    # 8. Tracking
-    result_tracker: OneOrManyHintOrType[ResultTracker] = None,
-    result_tracker_kwargs: OneOrManyOptionalKwargs = None,
-    # Misc
-    metadata: dict[str, Any] | None = None,
-    device: DeviceHint = None,
+    # The per-fold pipeline and its (cross-cutting) arguments
+    pipeline: Callable[..., PipelineResult] = pipeline,
     random_seed: int | None = None,
-    use_testing_data: bool = True,
-    evaluation_fallback: bool = False,
-    filter_validation_when_testing: bool = True,
-    use_tqdm: bool | None = None,
+    metadata: dict[str, Any] | None = None,
+    **pipeline_kwargs: Any,
 ) -> CrossValidationPipelineResult:
-    """Train and evaluate a KGE model using k-fold cross-validation.
+    """Train and evaluate a model using k-fold cross-validation.
 
-    Wraps :func:`~pykeen.pipeline.pipeline` and calls it once per fold, then
-    aggregates the metric results across folds.  The function signature mirrors
-    :func:`~pykeen.pipeline.pipeline` exactly, with three additional parameters
-    controlling the cross-validation split (*k*, *validation_ratio*,
-    *kfold_random_state*).
+    Splits *dataset* into *k* folds and calls *pipeline* once per fold — passing each fold as
+    ``dataset=`` — then aggregates the metric results across folds.  Any pipeline that accepts a
+    :class:`~pykeen.datasets.Dataset` works: the stock :func:`~pykeen.pipeline.pipeline` (default),
+    :func:`~pykeen.pipeline.transitive_ancestor_descendant.transitive_ancestor_descendant_prediction_pipeline`,
+    :func:`~pykeen.pipeline.hierarchy.hierarchy_completion_pipeline`, etc.  All pipeline-specific
+    settings (``model``, ``epochs``, ``training_kwargs``, ``closure_ratio``, …) are forwarded via
+    *pipeline_kwargs*.
 
     :param dataset:
         A :class:`~pykeen.datasets.kfold.base.KFoldDataset` instance or subclass,
@@ -355,81 +323,19 @@ def cross_validation_pipeline(
         Random seed for the k-fold triple split.  Distinct from *random_seed*,
         which governs model initialisation and training.  Ignored when *dataset* is
         a pre-built :class:`~pykeen.datasets.kfold.base.KFoldDataset`.
-    :param evaluation_entity_whitelist:
-        Passed to :func:`~pykeen.pipeline.pipeline` for each fold.
-    :param evaluation_relation_whitelist:
-        Passed to :func:`~pykeen.pipeline.pipeline` for each fold.
-    :param model:
-        The model to train — string name, class, or instance.
-    :param model_kwargs:
-        Keyword arguments for the model constructor.
-    :param interaction:
-        Interaction function hint (for :class:`~pykeen.models.ERModel`-based models).
-    :param interaction_kwargs:
-        Keyword arguments for the interaction function.
-    :param dimensions:
-        Embedding dimensionality shortcut.
-    :param loss:
-        Loss function hint.
-    :param loss_kwargs:
-        Keyword arguments for the loss function.
-    :param regularizer:
-        Regularizer hint.
-    :param regularizer_kwargs:
-        Keyword arguments for the regularizer.
-    :param optimizer:
-        Optimizer hint.
-    :param optimizer_kwargs:
-        Keyword arguments for the optimizer.
-    :param clear_optimizer:
-        Whether to clear the optimizer state after training. Defaults to ``True``.
-    :param lr_scheduler:
-        Learning rate scheduler hint.
-    :param lr_scheduler_kwargs:
-        Keyword arguments for the learning rate scheduler.
-    :param training_loop:
-        Training loop hint.
-    :param training_loop_kwargs:
-        Keyword arguments for the training loop.
-    :param negative_sampler:
-        Negative sampler hint (for SLCWA training).
-    :param negative_sampler_kwargs:
-        Keyword arguments for the negative sampler.
-    :param epochs:
-        Number of training epochs per fold.
-    :param training_kwargs:
-        Additional keyword arguments forwarded to the training loop's ``train()`` call.
-    :param stopper:
-        Early stopping hint.
-    :param stopper_kwargs:
-        Keyword arguments for the stopper.
-    :param evaluator:
-        Evaluator hint.
-    :param evaluator_kwargs:
-        Keyword arguments for the evaluator.
-    :param evaluation_kwargs:
-        Additional keyword arguments forwarded to the evaluator's ``evaluate()`` call.
-    :param result_tracker:
-        Result tracker hint.  A fresh tracker is created per fold by
-        :func:`~pykeen.pipeline.pipeline`.
-    :param result_tracker_kwargs:
-        Keyword arguments for the result tracker.
-    :param metadata:
-        Additional metadata dict merged into each fold's metadata.  The keys
-        ``cv_fold`` and ``cv_num_folds`` are added automatically.
-    :param device:
-        The device to use for training (e.g. ``"cuda"``).
+    :param pipeline:
+        The per-fold pipeline callable.  Must accept a ``dataset=`` keyword argument and return a
+        :class:`~pykeen.pipeline.PipelineResult`.  Defaults to :func:`~pykeen.pipeline.pipeline`.
     :param random_seed:
-        Base random seed.  Fold *i* uses ``random_seed + i``, ensuring each fold
-        is independently reproducible.  When ``None``, each fold draws a random seed.
-    :param use_testing_data:
-        Whether to evaluate on the test set. Defaults to ``True``.
-    :param evaluation_fallback:
-        Whether to fall back to a simpler evaluator on OOM errors. Defaults to ``False``.
-    :param filter_validation_when_testing:
-        Whether to filter validation triples during test evaluation. Defaults to ``True``.
-    :param use_tqdm:
-        Whether to show tqdm progress bars.
+        Base random seed.  Fold *i* uses ``random_seed + i``, ensuring each fold is independently
+        reproducible.  Injected into *pipeline* under whichever seed argument it exposes
+        (``random_seed`` or ``seed``), unless already given in *pipeline_kwargs*.  When ``None``,
+        each fold draws its own seed.
+    :param metadata:
+        Additional metadata dict merged into each fold's metadata (when the pipeline accepts a
+        ``metadata`` argument).  The keys ``cv_fold`` and ``cv_num_folds`` are added automatically.
+    :param pipeline_kwargs:
+        Additional keyword arguments forwarded verbatim to *pipeline* for every fold.
     :returns: A :class:`CrossValidationPipelineResult` aggregating all fold results.
     """
     kfold_dataset = _resolve_kfold_dataset(
@@ -443,71 +349,34 @@ def cross_validation_pipeline(
     num_folds = kfold_dataset.num_folds
     fold_results: list[PipelineResult] = []
 
+    # Introspect the target pipeline once to route the cross-cutting seed/metadata arguments.
+    sig = inspect.signature(pipeline).parameters
+    has_var_kw = any(p.kind is p.VAR_KEYWORD for p in sig.values())
+    seed_key = "random_seed" if "random_seed" in sig else ("seed" if "seed" in sig else None)
+    accepts_metadata = "metadata" in sig or has_var_kw
+
     for fold_index, fold in enumerate(kfold_dataset):
-        fold_seed = (random_seed + fold_index) if random_seed is not None else None
+        call_kwargs = dict(pipeline_kwargs)
+
+        if random_seed is not None and seed_key and seed_key not in call_kwargs:
+            call_kwargs[seed_key] = random_seed + fold_index
+
+        if accepts_metadata:
+            call_kwargs["metadata"] = {
+                **(metadata or {}),
+                **(call_kwargs.get("metadata") or {}),
+                "cv_fold": fold_index,
+                "cv_num_folds": num_folds,
+            }
+
         logger.info(
-            "Running fold %d/%d (seed=%s)",
+            "Running fold %d/%d (%s=%s)",
             fold_index + 1,
             num_folds,
-            fold_seed,
+            seed_key or "seed",
+            call_kwargs.get(seed_key) if seed_key else None,
         )
-
-        fold_metadata: dict[str, Any] = {**(metadata or {})}
-        fold_metadata["cv_fold"] = fold_index
-        fold_metadata["cv_num_folds"] = num_folds
-        result = pipeline(
-            # Inject fold factories directly — bypasses dataset resolution in pipeline()
-            training=fold.training,
-            testing=fold.testing,
-            validation=fold.validation,
-            evaluation_entity_whitelist=evaluation_entity_whitelist,
-            evaluation_relation_whitelist=evaluation_relation_whitelist,
-            # Model
-            model=model,
-            model_kwargs=model_kwargs,
-            interaction=interaction,
-            interaction_kwargs=interaction_kwargs,
-            dimensions=dimensions,
-            # Loss
-            loss=loss,
-            loss_kwargs=loss_kwargs,
-            # Regularizer
-            regularizer=regularizer,
-            regularizer_kwargs=regularizer_kwargs,
-            # Optimizer
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
-            clear_optimizer=clear_optimizer,
-            # LR Scheduler
-            lr_scheduler=lr_scheduler,
-            lr_scheduler_kwargs=lr_scheduler_kwargs,
-            # Training Loop
-            training_loop=training_loop,
-            training_loop_kwargs=training_loop_kwargs,
-            negative_sampler=negative_sampler,
-            negative_sampler_kwargs=negative_sampler_kwargs,
-            # Training
-            epochs=epochs,
-            training_kwargs=training_kwargs,
-            stopper=stopper,
-            stopper_kwargs=stopper_kwargs,
-            # Evaluation
-            evaluator=evaluator,
-            evaluator_kwargs=evaluator_kwargs,
-            evaluation_kwargs=evaluation_kwargs,
-            # Tracking — pipeline() manages tracker lifecycle per fold
-            result_tracker=result_tracker,
-            result_tracker_kwargs=result_tracker_kwargs,
-            # Misc
-            metadata=fold_metadata,
-            device=device,
-            random_seed=fold_seed,
-            use_testing_data=use_testing_data,
-            evaluation_fallback=evaluation_fallback,
-            filter_validation_when_testing=filter_validation_when_testing,
-            use_tqdm=use_tqdm,
-        )
-        fold_results.append(result)
+        fold_results.append(pipeline(dataset=fold, **call_kwargs))
 
     metric_means, metric_stds = _aggregate_fold_metrics(fold_results)
 

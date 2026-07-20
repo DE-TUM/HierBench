@@ -10,7 +10,7 @@ __all__ = [
     "ACMCCS",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fiDLcvbXXLZ5TTjxMvrBDS/ACM-CCS/"
+_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/acmccm/"
 
 
 @parse_docdata

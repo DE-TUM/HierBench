@@ -10,7 +10,7 @@ __all__ = [
     "DOID",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fiUW4yvpeJj7TQEZ9qbBra/doid/"
+_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/doid/"
 
 
 @parse_docdata

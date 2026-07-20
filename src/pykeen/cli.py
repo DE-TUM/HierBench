@@ -32,7 +32,7 @@ from .datasets import dataset_resolver
 from .datasets.inductive import inductive_dataset_resolver
 from .evaluation import (
     ClassificationMetricResults,
-    HierarchicalMetricResults,
+    LCAMetricResults,
     MetricResults,
     RankBasedMetricResults,
     evaluator_resolver,
@@ -488,8 +488,8 @@ def _help_hpo_samplers(tablefmt: str, link_fmt: str | None = None) -> str:
 
 METRIC_NAMES: Mapping[type[MetricResults], str] = {
     ClassificationMetricResults: "Classification",
+    LCAMetricResults: "Hierarchical Classification (LCA)",
     RankBasedMetricResults: "Ranking",
-    HierarchicalMetricResults: "Hierarchical Classification",
 }
 
 METRICS_SKIP: set[str] = {"standard_deviation", "variance", "median_absolute_deviation", "count"}

@@ -72,6 +72,13 @@ from .utils import get_dataset
 from .wd50k import WD50KT
 from .wikidata5m import Wikidata5M
 from .wordnet import WN18, WN18RR
+from .wordnet_noun import (
+    WordNetNoun0Percent,
+    WordNetNoun10Percent,
+    WordNetNoun25Percent,
+    WordNetNoun50Percent,
+    WordNetNoun90Percent,
+)
 from .yago import YAGO310
 
 __all__ = [
@@ -102,6 +109,11 @@ __all__ = [
     "WK3l120k",
     "WN18",
     "WN18RR",
+    "WordNetNoun0Percent",
+    "WordNetNoun10Percent",
+    "WordNetNoun25Percent",
+    "WordNetNoun50Percent",
+    "WordNetNoun90Percent",
     "YAGO310",
     "DRKG",
     "BioKG",

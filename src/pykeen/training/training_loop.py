@@ -7,6 +7,7 @@ import pathlib
 import pickle
 import random
 import time
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from contextlib import ExitStack
@@ -55,6 +56,27 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 BatchType = TypeVar("BatchType")
+
+
+def _warn_if_manifold_without_riemannian(model: Model, optimizer: Optimizer) -> None:
+    """Warn when a model with geoopt manifold parameters is trained with a non-Riemannian optimizer.
+
+    A Euclidean optimizer step moves manifold points off the manifold; the model then silently
+    projects them back via ``post_parameter_update()`` each step. That fallback works but is
+    suboptimal, so surface it here — where both the model and the resolved optimizer are known.
+    """
+    import geoopt
+
+    has_manifold = any(isinstance(p, geoopt.ManifoldParameter) for p in model.parameters())
+    is_riemannian = isinstance(optimizer, geoopt.optim.mixin.OptimMixin)
+    if has_manifold and not is_riemannian:
+        warnings.warn(
+            f"Model has manifold parameters but is trained with a non-Riemannian optimizer "
+            f"({type(optimizer).__name__}); falling back to manifold projection after each step. "
+            "Consider a geoopt Riemannian optimizer (RiemannianAdam / RiemannianSGD).",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 class NonFiniteLossError(RuntimeError):
@@ -171,6 +193,7 @@ class TrainingLoop(Generic[BatchType], ABC):
         """
         self.model = model
         self.optimizer = optimizer_resolver.make(optimizer, pos_kwargs=optimizer_kwargs, params=model.get_grad_params())
+        _warn_if_manifold_without_riemannian(self.model, self.optimizer)
         self.lr_scheduler = lr_scheduler_resolver.make_safe(
             lr_scheduler, pos_kwargs=lr_scheduler_kwargs, optimizer=self.optimizer
         )
@@ -609,6 +632,10 @@ class TrainingLoop(Generic[BatchType], ABC):
 
             # Create new optimizer
             optimizer_kwargs = _get_optimizer_kwargs(self.optimizer)
+            if self.lr_scheduler is not None:
+                # schedulers may scale the optimizer's lr in-place at construction (e.g. ConstantLR),
+                # so clone from the unscaled base_lrs to keep repeated rebuilds idempotent
+                optimizer_kwargs = {**optimizer_kwargs, "lr": self.lr_scheduler.base_lrs[0]}
             self.optimizer = self.optimizer.__class__(
                 params=self.model.get_grad_params(),
                 **optimizer_kwargs,

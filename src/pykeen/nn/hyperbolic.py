@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import math
-import warnings
 from typing import Any
 
 import geoopt
@@ -22,12 +21,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-_RIEMANNIAN_OPTIMIZER_WARNING = (
-    "{cls} works best with a Riemannian optimizer. "
-    "Consider using geoopt.optim.RiemannianAdam instead of standard Adam. "
-    "Falling back to manifold projection via post_parameter_update() after each gradient step."
-)
 
 
 class PoincareEmbedding(Representation):
@@ -98,11 +91,6 @@ class PoincareEmbedding(Representation):
         data = self.manifold.origin(max_id, _embedding_dim)
         self._embeddings = geoopt.ManifoldParameter(data, manifold=self.manifold, requires_grad=trainable)
 
-        warnings.warn(
-            _RIEMANNIAN_OPTIMIZER_WARNING.format(cls=self.__class__.__name__),
-            UserWarning,
-            stacklevel=2,
-        )
         self.reset_parameters()
 
     def reset_parameters(self) -> None:  # noqa: D102
@@ -214,11 +202,6 @@ class LorentzEmbedding(Representation):
         data = self.manifold.origin(max_id, internal_dim)
         self._embeddings = geoopt.ManifoldParameter(data, manifold=self.manifold, requires_grad=trainable)
 
-        warnings.warn(
-            _RIEMANNIAN_OPTIMIZER_WARNING.format(cls=self.__class__.__name__),
-            UserWarning,
-            stacklevel=2,
-        )
         self.reset_parameters()
 
     def reset_parameters(self) -> None:  # noqa: D102
@@ -227,13 +210,13 @@ class LorentzEmbedding(Representation):
             return
         with torch.no_grad():
             # Build tangent vector at origin: time component must be 0
-            v = torch.zeros(self.max_id, self._internal_dim)
+            v = torch.zeros_like(self._embeddings.data)
             if self.initializer is not None:
                 # Initializer operates on (max_id, d) spatial coordinates
-                spatial = self.initializer(torch.zeros(self.max_id, self._internal_dim - 1))
+                spatial = self.initializer(torch.zeros_like(self._embeddings.data[:, 1:]))
                 v[:, 1:] = spatial
             else:
-                v[:, 1:] = torch.randn(self.max_id, self._internal_dim - 1) * 1e-3
+                v[:, 1:] = torch.randn_like(self._embeddings.data[:, 1:]) * 1e-3
             self._embeddings.data.copy_(self.manifold.expmap0(v))
 
     def post_parameter_update(self) -> None:  # noqa: D102

@@ -376,12 +376,12 @@ The following 2 stoppers are implemented in PyKEEN.
 
 ### Evaluators
 
-The following 6 evaluators are implemented in PyKEEN.
+The following 7 evaluators are implemented in PyKEEN.
 
 | Name                       | Reference                                                                                                                                                         | Description                                                                  |
 |----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
 | classification             | [`pykeen.evaluation.ClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.ClassificationEvaluator.html)                         | An evaluator that uses a classification metrics.                             |
-| hierarchicalclassification | [`pykeen.evaluation.HierarchicalClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.HierarchicalClassificationEvaluator.html) | An evaluator computing hierarchical precision/recall/F1 over ancestor paths. |
+| lcaclassification          | [`pykeen.evaluation.LCAClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.LCAClassificationEvaluator.html)                   | An evaluator computing LCA-based hierarchical precision/recall/F1.           |
 | macrorankbased             | [`pykeen.evaluation.MacroRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.MacroRankBasedEvaluator.html)                         | Macro-average rank-based evaluation.                                         |
 | ogb                        | [`pykeen.evaluation.OGBEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.OGBEvaluator.html)                                               | A sampled, rank-based evaluator that applies a custom OGB evaluation.        |
 | rankbased                  | [`pykeen.evaluation.RankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.RankBasedEvaluator.html)                                   | A rank-based evaluator for KGE models.                                       |
@@ -389,7 +389,7 @@ The following 6 evaluators are implemented in PyKEEN.
 
 ### Metrics
 
-The following 47 metrics are implemented in PyKEEN.
+The following 50 metrics are implemented in PyKEEN.
 
 | Name                                                                                                                                           | Interval                    | Direction   | Description                                                             | Type                        |
 |------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|-------------|-------------------------------------------------------------------------|-----------------------------|
@@ -415,9 +415,9 @@ The following 47 metrics are implemented in PyKEEN.
 | [Threat Score](https://en.wikipedia.org/wiki/Sensitivity_and_specificity)                                                                      | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification              |
 | [True Negative Rate](https://en.wikipedia.org/wiki/Specificity_(tests))                                                                        | $[0, 1]$                    | 📈           | The probability that a truly false triple is predicted negative.        | Classification              |
 | [True Positive Rate](https://en.wikipedia.org/wiki/Sensitivity_(test))                                                                         | $[0, 1]$                    | 📈           | The probability that a truly positive triple is predicted positive.     | Classification              |
-| [Hierarchical F1](https://doi.org/10.1007/s10618-014-0382-x)                                                                                   | $[0, 1]$                    | 📈           | Harmonic mean of hierarchical precision and recall.                     | Hierarchical Classification |
-| [Hierarchical Precision](https://doi.org/10.1007/s10618-014-0382-x)                                                                            | $[0, 1]$                    | 📈           | Ancestor-augmented precision of the predicted node set.                 | Hierarchical Classification |
-| [Hierarchical Recall](https://doi.org/10.1007/s10618-014-0382-x)                                                                               | $[0, 1]$                    | 📈           | Ancestor-augmented recall of the predicted node set.                    | Hierarchical Classification |
+| [LCA F1](https://doi.org/10.1007/s10618-014-0382-x)                                                                                            | $[0, 1]$                    | 📈           | Harmonic mean of LCA precision and recall.                              | Hierarchical Classification (LCA) |
+| [LCA Precision](https://doi.org/10.1007/s10618-014-0382-x)                                                                                     | $[0, 1]$                    | 📈           | Precision of the LCA-augmented predicted node set.                      | Hierarchical Classification (LCA) |
+| [LCA Recall](https://doi.org/10.1007/s10618-014-0382-x)                                                                                        | $[0, 1]$                    | 📈           | Recall of the LCA-augmented true node set.                              | Hierarchical Classification (LCA) |
 | [Adjusted Arithmetic Mean Rank (AAMR)](https://arxiv.org/abs/2002.06914)                                                                       | $[0, 2)$                    | 📉           | The mean over all ranks divided by its expected value.                  | Ranking                     |
 | [Adjusted Arithmetic Mean Rank Index (AAMRI)](https://arxiv.org/abs/2002.06914)                                                                | $[-1, 1]$                   | 📈           | The re-indexed adjusted mean rank (AAMR)                                | Ranking                     |
 | [Adjusted Geometric Mean Rank Index (AGMRI)](https://arxiv.org/abs/2002.06914)                                                                 | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted geometric mean rank (AGMRI)                     | Ranking                     |

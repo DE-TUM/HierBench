@@ -10,7 +10,7 @@ __all__ = [
     "NASA",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fiHdHacRoQetsxARSBLcak/NASA/"
+_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/nasa/"
 
 
 @parse_docdata

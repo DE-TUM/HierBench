@@ -28,10 +28,6 @@ from pykeen.evaluation.evaluator import (
     get_candidate_set_size,
     prepare_filter_triples,
 )
-from pykeen.evaluation.hierarchical_classification_evaluator import (
-    HierarchicalClassificationEvaluator,
-    HierarchicalMetricResults,
-)
 from pykeen.evaluation.rank_based_evaluator import (
     MacroRankBasedEvaluator,
     RankBasedMetricKey,
@@ -185,25 +181,6 @@ class ClassificationEvaluatorTest(cases.EvaluatorTestCase):
 
         for (side, metric_name), value in result.data.items():
             assert side in SIDES
-            assert isinstance(metric_name, str)
-            assert isinstance(value, (float, int))
-
-
-class HierarchicalClassificationEvaluatorTest(cases.EvaluatorTestCase):
-    """Unittest for the HierarchicalClassificationEvaluator."""
-
-    cls = HierarchicalClassificationEvaluator
-    # identity ancestors (each node its own root) -> well-defined hierarchical sets;
-    # covers all 14 Nations entities.
-    kwargs = {"ancestors": {i: frozenset({i}) for i in range(14)}}
-
-    def _validate_result(
-        self,
-        result: MetricResults,
-        data: dict[str, torch.Tensor],
-    ):
-        assert isinstance(result, HierarchicalMetricResults)
-        for (_side, metric_name), value in result.data.items():
             assert isinstance(metric_name, str)
             assert isinstance(value, (float, int))
 
@@ -840,28 +817,6 @@ class ClassificationMetricResultsTests(cases.MetricResultTestCase):
         kwargs = super()._pre_instantiation_hook(kwargs)
         # Populate with real results.
         evaluator = ClassificationEvaluator()
-        evaluator.process_scores_(
-            hrt_batch=torch.randint(self.num_entities, size=(self.num_triples, 3)),
-            target=LABEL_TAIL,
-            scores=torch.rand(self.num_triples, self.num_entities),
-            dense_positive_mask=torch.rand(self.num_triples, self.num_entities) < 0.5,
-        )
-        kwargs["data"] = evaluator.finalize().data
-        return kwargs
-
-
-class HierarchicalMetricResultsTests(cases.MetricResultTestCase):
-    """Tests for hierarchical metric results."""
-
-    cls = HierarchicalMetricResults
-    num_entities: int = 7
-    num_triples: int = 13
-
-    def _pre_instantiation_hook(self, kwargs: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
-        kwargs = super()._pre_instantiation_hook(kwargs)
-        evaluator = HierarchicalClassificationEvaluator(
-            ancestors={i: frozenset({i}) for i in range(self.num_entities)},
-        )
         evaluator.process_scores_(
             hrt_batch=torch.randint(self.num_entities, size=(self.num_triples, 3)),
             target=LABEL_TAIL,

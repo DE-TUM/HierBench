@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import pathlib
 from collections.abc import Mapping, Sequence
-from typing import Any, ClassVar, TypeAlias
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import pandas as pd
 
@@ -15,11 +15,15 @@ from ..triples import TriplesFactory
 from ..typing import TorchRandomHint
 from ..utils import normalize_path
 
+if TYPE_CHECKING:
+    from .base import Dataset
+
 __all__ = [
     "HierarchicalGraph",
     "MetadataDataset",
     "RemoteMetadataDataset",
     "SingleFileRemoteMetadataDataset",
+    "resolve_hierarchy_relation",
 ]
 
 logger = logging.getLogger(__name__)
@@ -36,6 +40,36 @@ class HierarchicalGraph:
 
     #: Name of the relation forming the parent/child hierarchy edges.
     hierarchical_relation: ClassVar[str]
+
+    #: Whether the hierarchy edges point child->parent (e.g. WN18RR's ``_hypernym``) instead of the
+    #: canonical parent->child (``narrower``, ``has_subclass``). Closure-based splits flip inverted
+    #: edges so that heads are always ancestors, keeping metrics comparable across datasets.
+    hierarchy_inverted: ClassVar[bool] = False
+
+    #: Whether the dataset ships its own train/validation/test closure split (e.g. the
+    #: WordNetNoun* ``maxn`` splits of Ganea et al. 2018). Closure-based splits then use the
+    #: dataset's fixed validation/testing triples as eval positives and the training triples
+    #: verbatim, instead of re-deriving a split from the training graph's transitive closure
+    #: (which would leak closure edges already present in training back into evaluation).
+    predefined_closure_split: ClassVar[bool] = False
+
+
+def resolve_hierarchy_relation(dataset: Dataset, hierarchy_relation: int | str | None) -> int | None:
+    """Resolve the hierarchy relation to a relation id.
+
+    Precedence: an explicit ``hierarchy_relation`` (id or label) wins; otherwise, if ``dataset`` is a
+    :class:`HierarchicalGraph`, its :attr:`hierarchical_relation` label is used. Returns ``None``
+    when neither is available; callers treat ``None`` as "all edges are hierarchy edges", so a
+    dataset without a designated hierarchy relation transparently falls back to using every relation.
+    """
+    if hierarchy_relation is None and isinstance(dataset, HierarchicalGraph):
+        hierarchy_relation = dataset.hierarchical_relation
+    if isinstance(hierarchy_relation, str):
+        try:
+            return dataset.training.relations_to_ids([hierarchy_relation])[0]
+        except (AttributeError, KeyError) as exc:
+            raise KeyError(f"hierarchy relation {hierarchy_relation!r} not found in dataset relations") from exc
+    return hierarchy_relation
 
 
 def _load_metadata_file(path: pathlib.Path) -> pd.DataFrame:

@@ -5,6 +5,7 @@ import pathlib
 from docdata import parse_docdata
 
 from .base import TarFileRemoteDataset
+from .metadata import HierarchicalGraph
 
 __all__ = [
     "WN18",
@@ -48,8 +49,10 @@ class WN18(TarFileRemoteDataset):
 
 
 @parse_docdata
-class WN18RR(TarFileRemoteDataset):
+class WN18RR(TarFileRemoteDataset, HierarchicalGraph):
     """The WN18-RR dataset.
+
+    The ``_hypernym`` relation forms the WordNet noun/verb taxonomy.
 
     ---
     name: WordNet-18 (RR)
@@ -65,6 +68,10 @@ class WN18RR(TarFileRemoteDataset):
         year: 2015
         link: https://www.aclweb.org/anthology/W15-4007/
     """
+
+    hierarchical_relation = "_hypernym"
+    # _hypernym points child->parent; closure-based splits canonicalize to parent->child.
+    hierarchy_inverted = True
 
     def __init__(self, **kwargs):
         """Initialize the WordNet-18 (RR) dataset.

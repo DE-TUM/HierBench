@@ -10,7 +10,7 @@ __all__ = [
     "EstatFSS",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fiC48NobSc45aqDo4EbJNt/estat-fss/"
+_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/estat-fss/"
 
 
 @parse_docdata

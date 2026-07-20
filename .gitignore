@@ -30,6 +30,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+results/
 
 # Installer logs
 pip-log.txt
@@ -46,6 +47,7 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+graphify-out/
 
 # Translations
 *.mo
@@ -124,3 +126,4 @@ CLAUDE.md
 # test.py
 /test_classification.py
 notebooks/
+graphify-out/

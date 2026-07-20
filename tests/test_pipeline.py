@@ -541,7 +541,7 @@ class TestHierarchyCompletionPipeline(unittest.TestCase):
             assert tuple(ctx) in train_edges
 
     def test_pipeline_runs(self):
-        """Pipeline completes, returns a valid MRR, and reports hierarchical metrics."""
+        """Pipeline completes and returns a valid MRR."""
         from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
 
         dataset = _make_bipartite_dataset()
@@ -549,7 +549,6 @@ class TestHierarchyCompletionPipeline(unittest.TestCase):
         assert result.metric_results is not None
         mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
         assert 0.0 <= mrr <= 1.0
-        assert result.hierarchical_metric_results is not None
 
     def test_negative_sampler_selectable(self):
         """The hierarchy default is a setdefault: pseudotyped/basic can be chosen instead."""
@@ -562,9 +561,291 @@ class TestHierarchyCompletionPipeline(unittest.TestCase):
             assert 0.0 <= mrr <= 1.0
 
 
+def _is_tree_ancestor(ancestor: int, node: int) -> bool:
+    """Return whether ``ancestor`` lies on ``node``'s root path in the balanced binary tree."""
+    while node > 0:
+        node = (node - 1) // 2
+        if node == ancestor:
+            return True
+    return False
+
+
+class TestTransitiveAncestorDescendantPredictionPipeline(unittest.TestCase):
+    """Tests for multi-hop transitive ancestor-descendant prediction (Ganea et al. 2018; He et al. 2024)."""
+
+    def test_split_train_direct_and_heldout_indirect(self):
+        """Training keeps all direct edges; val/test are disjoint non-direct closure pairs."""
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_split
+
+        dataset = _make_balanced_tree_dataset()
+        direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+
+        # the balanced tree has 20 non-direct closure pairs -> 5 val + 5 test
+        train, val, test = transitive_ancestor_descendant_prediction_split(dataset, eval_ratio=0.25, seed=42)
+        assert sorted(train.mapped_triples.tolist()) == sorted(dataset.training.mapped_triples.tolist())
+        val_rows = [tuple(row) for row in val.mapped_triples.tolist()]
+        test_rows = [tuple(row) for row in test.mapped_triples.tolist()]
+        assert len(val_rows) == len(test_rows) == 5
+        assert set(val_rows).isdisjoint(test_rows)
+        for h, r, t in val_rows + test_rows:
+            assert r == 0
+            assert (h, t) not in direct
+            assert _is_tree_ancestor(h, t)
+
+    def test_closure_ratio_adds_pairs_to_train(self):
+        """``closure_ratio`` moves indirect closure pairs into training, disjoint from val/test."""
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_split
+
+        dataset = _make_balanced_tree_dataset()
+        direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+
+        # 20 indirect pairs: 5 val + 5 test + 25% of 20 = 5 extra training pairs
+        train, val, test = transitive_ancestor_descendant_prediction_split(
+            dataset, closure_ratio=0.25, eval_ratio=0.25, seed=42
+        )
+        extra = [(h, t) for h, _, t in train.mapped_triples.tolist() if (h, t) not in direct]
+        assert len(extra) == 5
+        held = {(h, t) for h, _, t in val.mapped_triples.tolist() + test.mapped_triples.tolist()}
+        assert held.isdisjoint(extra)
+        for h, t in extra:
+            assert _is_tree_ancestor(h, t)
+
+    def test_invalid_ratios_raise(self):
+        """Ratios that overrun the closure pool are rejected."""
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_split
+
+        dataset = _make_balanced_tree_dataset()
+        with pytest.raises(ValueError, match="closure_ratio"):
+            transitive_ancestor_descendant_prediction_split(dataset, closure_ratio=0.5, eval_ratio=0.3, seed=42)
+
+    def test_determinism(self):
+        """The same seed yields identical splits."""
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_split
+
+        dataset = _make_balanced_tree_dataset()
+        first = transitive_ancestor_descendant_prediction_split(dataset, eval_ratio=0.25, seed=7)
+        second = transitive_ancestor_descendant_prediction_split(dataset, eval_ratio=0.25, seed=7)
+        for factory_a, factory_b in zip(first, second, strict=True):
+            assert factory_a.mapped_triples.tolist() == factory_b.mapped_triples.tolist()
+
+    def test_hierarchy_inverted_canonicalizes_orientation(self):
+        """Assert an inverted dataset (child->parent edges, e.g. WN18RR) yields the canonical closure."""
+        from pykeen.pipeline.hierarchical_helper import _closure_pool
+
+        dataset = _make_balanced_tree_dataset()
+        inverted_rows = [[t, r, h] for h, r, t in dataset.training.mapped_triples.tolist()]
+        train = CoreTriplesFactory(
+            mapped_triples=torch.tensor(inverted_rows, dtype=torch.long), num_entities=15, num_relations=1
+        )
+        inverted = EagerDataset(training=train, testing=train, validation=train)
+        inverted.hierarchy_inverted = True
+
+        for expected, actual in zip(_closure_pool(dataset, 0), _closure_pool(inverted, 0), strict=True):
+            assert expected == actual
+
+    def test_predefined_closure_split_uses_dataset_files(self):
+        """A predefined-split dataset keeps its own train/val/test rows; nothing is re-derived."""
+        from pykeen.pipeline.transitive_ancestor_descendant import _transitive_ancestor_descendant_split
+
+        # training: chain 0->1->2 plus the in-training closure shortcut 0->2 (as in Ganea's maxn
+        # 50% files); held-out closure pairs live only in the fixed val/test factories.
+        train_rows = [[0, 0, 1], [1, 0, 2], [0, 0, 2], [2, 0, 3]]
+        train = CoreTriplesFactory(
+            mapped_triples=torch.tensor(train_rows, dtype=torch.long), num_entities=4, num_relations=1
+        )
+        val = CoreTriplesFactory(
+            mapped_triples=torch.tensor([[1, 0, 3]], dtype=torch.long), num_entities=4, num_relations=1
+        )
+        test = CoreTriplesFactory(
+            mapped_triples=torch.tensor([[0, 0, 3]], dtype=torch.long), num_entities=4, num_relations=1
+        )
+        dataset = EagerDataset(training=train, testing=test, validation=val)
+        dataset.predefined_closure_split = True
+
+        out_train, out_val, out_test, paths, direct = _transitive_ancestor_descendant_split(
+            dataset, closure_ratio=0.9, eval_ratio=0.4, seed=42, hierarchy_relation=0
+        )
+        # training rows are kept verbatim (incl. the shortcut - no transitive reduction, no
+        # re-held-out closure edges) and eval rows come from the dataset's own files.
+        assert out_train == train_rows
+        assert out_val == [[1, 0, 3]]
+        assert out_test == [[0, 0, 3]]
+        assert direct == {(0, 1), (1, 2), (0, 2), (2, 3)}
+        # ancestor paths span the full closure of the training graph (false-negative filtering)
+        assert paths[3] == frozenset({0, 1, 2, 3})
+
+    def test_basic_edges_are_transitive_reduction(self):
+        """Assert a redundant shortcut edge is demoted from basic (training) to the eval pool."""
+        from pykeen.pipeline.hierarchical_helper import _closure_pool
+
+        # 0->1->2 plus the redundant shortcut 0->2; the reduction drops 0->2.
+        rows = torch.tensor([[0, 0, 1], [1, 0, 2], [0, 0, 2]], dtype=torch.long)
+        train = CoreTriplesFactory(mapped_triples=rows, num_entities=3, num_relations=1)
+        dataset = EagerDataset(training=train, testing=train, validation=train)
+
+        paths, _all_rows, direct, pool = _closure_pool(dataset, 0)
+        assert direct == {(0, 1), (1, 2)}
+        assert (0, 2) in pool
+        assert paths[2] == frozenset({0, 1, 2})
+
+    def test_clean_tree_reduction_is_asserted_edges(self):
+        """Assert a shortcut-free tree is unchanged: its reduction equals the asserted edges."""
+        from pykeen.pipeline.hierarchical_helper import _closure_pool
+
+        dataset = _make_balanced_tree_dataset()
+        asserted = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+        _paths, _all_rows, direct, _pool = _closure_pool(dataset, 0)
+        assert direct == asserted
+
+    def test_hard_negatives_prefer_siblings(self):
+        """Hard negatives pair an entity with its own sibling first, then top up with random."""
+        from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
+        from pykeen.pipeline.transitive_ancestor_descendant import _sibling_map
+
+        dataset = _make_balanced_tree_dataset()
+        paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
+        direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+        siblings = _sibling_map(direct)
+        assert siblings[1] == [2]
+        assert siblings[7] == [8]
+
+        # heads' and tails' siblings give two hard candidates ((1,2) and (8,7)); one random top-up
+        negatives = _sample_negatives(
+            [[1, 0, 7]], paths, num_entities=15, rng=np.random.default_rng(0), num_negatives=3, siblings=siblings
+        )
+        assert len(negatives) == 3
+        assert [1, 0, 2] in negatives
+        assert [8, 0, 7] in negatives
+        for h, r, t in negatives:
+            assert r == 0
+            assert h not in paths[t]
+
+    def test_num_negatives_per_positive(self):
+        """Random sampling yields exactly ``num_negatives`` valid negatives per positive."""
+        from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
+
+        dataset = _make_balanced_tree_dataset()
+        paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
+        positives = [[1, 0, 7], [2, 0, 11]]
+        negatives = _sample_negatives(positives, paths, num_entities=15, rng=np.random.default_rng(0), num_negatives=4)
+        assert len(negatives) == 8
+        for h, _r, t in negatives:
+            assert h not in paths[t]
+
+    def test_two_sided_negatives(self):
+        """Two-sided sampling corrupts both slots evenly and stays outside the closure (Ganea et al. 2018 §5)."""
+        from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
+
+        dataset = _make_balanced_tree_dataset()
+        paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
+        positives = [[1, 0, 7], [2, 0, 11]]
+        negatives = _sample_negatives(
+            positives, paths, num_entities=15, rng=np.random.default_rng(0), num_negatives=10, two_sided=True
+        )
+        assert len(negatives) == 20
+        for h, r, t in negatives:
+            assert r == 0
+            assert h not in paths[t]
+        # negatives come back grouped per positive; a valid corruption never reproduces the
+        # original slot (the positive is a closure pair), so the 5/5 counts are exact
+        for i, (head, _, tail) in enumerate(positives):
+            rows = negatives[10 * i : 10 * (i + 1)]
+            assert sum(1 for h, _r, t in rows if h == head) == 5  # tail-corrupted
+            assert sum(1 for h, _r, t in rows if t == tail) == 5  # head-corrupted
+
+    def test_negatives_deduped_per_positive(self):
+        """Negatives are drawn without replacement: no pair repeats for one positive (issues.md §6)."""
+        from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
+        from pykeen.pipeline.transitive_ancestor_descendant import _sibling_map
+
+        dataset = _make_balanced_tree_dataset()
+        paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
+        direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
+        siblings = _sibling_map(direct)
+
+        # eight valid tail-corruptions exist for (1, 7); requesting all eight forces collisions
+        # under with-replacement sampling, so distinctness proves the dedupe
+        for kwargs in ({}, {"two_sided": True}, {"siblings": siblings}):
+            negatives = _sample_negatives(
+                [[1, 0, 7]], paths, num_entities=15, rng=np.random.default_rng(0), num_negatives=8, **kwargs
+            )
+            assert len({tuple(n) for n in negatives}) == len(negatives)
+
+    def test_pipeline_runs(self):
+        """Pipeline completes and reports thresholded P/R/F1 plus mAP/AUROC."""
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_pipeline
+
+        dataset = _make_balanced_tree_dataset()
+        result = transitive_ancestor_descendant_prediction_pipeline(
+            dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0
+        )
+        mrr = result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+        assert 0.0 <= mrr <= 1.0
+        metrics = result.ancestor_descendant_metric_results
+        assert metrics is not None
+        for key in ("precision", "recall", "f1", "average_precision", "roc_auc"):
+            assert 0.0 <= metrics.get_metric(key) <= 1.0
+
+    def test_metrics_reevaluate_trained_model(self):
+        """``transitive_ancestor_descendant_prediction_metrics`` re-scores a trained model, e.g. with hard negatives."""
+        from pykeen.pipeline.transitive_ancestor_descendant import (
+            transitive_ancestor_descendant_prediction_metrics,
+            transitive_ancestor_descendant_prediction_pipeline,
+        )
+
+        dataset = _make_balanced_tree_dataset()
+        result = transitive_ancestor_descendant_prediction_pipeline(
+            dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0
+        )
+        metrics = transitive_ancestor_descendant_prediction_metrics(
+            result.model, dataset, eval_ratio=0.25, num_negatives=3, hard_negatives=True, seed=0
+        )
+        assert metrics is not None
+        for key in ("precision", "recall", "f1", "average_precision", "roc_auc"):
+            assert 0.0 <= metrics.get_metric(key) <= 1.0
+
+    def test_perfect_scorer_yields_perfect_f1(self):
+        """A scorer that recognises true ancestor pairs gives F1 = mAP = AUROC = 1."""
+        from pykeen.pipeline.transitive_ancestor_descendant import transitive_ancestor_descendant_prediction_pipeline
+
+        dataset = _make_balanced_tree_dataset()
+
+        def perfect_scorer(model, batch):
+            """Score 1 for true ancestor-descendant pairs, 0 otherwise (scale-consistent val/test)."""
+            return torch.tensor([float(_is_tree_ancestor(h, t)) for h, _r, t in batch.tolist()])
+
+        result = transitive_ancestor_descendant_prediction_pipeline(
+            dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0, eval_score_fn=perfect_scorer
+        )
+        metrics = result.ancestor_descendant_metric_results
+        assert metrics is not None
+        assert metrics.get_metric("f1") == 1.0
+        assert metrics.get_metric("average_precision") == 1.0
+        assert metrics.get_metric("roc_auc") == 1.0
+
+    def test_lca_metrics(self):
+        """``lca=True`` reports LCA-based P/R/F1 per test descendant, matching the standalone function."""
+        from pykeen.pipeline.transitive_ancestor_descendant import (
+            transitive_ancestor_descendant_lca_metrics,
+            transitive_ancestor_descendant_prediction_pipeline,
+        )
+
+        dataset = _make_balanced_tree_dataset()
+        result = transitive_ancestor_descendant_prediction_pipeline(
+            dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0, lca=True
+        )
+        metrics = result.lca_metric_results
+        assert metrics is not None
+        for key in ("lca_precision", "lca_recall", "lca_f1"):
+            assert 0.0 <= metrics.get_metric(f"both.{key}") <= 1.0
+        standalone = transitive_ancestor_descendant_lca_metrics(result.model, dataset, eval_ratio=0.25, seed=0)
+        assert standalone is not None
+        assert standalone.get_metric("both.lca_f1") == metrics.get_metric("both.lca_f1")
+
+
 def test_build_ancestor_paths_chain():
     """build_ancestor_paths returns a total inclusive ancestor map for a chain."""
-    from pykeen.pipeline.hierarchy import build_ancestor_paths
+    from pykeen.pipeline.hierarchical_helper import build_ancestor_paths
 
     triples = torch.tensor([[0, 0, 1], [1, 0, 2], [2, 0, 3]], dtype=torch.long)
     ancestors = build_ancestor_paths(triples, num_entities=4)
@@ -575,7 +856,7 @@ def test_build_ancestor_paths_chain():
 
 def test_build_ancestor_paths_relation_filter():
     """build_ancestor_paths only follows edges of the given hierarchy relation."""
-    from pykeen.pipeline.hierarchy import build_ancestor_paths
+    from pykeen.pipeline.hierarchical_helper import build_ancestor_paths
 
     # relation 0 = hierarchy chain 0→1→2; relation 1 = a non-hierarchy edge 3→0
     triples = torch.tensor([[0, 0, 1], [1, 0, 2], [3, 1, 0]], dtype=torch.long)
@@ -587,99 +868,8 @@ def test_build_ancestor_paths_relation_filter():
     assert 3 in unfiltered[0]
 
 
-def test_hierarchical_scores_paper_example():
-    """Reproduce Kosmopoulos et al. (2015), Fig. 11 / Table 3 (root included, per-query scores)."""
-    from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
-    from pykeen.pipeline.hierarchy import build_ancestor_paths
-
-    # 0=Arts, 1=Music, 2=Theater, 3=Pop, 4=Rock, 5=Classical
-    triples = torch.tensor([[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [1, 0, 5]], dtype=torch.long)
-    ancestors = build_ancestor_paths(triples, num_entities=6)
-    y_true = np.array([0, 0, 0, 1, 0, 0])  # true class is Pop
-
-    # case (a): predicted Rock → hP = hR = hF1 = 2/3 (shared path {Arts, Music})
-    case_a = _hierarchical_scores(y_true=y_true, y_score=np.array([0, 0, 0, 0, 1.0, 0]), ancestors=ancestors)
-    assert case_a == pytest.approx((2 / 3, 2 / 3, 2 / 3))
-
-    # case (b): predicted Theater → hP = 1/2, hR = 1/3, hF1 = 0.4 (only Arts shared)
-    case_b = _hierarchical_scores(y_true=y_true, y_score=np.array([0, 0, 1.0, 0, 0, 0]), ancestors=ancestors)
-    assert case_b == pytest.approx((1 / 2, 1 / 3, 0.4))
-
-
-def test_hierarchical_scores_disjoint_and_empty():
-    """Disjoint branches score 0.0; an empty positive mask yields None."""
-    from pykeen.evaluation.hierarchical_classification_evaluator import _hierarchical_scores
-
-    # two disjoint chains 0→1 and 2→3
-    ancestors = {0: frozenset({0}), 1: frozenset({0, 1}), 2: frozenset({2}), 3: frozenset({2, 3})}
-    disjoint = _hierarchical_scores(
-        y_true=np.array([0, 1, 0, 0]), y_score=np.array([0.0, 0.0, 0.0, 1.0]), ancestors=ancestors
-    )
-    assert disjoint == pytest.approx((0.0, 0.0, 0.0))
-
-    empty = _hierarchical_scores(
-        y_true=np.array([0, 0, 0, 0]), y_score=np.array([0.1, 0.2, 0.3, 0.4]), ancestors=ancestors
-    )
-    assert empty is None
-
-
-def test_hierarchical_aggregate_averages_per_query():
-    """Aggregation averages the per-query scores (Kosmopoulos et al. 2015), not micro-pooled counts."""
-    from pykeen.evaluation.hierarchical_classification_evaluator import (
-        HierarchicalClassificationEvaluator,
-        HierarchicalMetricKey,
-    )
-
-    values = [(0.5, 0.25, 1 / 3), (1.0, 1.0, 1.0)]
-    result = HierarchicalClassificationEvaluator._aggregate(side="tail", values=values)
-    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_precision")] == pytest.approx(0.75)
-    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_recall")] == pytest.approx(0.625)
-    assert result[HierarchicalMetricKey(side="tail", metric="hierarchical_f1")] == pytest.approx(2 / 3)
-
-    # no queries → all zeros
-    zeros = HierarchicalClassificationEvaluator._aggregate(side="tail", values=[])
-    assert all(value == 0.0 for value in zeros.values())
-
-
-def test_hierarchical_evaluator_requires_ancestors():
-    """The hierarchical evaluator raises when no ancestors map is given."""
-    from pykeen.evaluation import HierarchicalClassificationEvaluator
-
-    with pytest.raises(ValueError, match="ancestors"):
-        HierarchicalClassificationEvaluator()
-
-
-def test_pipeline_reports_hierarchical_metrics():
-    """The hierarchy-completion pipeline attaches hierarchical metrics in [0, 1] when enabled."""
-    from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
-
-    dataset = _make_balanced_tree_dataset()
-    result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0)
-    assert result.hierarchical_metric_results is not None
-    h_f1 = result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
-    assert 0.0 <= h_f1 <= 1.0
-
-    disabled = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0, hierarchical=False)
-    assert disabled.hierarchical_metric_results is None
-
-
-def test_pipeline_persists_hierarchical_metrics():
-    """save_to_directory writes the hierarchical metrics into results.json."""
-    import json
-
-    from pykeen.pipeline.hierarchy import hierarchy_completion_pipeline
-
-    dataset = _make_balanced_tree_dataset()
-    result = hierarchy_completion_pipeline(dataset, epochs=1, test_ratio=0.5, seed=0)
-    with tempfile.TemporaryDirectory() as directory:
-        result.save_to_directory(directory)
-        with pathlib.Path(directory, "results.json").open() as file:
-            saved = json.load(file)
-    assert "hierarchical_metrics" in saved
-
-
 def test_hpo_pipeline_refits_best_trial():
-    """The hierarchy-completion HPO pipeline runs a study and re-fits the best trial's hierarchical metrics."""
+    """The hierarchy-completion HPO pipeline runs a study and re-fits the best trial."""
     from pykeen.pipeline.hierarchy import hpo_hierarchy_completion_pipeline
 
     dataset = _make_balanced_tree_dataset()
@@ -688,5 +878,5 @@ def test_hpo_pipeline_refits_best_trial():
     )
     assert outcome.hpo_result.study is not None
     assert outcome.result is not None
-    h_f1 = outcome.result.hierarchical_metric_results.get_metric("both.hierarchical_f1")
-    assert 0.0 <= h_f1 <= 1.0
+    mrr = outcome.result.get_metric("both.realistic.inverse_harmonic_mean_rank")
+    assert 0.0 <= mrr <= 1.0

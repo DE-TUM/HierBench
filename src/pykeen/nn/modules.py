@@ -2186,7 +2186,7 @@ class HyperbolicConesInteraction(Interaction[FloatTensor, tuple[()], FloatTensor
 
     .. math::
 
-        \text{score}(h, t) = -\max\!\bigl(0,\; \Xi(h, t) - \psi(h)\bigr)
+        \text{score}(h, t) = \psi(h) - \Xi(h, t)
 
     where:
 
@@ -2201,7 +2201,10 @@ class HyperbolicConesInteraction(Interaction[FloatTensor, tuple[()], FloatTensor
                  {\|h\| \cdot \|h-t\| \cdot \sqrt{1+\|h\|^2\|t\|^2 - 2\langle h,t\rangle}}
         \right)
 
-    A score of 0 means ``t`` lies inside ``h``'s entailment cone.
+    A non-negative score means ``t`` lies inside ``h``'s entailment cone. The paper's cone
+    energy is :math:`E(h,t) = \max(0, -\text{score}(h,t))`; the relu is left to the loss
+    (see :class:`pykeen.losses.PointwiseHingeLoss`) so that scores stay continuous and
+    tie-free for ranking-based evaluation.
     Pair with :class:`~pykeen.nn.hyperbolic.HyperbolicConesEmbedding` to enforce the
     inner-radius constraint on entity embeddings.
 
@@ -2242,7 +2245,8 @@ class HyperbolicConesInteraction(Interaction[FloatTensor, tuple[()], FloatTensor
             The child (descendant) entity representations on the Poincaré ball.
 
         :return: shape: ``batch_dims``
-            The scores (negative cone energy; higher is better).
+            The scores (signed cone membership margin ``ψ(h) − Ξ(h, t)``; higher is better,
+            non-negative iff ``t`` lies inside ``h``'s cone).
         """
         eps = 1e-5
         h_norm_sq = (h * h).sum(dim=-1)
@@ -2258,7 +2262,7 @@ class HyperbolicConesInteraction(Interaction[FloatTensor, tuple[()], FloatTensor
         cos_child = (dot_ht * (1.0 + h_norm_sq) - h_norm_sq * (1.0 + t_norm_sq)) / (h_norm * diff_norm * g.sqrt())
         child_angle = cos_child.clamp(-1.0 + eps, 1.0 - eps).arccos()
 
-        return -torch.relu(child_angle - cone_angle)
+        return cone_angle - child_angle
 
 
 @parse_docdata
