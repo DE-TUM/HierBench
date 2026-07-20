@@ -823,6 +823,25 @@ class TestTransitiveAncestorDescendantPredictionPipeline(unittest.TestCase):
         assert metrics.get_metric("average_precision") == 1.0
         assert metrics.get_metric("roc_auc") == 1.0
 
+    def test_lca_metrics(self):
+        """``lca=True`` reports LCA-based P/R/F1 per test descendant, matching the standalone function."""
+        from pykeen.pipeline.transitive_ancestor_descendant import (
+            transitive_ancestor_descendant_lca_metrics,
+            transitive_ancestor_descendant_prediction_pipeline,
+        )
+
+        dataset = _make_balanced_tree_dataset()
+        result = transitive_ancestor_descendant_prediction_pipeline(
+            dataset, epochs=1, eval_ratio=0.25, num_negatives=3, seed=0, lca=True
+        )
+        metrics = result.lca_metric_results
+        assert metrics is not None
+        for key in ("lca_precision", "lca_recall", "lca_f1"):
+            assert 0.0 <= metrics.get_metric(f"both.{key}") <= 1.0
+        standalone = transitive_ancestor_descendant_lca_metrics(result.model, dataset, eval_ratio=0.25, seed=0)
+        assert standalone is not None
+        assert standalone.get_metric("both.lca_f1") == metrics.get_metric("both.lca_f1")
+
 
 def test_build_ancestor_paths_chain():
     """build_ancestor_paths returns a total inclusive ancestor map for a chain."""

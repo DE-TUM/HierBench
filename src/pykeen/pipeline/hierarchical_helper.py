@@ -24,6 +24,7 @@ from scipy import sparse
 
 from .api import PipelineResult, pipeline
 from ..datasets.base import Dataset
+from ..evaluation.lca_classification_evaluator import LCAMetricResults
 from ..evaluation.pair_classification_evaluator import PairClassificationMetricResults
 from ..models.nbase import ERModel
 from ..models.unimodal import PoincareE
@@ -113,12 +114,17 @@ class HierarchicalPipelineResult(PipelineResult):
     #: ancestor-descendant metrics, populated only when the pipeline is called with ``return_raw=True``.
     #: A carry field for opted-in callers; deliberately excluded from ``_get_results()``/``to_dict()``.
     ancestor_descendant_raw_predictions: dict | None = None
+    #: LCA-based hierarchical precision/recall/F1 (Kosmopoulos et al. 2015) per test descendant,
+    #: populated only when the pipeline is called with ``lca=True``.
+    lca_metric_results: LCAMetricResults | None = None
 
     def _get_results(self) -> Mapping[str, Any]:
         """Extend the serialized results with the hierarchical-task metrics."""
         results = dict(super()._get_results())
         if self.ancestor_descendant_metric_results is not None:
             results["ancestor_descendant_metrics"] = self.ancestor_descendant_metric_results.to_dict()
+        if self.lca_metric_results is not None:
+            results["lca_metrics"] = self.lca_metric_results.to_dict()
         return results
 
 

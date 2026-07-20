@@ -44,17 +44,19 @@ from .hierarchical_helper import (
 )
 from ..datasets.base import Dataset
 from ..datasets.metadata import resolve_hierarchy_relation
+from ..evaluation.lca_classification_evaluator import LCAClassificationEvaluator, LCAMetricResults
 from ..evaluation.pair_classification_evaluator import PairClassificationMetricResults
 from ..metrics.classification import AreaUnderTheReceiverOperatingCharacteristicCurve, AveragePrecisionScore
 from ..models.base import Model
 from ..models.nbase import ERModel
 from ..triples import CoreTriplesFactory
-from ..typing import MappedTriples
+from ..typing import LABEL_HEAD, MappedTriples
 
 __all__ = [
     "transitive_ancestor_descendant_prediction_split",
     "transitive_ancestor_descendant_prediction_pipeline",
     "transitive_ancestor_descendant_prediction_metrics",
+    "transitive_ancestor_descendant_lca_metrics",
 ]
 
 #: stateless, reused metric instances (mirrors AveragePrecisionScore/AreaUnderTheReceiverOperatingCharacteristicCurve
@@ -391,6 +393,81 @@ def transitive_ancestor_descendant_prediction_metrics(
     )
 
 
+def transitive_ancestor_descendant_lca_metrics(
+    model: Model,
+    dataset: Dataset,
+    *,
+    closure_ratio: float = 0.0,
+    eval_ratio: float = 0.05,
+    seed: int = 42,
+    hierarchy_relation: int | str | None = None,
+    batch_size: int | None = None,
+    max_paths: int = 64,
+) -> LCAMetricResults | None:
+    """Compute LCA-based hierarchical P/R/F1 (Kosmopoulos et al. 2015) per test descendant.
+
+    Reframes the transitive ancestor-descendant task as one multi-label instance per test
+    descendant: the true set is its **full** inclusive ancestor closure, and the predicted set is
+    the top-``|Y|`` entities of a full-vocabulary scoring pass. Both sets are then augmented only
+    up to the lowest common ancestor with the nearest node of the other set (paper §2.4.2,
+    Algorithm 1), so near-root predictions get almost no credit — unlike the full ancestor
+    augmentation of the plain hierarchical F1, which rewards shallow predictions.
+
+    Requires a full-vocabulary scoring pass (``|test descendants| × |E|`` scores): cheap for
+    NASA/DOID, noticeable for WordNet/MeSH. Symmetric-distance models (e.g. plain Poincaré
+    embeddings) rank ancestors and descendants alike; the LCA measures tolerate this better than
+    pair classification since wrong-direction predictions land near the true nodes, but there is
+    no ``eval_score_fn`` hook on this per-target protocol.
+
+    :param model: A trained model (e.g. from :func:`transitive_ancestor_descendant_prediction_pipeline`).
+    :param dataset: The hierarchical dataset the model was trained on.
+    :param closure_ratio: Must match the value used for training; see
+        :func:`transitive_ancestor_descendant_prediction_split`.
+    :param eval_ratio: Must match the value used for training; see
+        :func:`transitive_ancestor_descendant_prediction_split`.
+    :param seed: Random seed; must match the training split's seed for the held-out pairs to line up.
+    :param hierarchy_relation: Relation id or label defining the hierarchy; defaults to the dataset's
+        :attr:`~pykeen.datasets.metadata.HierarchicalGraph.hierarchical_relation` when available.
+    :param batch_size: Evaluation batch size; ``None`` lets the evaluator pick one automatically.
+    :param max_paths: Bound on equal-length LCA path enumeration per node; see
+        :class:`~pykeen.evaluation.LCAClassificationEvaluator`.
+
+    :returns: The per-side and combined ``lca_precision``/``lca_recall``/``lca_f1`` results, or
+        ``None`` when there are no test pairs.
+    """
+    hierarchy_relation = resolve_hierarchy_relation(dataset, hierarchy_relation)
+    _train_rows, _val_rows, test_rows, paths, direct = _transitive_ancestor_descendant_split(
+        dataset,
+        closure_ratio=closure_ratio,
+        eval_ratio=eval_ratio,
+        seed=seed,
+        hierarchy_relation=hierarchy_relation,
+    )
+    if not test_rows:
+        warnings.warn("empty test ancestor-descendant pairs; skipping LCA metrics", stacklevel=2)
+        return None
+    # One query per test descendant (the reached slot), with the *full* inclusive ancestor closure
+    # as evaluation rows: the evaluator's dense positive mask then equals the complete true
+    # ancestor set, and its per-query dedup collapses the rows back to one instance per descendant.
+    relation = test_rows[0][1]
+    rows = [
+        [ancestor, relation, descendant]
+        for descendant in sorted({row[2] for row in test_rows})
+        for ancestor in sorted(paths[descendant] - {descendant})
+    ]
+    evaluator = LCAClassificationEvaluator(edges=direct, ancestors=paths, max_paths=max_paths)
+    return evaluator.evaluate(
+        model=model,
+        mapped_triples=torch.tensor(rows, dtype=torch.long),
+        batch_size=batch_size,
+        targets=(LABEL_HEAD,),
+        use_tqdm=False,
+        # [] (not None) -> Y reflects exactly the closure rows above, no training triples added,
+        # while skipping prepare_filter_triples()'s "did you forget training triples?" warning
+        additional_filter_triples=[],
+    )
+
+
 def transitive_ancestor_descendant_prediction_pipeline(
     dataset: Dataset,
     *,
@@ -405,6 +482,7 @@ def transitive_ancestor_descendant_prediction_pipeline(
     hierarchy_relation: int | str | None = None,
     eval_score_fn: Callable[[Model, MappedTriples], torch.Tensor] | None = None,
     return_raw: bool = False,
+    lca: bool = False,
     **pipeline_kwargs,
 ) -> HierarchicalPipelineResult:
     """Train on the direct edges (plus optional closure fraction) and predict held-out ancestor-descendant pairs.
@@ -437,6 +515,9 @@ def transitive_ancestor_descendant_prediction_pipeline(
     :param return_raw: When ``True``, the per-pair test ``rows``/``labels``/``scores``/
         ``predictions``/``threshold`` are stashed on ``ancestor_descendant_raw_predictions`` of the
         returned result for error analysis and plotting.
+    :param lca: When ``True``, additionally compute the LCA-based hierarchical P/R/F1 via
+        :func:`transitive_ancestor_descendant_lca_metrics` (an extra full-vocabulary evaluation
+        pass) and stash them on ``lca_metric_results`` of the returned result.
     :param pipeline_kwargs: Additional kwargs forwarded to :func:`pykeen.pipeline.pipeline`. Under
         sLCWA the negative sampler defaults to :class:`~pykeen.sampling.HierarchyNegativeSampler`
         (same-depth hard negatives); pass ``negative_sampler="pseudotyped"`` / ``"basic"`` to override.
@@ -482,4 +563,13 @@ def transitive_ancestor_descendant_prediction_pipeline(
         result.ancestor_descendant_metric_results, result.ancestor_descendant_raw_predictions = pair_metrics
     else:
         result.ancestor_descendant_metric_results = pair_metrics
+    if lca:
+        result.lca_metric_results = transitive_ancestor_descendant_lca_metrics(
+            result.model,
+            dataset,
+            closure_ratio=closure_ratio,
+            eval_ratio=eval_ratio,
+            seed=seed,
+            hierarchy_relation=hierarchy_relation,
+        )
     return result
