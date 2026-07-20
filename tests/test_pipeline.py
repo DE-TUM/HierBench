@@ -700,12 +700,12 @@ class TestTransitiveAncestorDescendantPredictionPipeline(unittest.TestCase):
     def test_hard_negatives_prefer_siblings(self):
         """Hard negatives pair an entity with its own sibling first, then top up with random."""
         from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
-        from pykeen.pipeline.transitive_ancestor_descendant import _sibling_map
+        from pykeen.sampling import sibling_groups
 
         dataset = _make_balanced_tree_dataset()
         paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
         direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
-        siblings = _sibling_map(direct)
+        siblings = sibling_groups(direct)
         assert siblings[1] == [2]
         assert siblings[7] == [8]
 
@@ -756,12 +756,12 @@ class TestTransitiveAncestorDescendantPredictionPipeline(unittest.TestCase):
     def test_negatives_deduped_per_positive(self):
         """Negatives are drawn without replacement: no pair repeats for one positive (issues.md §6)."""
         from pykeen.pipeline.hierarchical_helper import _sample_negatives, build_ancestor_paths
-        from pykeen.pipeline.transitive_ancestor_descendant import _sibling_map
+        from pykeen.sampling import sibling_groups
 
         dataset = _make_balanced_tree_dataset()
         paths = build_ancestor_paths(dataset.training.mapped_triples, num_entities=15)
         direct = {(h, t) for h, _, t in dataset.training.mapped_triples.tolist()}
-        siblings = _sibling_map(direct)
+        siblings = sibling_groups(direct)
 
         # eight valid tail-corruptions exist for (1, 7); requesting all eight forces collisions
         # under with-replacement sampling, so distinctness proves the dedupe

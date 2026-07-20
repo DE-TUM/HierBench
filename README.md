@@ -387,7 +387,7 @@ The following 3 training loops are implemented in PyKEEN.
 
 ### Negative Samplers
 
-The following 4 negative samplers are implemented in PyKEEN.
+The following 5 negative samplers are implemented in PyKEEN.
 
 | Name        | Reference                                                                                                                                   | Description                                                                             |
 |-------------|---------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
@@ -395,6 +395,7 @@ The following 4 negative samplers are implemented in PyKEEN.
 | bernoulli   | [`pykeen.sampling.BernoulliNegativeSampler`](https://pykeen.readthedocs.io/en/latest/api/pykeen.sampling.BernoulliNegativeSampler.html)     | An implementation of the Bernoulli negative sampling approach proposed by [wang2014]_.  |
 | hierarchy   | [`pykeen.sampling.HierarchyNegativeSampler`](https://pykeen.readthedocs.io/en/latest/api/pykeen.sampling.HierarchyNegativeSampler.html)     | A sampler that corrupts a hierarchy edge with a node at the *same depth* (&#34;near-miss&#34;). |
 | pseudotyped | [`pykeen.sampling.PseudoTypedNegativeSampler`](https://pykeen.readthedocs.io/en/latest/api/pykeen.sampling.PseudoTypedNegativeSampler.html) | A sampler that accounts for which entities co-occur with a relation.                    |
+| sibling     | [`pykeen.sampling.SiblingNegativeSampler`](https://pykeen.readthedocs.io/en/latest/api/pykeen.sampling.SiblingNegativeSampler.html)         | A sampler that corrupts a hierarchy edge by pairing an entity with its own sibling.     |
 
 ### Stoppers
 

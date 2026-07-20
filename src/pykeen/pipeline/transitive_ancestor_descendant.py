@@ -50,6 +50,7 @@ from ..evaluation.pair_classification_evaluator import PairClassificationMetricR
 from ..metrics.classification import AreaUnderTheReceiverOperatingCharacteristicCurve, AveragePrecisionScore
 from ..models.base import Model
 from ..models.nbase import ERModel
+from ..sampling import sibling_groups
 from ..triples import CoreTriplesFactory
 from ..typing import LABEL_HEAD, MappedTriples
 
@@ -64,26 +65,6 @@ __all__ = [
 #: already registered in pykeen.metrics.classification)
 _AVERAGE_PRECISION = AveragePrecisionScore()
 _ROC_AUC = AreaUnderTheReceiverOperatingCharacteristicCurve()
-
-
-def _sibling_map(direct: set[tuple[int, int]]) -> dict[int, list[int]]:
-    """Map each entity to its siblings — entities sharing a direct neighbour on the same edge side.
-
-    Orientation-agnostic: hierarchy relations may point parent->child (e.g. NASA ``has_subclass``)
-    or child->parent (e.g. WN18RR ``_hypernym``), so two entities count as siblings when they share
-    a direct predecessor *or* a direct successor. On a tree this reduces to the papers' definition
-    (same parent) regardless of edge direction.
-    """
-    by_pred: dict[int, set[int]] = {}
-    by_succ: dict[int, set[int]] = {}
-    for h, t in direct:
-        by_pred.setdefault(h, set()).add(t)
-        by_succ.setdefault(t, set()).add(h)
-    siblings: dict[int, set[int]] = {}
-    for group in (*by_pred.values(), *by_succ.values()):
-        for member in group:
-            siblings.setdefault(member, set()).update(group - {member})
-    return {node: sorted(sibs) for node, sibs in siblings.items()}
 
 
 #: cache of the last few computed splits, keyed by dataset identity and split parameters. The split
@@ -276,7 +257,9 @@ def _transitive_ancestor_descendant_pair_metrics(
     if not val_rows or not test_rows:
         warnings.warn("empty validation or test ancestor-descendant pairs; skipping threshold metrics", stacklevel=2)
         return (None, None) if return_raw else None
-    siblings = _sibling_map(direct) if hard_negatives else None
+    # same "sibling" definition as SiblingNegativeSampler, so evaluation-time hard negatives and
+    # training-time ones agree; over the basic (transitively reduced) edges
+    siblings = sibling_groups(direct) if hard_negatives else None
     rng = np.random.default_rng(seed)
 
     def _score(rows: list[list[int]]) -> tuple[np.ndarray, np.ndarray, list[list[int]]] | None:

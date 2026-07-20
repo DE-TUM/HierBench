@@ -119,6 +119,7 @@ from .bernoulli_negative_sampler import BernoulliNegativeSampler
 from .hierarchy_negative_sampler import HierarchyNegativeSampler
 from .negative_sampler import NegativeSampler
 from .pseudo_type import PseudoTypedNegativeSampler
+from .sibling_negative_sampler import SiblingNegativeSampler, sibling_groups
 
 __all__ = [
     "NegativeSampler",
@@ -126,6 +127,8 @@ __all__ = [
     "BernoulliNegativeSampler",
     "PseudoTypedNegativeSampler",
     "HierarchyNegativeSampler",
+    "SiblingNegativeSampler",
+    "sibling_groups",
     # Utils
     "negative_sampler_resolver",
 ]
