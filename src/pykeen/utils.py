@@ -217,6 +217,37 @@ def _flatten_dictionary(
     return result
 
 
+def _norm(
+    x: torch.Tensor,
+    p: str | int | float,
+    dim: None | int | Iterable[int] = None,
+    keepdim: bool = False,
+) -> torch.Tensor:
+    """Compute the $p$-norm, preferring the non-deprecated :func:`torch.linalg.vector_norm`.
+
+    :func:`torch.linalg.vector_norm` natively supports complex dtypes (per its documentation)
+    but does not accept a string ``ord`` (``"fro"``/``"nuc"``, i.e. matrix norms). No call site
+    in this codebase passes a string ``p`` in practice; that branch only exists to keep
+    :func:`clamp_norm`'s default signature working, and falls back to the deprecated
+    :meth:`torch.Tensor.norm`.
+
+    :param x:
+        The tensor.
+    :param p:
+        The norm type.
+    :param dim:
+        The dimension(s) to reduce.
+    :param keepdim:
+        Whether to retain the reduced dimensions.
+
+    :return:
+        The norm.
+    """
+    if isinstance(p, str):
+        return x.norm(p=p, dim=dim, keepdim=keepdim)
+    return torch.linalg.vector_norm(x, ord=p, dim=dim, keepdim=keepdim)
+
+
 def clamp_norm(
     x: torch.Tensor,
     maxnorm: float,
@@ -237,7 +268,7 @@ def clamp_norm(
     :return:
         A vector with $|x| <= maxnorm$.
     """
-    norm = x.norm(p=p, dim=dim, keepdim=True)
+    norm = _norm(x, p=p, dim=dim, keepdim=True)
     mask = (norm < maxnorm).type_as(x)
     return mask * x + (1 - mask) * (x / at_least_eps(norm) * maxnorm)
 
@@ -632,7 +663,7 @@ def negative_norm(
         assert not isinstance(p, str)
         return -(x.abs() ** p).sum(dim=-1)
 
-    return -x.norm(p=p, dim=-1)
+    return -_norm(x, p=p, dim=-1)
 
 
 def project_entity(
@@ -926,7 +957,8 @@ class Bias(nn.Module):
 
 def lp_norm(x: FloatTensor, p: float, dim: int | None, normalize: bool) -> FloatTensor:
     """Return the $L_p$ norm."""
-    value = x.norm(p=p, dim=dim)
+    # p is always numeric here (declared float); vector_norm natively supports complex dtypes
+    value = torch.linalg.vector_norm(x, ord=p, dim=dim)
     if not normalize:
         return value
     return value / get_expected_norm(p=p, d=x.shape[-1])
