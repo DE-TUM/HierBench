@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Mapping
+from typing import cast
 
 import numpy as np
 import torch
@@ -148,7 +149,10 @@ def _compute_transitive_ancestor_descendant_split(
     """
     if getattr(dataset, "predefined_closure_split", False):
 
-        def hierarchy_rows(factory: CoreTriplesFactory) -> list[list[int]]:
+        def hierarchy_rows(factory: CoreTriplesFactory | None) -> list[list[int]]:
+            """Return the canonical hierarchy rows of ``factory`` (empty when it is absent)."""
+            if factory is None:
+                return []
             rows = _canonical_rows(factory.mapped_triples, dataset, hierarchy_relation)
             return [row for row in rows if hierarchy_relation is None or row[1] == hierarchy_relation]
 
@@ -456,15 +460,18 @@ def transitive_ancestor_descendant_lca_metrics(
         for ancestor in sorted(paths[descendant] - {descendant})
     ]
     evaluator = LCAClassificationEvaluator(edges=direct, ancestors=paths, max_paths=max_paths)
-    return evaluator.evaluate(
-        model=model,
-        mapped_triples=torch.tensor(rows, dtype=torch.long),
-        batch_size=batch_size,
-        targets=(LABEL_HEAD,),
-        use_tqdm=False,
-        # [] (not None) -> Y reflects exactly the closure rows above, no training triples added,
-        # while skipping prepare_filter_triples()'s "did you forget training triples?" warning
-        additional_filter_triples=[],
+    return cast(
+        LCAMetricResults,
+        evaluator.evaluate(
+            model=model,
+            mapped_triples=torch.tensor(rows, dtype=torch.long),
+            batch_size=batch_size,
+            targets=(LABEL_HEAD,),
+            use_tqdm=False,
+            # [] (not None) -> Y reflects exactly the closure rows above, no training triples added,
+            # while skipping prepare_filter_triples()'s "did you forget training triples?" warning
+            additional_filter_triples=[],
+        ),
     )
 
 
@@ -559,7 +566,7 @@ def transitive_ancestor_descendant_prediction_pipeline(
         score_fn=eval_score_fn,
         return_raw=return_raw,
     )
-    if return_raw:
+    if isinstance(pair_metrics, tuple):
         result.ancestor_descendant_metric_results, result.ancestor_descendant_raw_predictions = pair_metrics
     else:
         result.ancestor_descendant_metric_results = pair_metrics

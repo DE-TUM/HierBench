@@ -246,13 +246,9 @@ def test_balance_empty() -> None:
 def test_balance_symmetric_beats_caterpillar() -> None:
     """A balanced binary tree on 4 leaves scores higher than a caterpillar with the same leaves."""
     # Balanced: 0→{1,2}, 1→{3,4}, 2→{5,6} (leaves 3,4,5,6).
-    balanced = _make_dataset(
-        [[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [2, 0, 5], [2, 0, 6]], num_entities=7
-    )
+    balanced = _make_dataset([[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [2, 0, 5], [2, 0, 6]], num_entities=7)
     # Caterpillar: 0→{1,2}, 2→{3,4}, 4→{5,6} (leaves 1,3,5,6).
-    caterpillar = _make_dataset(
-        [[0, 0, 1], [0, 0, 2], [2, 0, 3], [2, 0, 4], [4, 0, 5], [4, 0, 6]], num_entities=7
-    )
+    caterpillar = _make_dataset([[0, 0, 1], [0, 0, 2], [2, 0, 3], [2, 0, 4], [4, 0, 5], [4, 0, 6]], num_entities=7)
     assert ExtendedGraphAnalysis(balanced).balance > ExtendedGraphAnalysis(caterpillar).balance
 
 
