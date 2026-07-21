@@ -31,12 +31,12 @@ class DOID(SingleFileRemoteMetadataDataset, HierarchicalGraph):
         link:
         github: DiseaseOntology/HumanDiseaseOntology
     statistics:
-        entities: 12079
+        entities: 12221
         relations: 2
-        training: 13710
-        testing: 1714
-        validation: 1714
-        triples: 17138
+        training: 13928
+        testing: 1741
+        validation: 1741
+        triples: 17410
     """
 
     triples_url = _BASE_URL + "dataset.tsv"
