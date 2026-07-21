@@ -31,6 +31,13 @@ def _star_dataset() -> EagerDataset:
     return EagerDataset(training=tf, testing=tf)
 
 
+def _cycle4_dataset() -> EagerDataset:
+    """Return the 4-cycle 0→1→2→3→0 with a single relation."""
+    triples = torch.tensor([[0, 0, 1], [1, 0, 2], [2, 0, 3], [3, 0, 0]], dtype=torch.long)
+    tf = CoreTriplesFactory.create(mapped_triples=triples, num_entities=4, num_relations=1)
+    return EagerDataset(training=tf, testing=tf)
+
+
 # ---------------------------------------------------------------------------
 # ExtendedGraphAnalysis construction / split handling
 # ---------------------------------------------------------------------------
@@ -170,6 +177,17 @@ def test_levels_alias_chain() -> None:
     """Levels is an alias for max_hierarchy_depth."""
     ha = ExtendedGraphAnalysis(_chain_dataset())
     assert ha.levels == ha.max_hierarchy_depth == 3
+
+
+def test_gromov_hyperbolicity_trees_are_zero() -> None:
+    """Trees are 0-hyperbolic (chain and star)."""
+    assert ExtendedGraphAnalysis(_chain_dataset()).gromov_hyperbolicity() == 0.0
+    assert ExtendedGraphAnalysis(_star_dataset()).gromov_hyperbolicity() == 0.0
+
+
+def test_gromov_hyperbolicity_cycle4() -> None:
+    """The 4-cycle has delta == 1 (matching sums 2, 4, 2 -> (4-2)/2)."""
+    assert ExtendedGraphAnalysis(_cycle4_dataset()).gromov_hyperbolicity() == 1.0
 
 
 # ---------------------------------------------------------------------------

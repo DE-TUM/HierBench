@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING, Literal
 import networkx as nx
 import numpy as np
 import torch
+from scipy.sparse.csgraph import shortest_path
 
 from .metadata import resolve_hierarchy_relation
 from ..triples import CoreTriplesFactory
@@ -743,6 +744,93 @@ class ExtendedGraphAnalysis:
             (nx.diameter(undirected.subgraph(component)) for component in nx.connected_components(undirected)),
             default=0,
         )
+
+    def gromov_hyperbolicity(self, max_sample_nodes: int = 200, seed: int = 0) -> float:
+        r"""Gromov 4-point :math:`\delta`-hyperbolicity of the giant component.
+
+        Following Adcock, Sullivan & Mahoney (2013), *"Tree-like structure in large
+        social and information networks"* (ICDM), Definition 1: for a quadruplet of
+        nodes, take the three perfect-matching sums of pairwise shortest-path distances
+        :math:`S_1 \ge S_2 \ge S_3`; the quadruplet's :math:`\delta` is
+        :math:`(S_1 - S_2)/2`. The graph's :math:`\delta` is the maximum over all
+        quadruplets. Small :math:`\delta` means metrically tree-like (a tree is
+        0-hyperbolic); a 4-cycle has :math:`\delta = 1`.
+
+        Distances use the **undirected** shortest-path metric (the paper models networks
+        as undirected) and are only finite within a connected component, so the metric
+        is computed on the **largest connected component** of :attr:`_digraph`'s
+        undirected projection (the paper's "giant component" convention), matching the
+        per-component treatment of :attr:`diameter`.
+
+        Exact :math:`\delta` is :math:`O(n^4)` over a full distance matrix, infeasible at
+        KG scale, which is why the paper samples quadruplets on large graphs. Here we
+        sample ``max_sample_nodes`` **landmark** nodes, compute their pairwise distances
+        with a single batched BFS (:func:`scipy.sparse.csgraph.shortest_path`), and take
+        the exact :math:`\delta` over that submatrix. When the giant component has at most
+        ``max_sample_nodes`` nodes every node is a landmark, so the result is the *exact*
+        :math:`\delta`; otherwise it is a lower-bound estimate (the same guarantee
+        direction as the paper's quadruplet sampling).
+
+        :param max_sample_nodes: Number of landmark nodes to sample from the giant
+            component. The result is exact when the component is no larger than this.
+        :param seed: Seed for the landmark sampling RNG (unused when sampling is not
+            needed).
+
+        :returns: :math:`\delta \ge 0`, a multiple of 0.5 for unweighted graphs. Returns
+            0.0 when the giant component has fewer than four nodes.
+        """
+        undirected = self._digraph.to_undirected()
+        components = list(nx.connected_components(undirected))
+        if not components:
+            return 0.0
+        nodes = list(max(components, key=len))
+        if len(nodes) < 4:
+            return 0.0
+        sub = undirected.subgraph(nodes)
+        csr = nx.to_scipy_sparse_array(sub, nodelist=nodes, format="csr")
+        if len(nodes) > max_sample_nodes:
+            rng = np.random.default_rng(seed)
+            landmark_pos = np.sort(rng.choice(len(nodes), size=max_sample_nodes, replace=False))
+        else:
+            landmark_pos = np.arange(len(nodes))
+        dist = shortest_path(csr, method="D", unweighted=True, directed=False, indices=landmark_pos)
+        return self._delta_from_distance_matrix(dist[:, landmark_pos])
+
+    @staticmethod
+    def _delta_from_distance_matrix(distances: np.ndarray) -> float:
+        r"""Exact 4-point :math:`\delta` over a finite pairwise-distance matrix.
+
+        :param distances: A symmetric ``(s, s)`` matrix of finite shortest-path
+            distances (all nodes within one connected component).
+
+        :returns: :math:`\max_{\text{quadruplets}} (S_1 - S_2)/2`. Returns 0.0 for fewer
+            than four nodes.
+        """
+        # ponytail: O(s^4) exact over the s-landmark submatrix (semi-vectorised, O(s^2)
+        # memory); upgrade path is Cohen-Coudert-Lancin (2015) far-apart-pair pruning if
+        # the landmark count must grow past a few hundred.
+        s = distances.shape[0]
+        if s < 4:
+            return 0.0
+        triu = np.triu(np.ones((s, s), dtype=bool), k=1)  # strict k < l (each quadruplet once)
+        best = 0.0
+        for i in range(s):
+            di = distances[i]
+            for j in range(i + 1, s):
+                dj = distances[j]
+                # Three perfect matchings of {i, j, k, l}, broadcast over the (k, l) grid.
+                a = distances[i, j] + distances  # {i,j}{k,l}
+                b = di[:, None] + dj[None, :]  # {i,k}{j,l}
+                c = di[None, :] + dj[:, None]  # {i,l}{j,k}
+                sums = np.stack((a, b, c))
+                sums.sort(axis=0)  # ascending: [-1] largest S1, [-2] second S2
+                delta = (sums[-1] - sums[-2]) / 2.0
+                valid = triu.copy()
+                valid[(i, j), :] = False
+                valid[:, (i, j)] = False
+                if valid.any():
+                    best = max(best, float(delta[valid].max()))
+        return best
 
     @property
     def variance_in_degree(self) -> float:

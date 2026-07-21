@@ -20,6 +20,8 @@ parallel/unique counts) layered on top.
 
 from __future__ import annotations
 
+import itertools
+
 import networkx as nx
 import numpy as np
 import pytest
@@ -164,6 +166,26 @@ def _oracle_diameter(di: nx.DiGraph) -> int:
         (nx.diameter(undirected.subgraph(component)) for component in nx.connected_components(undirected)),
         default=0,
     )
+
+
+def _oracle_hyperbolicity(di: nx.DiGraph) -> float:
+    """Brute-force 4-point delta over the undirected giant component."""
+    undirected = di.to_undirected()
+    components = list(nx.connected_components(undirected))
+    if not components:
+        return 0.0
+    nodes = sorted(max(components, key=len))
+    if len(nodes) < 4:
+        return 0.0
+    dist = dict(nx.all_pairs_shortest_path_length(undirected.subgraph(nodes)))
+    best = 0.0
+    for a, b, c, d in itertools.combinations(nodes, 4):
+        sums = sorted(
+            (dist[a][b] + dist[c][d], dist[a][c] + dist[b][d], dist[a][d] + dist[b][c]),
+            reverse=True,
+        )
+        best = max(best, (sums[0] - sums[1]) / 2.0)
+    return best
 
 
 def _oracle_undirected_h_index(total_degrees: list[int]) -> int:
@@ -313,6 +335,18 @@ class TestStructuralInvariants:
         assert 0 <= ha.h_index <= n
         assert ha.diameter == _oracle_diameter(di)
         assert ha.diameter >= 0
+
+    @pytest.mark.parametrize("seed", SEEDS)
+    def test_gromov_hyperbolicity(self, seed: int) -> None:
+        """Delta-hyperbolicity matches the brute-force 4-point oracle (exact at this size)."""
+        n = _node_count(seed)
+        edges, num_relations = _random_digraph_edges(seed, n)
+        ha = ExtendedGraphAnalysis(_dataset_from_edges(edges, n, num_relations))
+        _multi, di = _oracle_graphs(edges, n)
+
+        delta = ha.gromov_hyperbolicity()
+        assert delta == pytest.approx(_oracle_hyperbolicity(di))
+        assert delta >= 0.0
 
     @pytest.mark.parametrize("seed", SEEDS)
     def test_variance_and_std(self, seed: int) -> None:
