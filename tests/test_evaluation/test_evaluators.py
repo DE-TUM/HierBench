@@ -28,6 +28,17 @@ from pykeen.evaluation.evaluator import (
     get_candidate_set_size,
     prepare_filter_triples,
 )
+from pykeen.evaluation.lca_classification_evaluator import (
+    LCA_METRICS,
+    LCAClassificationEvaluator,
+    LCAMetricKey,
+    LCAMetricResults,
+)
+from pykeen.evaluation.pair_classification_evaluator import (
+    PAIR_CLASSIFICATION_METRICS,
+    PairClassificationMetricKey,
+    PairClassificationMetricResults,
+)
 from pykeen.evaluation.rank_based_evaluator import (
     MacroRankBasedEvaluator,
     RankBasedMetricKey,
@@ -44,6 +55,7 @@ from pykeen.metrics.ranking import (
     rank_based_metric_resolver,
 )
 from pykeen.models import FixedModel
+from pykeen.pipeline.hierarchical_helper import build_ancestor_paths
 from pykeen.typing import (
     LABEL_HEAD,
     LABEL_RELATION,
@@ -824,6 +836,60 @@ class ClassificationMetricResultsTests(cases.MetricResultTestCase):
             dense_positive_mask=torch.rand(self.num_triples, self.num_entities) < 0.5,
         )
         kwargs["data"] = evaluator.finalize().data
+        return kwargs
+
+
+def _binary_tree_hierarchy(num_entities: int) -> tuple[list[tuple[int, int]], Mapping[int, frozenset[int]]]:
+    """Build a synthetic (parent, child) binary tree over ``0..num_entities-1`` and its ancestor map."""
+    edges = [((i - 1) // 2, i) for i in range(1, num_entities)]
+    mapped_triples = torch.as_tensor([[parent, 0, child] for parent, child in edges], dtype=torch.long)
+    return edges, build_ancestor_paths(mapped_triples=mapped_triples, num_entities=num_entities)
+
+
+class LCAClassificationEvaluatorTests(cases.EvaluatorTestCase):
+    """Unittest for the LCAClassificationEvaluator."""
+
+    cls = LCAClassificationEvaluator
+
+    def _pre_instantiation_hook(self, kwargs: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
+        kwargs = super()._pre_instantiation_hook(kwargs=kwargs)
+        kwargs["edges"], kwargs["ancestors"] = _binary_tree_hierarchy(self.dataset.num_entities)
+        return kwargs
+
+    def _validate_result(self, result: MetricResults, data: dict[str, torch.Tensor]):
+        assert isinstance(result, LCAMetricResults)
+        for key, value in result.data.items():
+            assert isinstance(key, LCAMetricKey)
+            assert key.side in SIDES
+            assert key.metric in LCA_METRICS
+            assert isinstance(value, float)
+            assert 0.0 <= value <= 1.0
+
+    def test_missing_hierarchy(self):
+        """Test that the hierarchy arguments are required."""
+        with pytest.raises(ValueError, match="requires the hierarchy"):
+            LCAClassificationEvaluator()
+
+
+class LCAMetricResultsTests(cases.MetricResultTestCase):
+    """Tests for LCA classification metric results."""
+
+    cls = LCAMetricResults
+
+    def _pre_instantiation_hook(self, kwargs: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
+        kwargs = super()._pre_instantiation_hook(kwargs)
+        kwargs["data"] = {LCAMetricKey(side=side, metric=metric): 0.5 for side in SIDES for metric in LCA_METRICS}
+        return kwargs
+
+
+class PairClassificationMetricResultsTests(cases.MetricResultTestCase):
+    """Tests for pairwise ancestor-descendant classification metric results."""
+
+    cls = PairClassificationMetricResults
+
+    def _pre_instantiation_hook(self, kwargs: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
+        kwargs = super()._pre_instantiation_hook(kwargs)
+        kwargs["data"] = {PairClassificationMetricKey(metric=metric): 0.5 for metric in PAIR_CLASSIFICATION_METRICS}
         return kwargs
 
 

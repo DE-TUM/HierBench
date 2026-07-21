@@ -43,6 +43,7 @@ class WordNetNoun0Percent(RemoteMetadataDataset, HierarchicalGraph):
     statistics:
         entities: 82114
         relations: 1
+        triples: 142039
         training: 84363
         testing: 28838
         validation: 28838
@@ -73,6 +74,7 @@ class WordNetNoun10Percent(RemoteMetadataDataset, HierarchicalGraph):
     statistics:
         entities: 82114
         relations: 1
+        triples: 199715
         training: 142039
         testing: 28838
         validation: 28838
@@ -103,6 +105,7 @@ class WordNetNoun25Percent(RemoteMetadataDataset, HierarchicalGraph):
     statistics:
         entities: 82114
         relations: 1
+        triples: 286230
         training: 228554
         testing: 28838
         validation: 28838
@@ -133,6 +136,7 @@ class WordNetNoun50Percent(RemoteMetadataDataset, HierarchicalGraph):
     statistics:
         entities: 82114
         relations: 1
+        triples: 430421
         training: 372745
         testing: 28838
         validation: 28838
@@ -163,6 +167,7 @@ class WordNetNoun90Percent(RemoteMetadataDataset, HierarchicalGraph):
     statistics:
         entities: 82114
         relations: 1
+        triples: 661126
         training: 603450
         testing: 28838
         validation: 28838

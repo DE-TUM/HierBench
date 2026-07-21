@@ -481,6 +481,8 @@ class ExtendedGraphAnalysis:
             raise ValueError(f"mode must be 'bfs' or 'dfs', got {mode!r}")
 
         triples = self._factory.mapped_triples
+        if self._hierarchy_relation is not None:
+            triples = triples[triples[:, 1] == self._hierarchy_relation]
         n = self._num_entities
 
         adj: list[list[tuple[int, int]]] = [[] for _ in range(n)]
@@ -834,3 +836,4 @@ class _SpanningTreeView(ExtendedGraphAnalysis):
         self._factory = training
         self._num_entities = training.num_entities
         self._split = "spanning_tree"
+        self._hierarchy_relation = None

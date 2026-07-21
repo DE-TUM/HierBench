@@ -661,6 +661,14 @@ class TestPoincareE(cases.ModelTestCase):
     num_constant_init = 2
 
 
+class TestLorentzE(cases.ModelTestCase):
+    """Test the LorentzE model."""
+
+    cls = pykeen.models.LorentzE
+    # two non-trainable curvature scalars (embedding + interaction)
+    num_constant_init = 2
+
+
 class TestTesting(unittest_templates.MetaTestCase[Model]):
     """Yo dawg, I heard you like testing, so I wrote a test to test the tests so you can test while you're testing."""
 

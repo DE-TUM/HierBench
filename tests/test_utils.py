@@ -16,6 +16,7 @@ import pytest
 import torch
 
 from pykeen.utils import (
+    _norm,
     _weisfeiler_lehman_iteration,
     _weisfeiler_lehman_iteration_approx,
     calculate_broadcasted_elementwise_result_shape,
@@ -177,6 +178,21 @@ class TestUtils(unittest.TestCase):
         assert set(compacted_mapping.values()) == set(range(len(mapping)))
         assert set(id_remapping.keys()) == set(mapping.values())
         assert set(id_remapping.values()) == set(compacted_mapping.values())
+
+    def test_norm(self):
+        """Test that _norm() matches Tensor.norm() in value and gradient for numeric p."""
+        gen = torch.manual_seed(42)
+        for dtype in [torch.float32, torch.cfloat]:
+            for p in [1, 2, 3.0, float("inf")]:
+                for dim in [None, -1, 0]:
+                    x = torch.randn(4, 6, generator=gen, dtype=dtype)
+                    assert torch.allclose(_norm(x, p=p, dim=dim), x.norm(p=p, dim=dim))
+
+                x1 = torch.randn(4, 6, generator=gen, dtype=dtype, requires_grad=True)
+                x2 = x1.detach().clone().requires_grad_()
+                _norm(x1, p=p, dim=-1).sum().abs().backward()
+                x2.norm(p=p, dim=-1).sum().abs().backward()
+                assert torch.allclose(x1.grad, x2.grad, rtol=1e-5, atol=1e-6)
 
     def test_clamp_norm(self):
         """Test clamp_norm() ."""

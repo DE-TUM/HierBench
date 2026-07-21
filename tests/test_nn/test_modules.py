@@ -666,6 +666,34 @@ class MultiLinearTuckerInteractionTests(cases.InteractionTestCase):
         return einsum("ijk,i,j,k", self.instance.core_tensor, h, r, t)
 
 
+class LorentzInteractionTests(cases.InteractionTestCase):
+    """Tests for Lorentz interaction function."""
+
+    cls = pykeen.nn.modules.LorentzInteraction
+
+    @staticmethod
+    def _manifold():
+        """Return the unit-curvature Lorentz manifold."""
+        import geoopt
+
+        return geoopt.Lorentz(k=1.0)
+
+    def _get_hrt(self, *shapes):
+        """Generate head/tail tensors lying on the hyperboloid."""
+        h, r, t = super()._get_hrt(*shapes)
+        manifold = self._manifold()
+        return manifold.projx(h), r, manifold.projx(t)
+
+    def _exp_score(self, h, r, t) -> torch.FloatTensor:
+        """Return the expected score: -d_L(h, t)."""
+        assert not r
+        return -self._manifold().dist(h, t)
+
+    def _additional_score_checks(self, scores):
+        """Scores are always non-positive (Lorentz distance >= 0)."""
+        assert (scores <= 0).all()
+
+
 class InteractionTestsTestCase(unittest_templates.MetaTestCase[pykeen.nn.modules.Interaction]):
     """Test for tests for all interaction functions."""
 
