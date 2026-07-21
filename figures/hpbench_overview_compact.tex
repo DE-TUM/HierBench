@@ -1,0 +1,127 @@
+%%% HPBench system overview — COMPACT variant of hpbench_overview.tex.
+%%% Same content, wide-and-flat aspect (~23:4.6 vs. ~19:7.7): scaled to
+%%% \textwidth it takes roughly half the vertical space.
+%%% Changes vs. the original: uniform 3-row grid per panel (one gray PyKEEN
+%%% row + two blue HPBench rows), per-panel "pykeen/hpbench" group labels
+%%% dropped (colour + legend carry that), Learning's PyKEEN chips merged
+%%% into one, legend moved into the otherwise empty strip left of the band.
+\documentclass[tikz,border=0pt]{standalone}
+\usepackage{amsmath,amssymb}
+\usepackage[T1]{fontenc}
+\usetikzlibrary{arrows.meta, positioning, shapes.misc, calc, backgrounds, fit}
+
+% ── Colour palette (project-wide) ───────────────────────────────────────
+\definecolor{varblue}{HTML}{3B82F6}
+\definecolor{edgegray}{HTML}{475569}
+\definecolor{titledark}{HTML}{1E293B}
+\definecolor{levelbox}{HTML}{94A3B8}
+\definecolor{blankslate}{HTML}{64748B}
+\definecolor{panelbg}{HTML}{F8FAFC}
+\definecolor{querybg}{HTML}{F1F5F9}
+
+\begin{document}
+\begin{tikzpicture}[
+    font=\sffamily,
+    >={Stealth[length=5pt, width=4pt]},
+    sub label/.style={font=\scriptsize\sffamily, text=titledark},
+    inner box/.style={draw=levelbox!70, line width=0.8pt, rounded corners=3pt,
+        fill=panelbg},
+    module title/.style={font=\small\sffamily\bfseries\scshape, text=titledark},
+    pyk chip/.style={draw=blankslate!60, fill=blankslate!12, rounded corners=3pt,
+        line width=0.7pt, font=\scriptsize\sffamily, text=titledark,
+        align=center, inner ysep=3pt, text width=#1},
+    hp chip/.style={draw=varblue!75!black, fill=varblue!15, rounded corners=3pt,
+        line width=0.9pt, font=\scriptsize\sffamily, text=titledark,
+        align=center, inner ysep=3pt, text width=#1},
+    future chip/.style={draw=varblue!60, dash pattern=on 3pt off 2pt,
+        rounded corners=3pt, line width=0.9pt, font=\scriptsize\sffamily,
+        text=titledark, align=center, inner ysep=3pt, text width=#1},
+    transition/.style={draw=titledark!55, line width=1.4pt, ->,
+        shorten <=4pt, shorten >=4pt},
+    configures/.style={->, draw=varblue!70, line width=0.9pt,
+        dash pattern=on 3pt off 2pt, shorten <=2pt, shorten >=2pt},
+    tlabel/.style={font=\scriptsize\sffamily, text=titledark, align=center},
+]
+
+% ══════════════════════════════════════════════════════════════════════
+%  DIMENSIONS — four panels on one flat row, uniform 3-chip grid
+% ══════════════════════════════════════════════════════════════════════
+\def\panelT{0}    \def\panelB{-3.3}
+\def\rowA{-1.05}  \def\rowB{-2.05}  \def\rowC{-2.85}   % chip row centres
+\def\DL{0}    \def\DR{5.6}    \def\Dcx{2.8}
+\def\PL{6.8}  \def\PR{12.4}   \def\Pcx{9.6}
+\def\LL{13.6} \def\LR{19.2}   \def\Lcx{16.4}
+\def\EL{20.4} \def\ER{26.0}   \def\Ecx{23.2}
+\def\chipW{5.0cm}
+
+\begin{scope}[on background layer]
+  \draw[inner box] (\DL,\panelB) rectangle (\DR,\panelT);
+  \draw[inner box] (\PL,\panelB) rectangle (\PR,\panelT);
+  \draw[inner box] (\LL,\panelB) rectangle (\LR,\panelT);
+  \draw[inner box] (\EL,\panelB) rectangle (\ER,\panelT);
+\end{scope}
+
+\node[module title] at (\Dcx,-0.35) {Datasets};
+\node[module title] at (\Pcx,-0.35) {Preprocessing};
+\node[module title] at (\Lcx,-0.35) {Learning};
+\node[module title] at (\Ecx,-0.35) {Evaluation};
+
+% ── Datasets ──────────────────────────────────────────────────────────
+\node[pyk chip=\chipW] at (\Dcx,\rowA) {FB15k-237 $\cdot$ WN18RR $\cdot$ $\cdots$};
+\node[hp chip=\chipW]  at (\Dcx,\rowB)
+    {8 taxonomies: NASA $\cdot$ DOID $\cdot$ MeSH\\WordNet-Noun $\cdot$ $\cdots$};
+\node[hp chip=\chipW]  at (\Dcx,\rowC) {\emph{HierarchicalGraph} interface};
+
+% ── Preprocessing ─────────────────────────────────────────────────────
+\node[pyk chip=\chipW] at (\Pcx,\rowA) {random triple split};
+\node[hp chip=\chipW]  at (\Pcx,\rowB) {transitive closure \& reduction};
+\node[hp chip=\chipW]  at (\Pcx,\rowC) {hierarchy-aware, leakage-safe splits};
+
+% ── Learning ──────────────────────────────────────────────────────────
+\node[pyk chip=\chipW] at (\Lcx,\rowA)
+    {TransE $\cdot$ RotatE $\cdot$ $\cdots$ $\cdot$ Bernoulli NS\\sLCWA / LCWA $\cdot$ losses $\cdot$ HPO};
+\node[hp chip=\chipW]  at (\Lcx,\rowB)
+    {Poincar\'eE $\cdot$ LorentzE $\cdot$ Hyperbolic Cones};
+\node[hp chip=\chipW]  at (\Lcx,\rowC)
+    {same-depth sampler $\cdot$ $k$-fold CV};
+
+% ── Evaluation ────────────────────────────────────────────────────────
+\node[pyk chip=\chipW] at (\Ecx,\rowA) {MRR $\cdot$ Hits@$k$ $\cdot$ mAP $\cdot$ AUROC};
+\node[hp chip=\chipW]  at (\Ecx,\rowB)
+    {pair classification: hard negatives,\\tuned threshold};
+\node[hp chip=\chipW]  at (\Ecx,\rowC) {LCA-based P/R/F1};
+
+% ── Flow arrows ───────────────────────────────────────────────────────
+\draw[transition] (\DR,\rowA) -- (\PL,\rowA);
+\node[tlabel] at ({(\DR+\PL)/2},-0.55) {triples};
+\draw[transition] (\PR,\rowA) -- (\LL,\rowA);
+\node[tlabel] at ({(\PR+\LL)/2},-0.55) {splits};
+\draw[transition] (\LR,\rowA) -- (\EL,\rowA);
+\node[tlabel] at ({(\LR+\EL)/2},-0.55) {model};
+
+% ══════════════════════════════════════════════════════════════════════
+%  TASKS BAND + LEGEND (share one flat strip)
+% ══════════════════════════════════════════════════════════════════════
+\def\taskT{-3.75} \def\taskB{-4.75} \def\taskM{-4.25}
+\begin{scope}[on background layer]
+  \draw[inner box, fill=querybg] (6.8,\taskB) rectangle (26.0,\taskT);
+\end{scope}
+\node[module title, anchor=west] at (7.1,\taskM) {Tasks};
+\node[hp chip=3.8cm]     at (12.2,\taskM) {transitive ancestor--descendant};
+\node[pyk chip=3.8cm]    at (17.4,\taskM) {link prediction};
+\node[future chip=3.8cm] at (22.6,\taskM) {$+$ future tasks $\cdots$};
+
+\draw[configures] (\Pcx,\taskT) -- (\Pcx,\panelB)
+    node[midway, right, sub label, text=varblue!75!black, xshift=2pt]
+    {split strategy};
+\draw[configures] (\Ecx,\taskT) -- (\Ecx,\panelB)
+    node[midway, right, sub label, text=varblue!75!black, xshift=2pt]
+    {evaluation protocol};
+
+\node[pyk chip=0.9cm] at (0.5,-3.95) {\strut};
+\node[sub label, anchor=west] at (1.1,-3.95) {PyKEEN component};
+\node[hp chip=0.9cm] at (0.5,-4.55) {\strut};
+\node[sub label, anchor=west] at (1.1,-4.55) {HPBench contribution};
+
+\end{tikzpicture}
+\end{document}
