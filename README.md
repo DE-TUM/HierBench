@@ -3,21 +3,17 @@
 </p>
 
 <h1 align="center">
-  PyKEEN
+  HPBench
 </h1>
 
 <p align="center">
-  <a href="https://github.com/pykeen/pykeen/actions/workflows/common.yml">
-    <img src="https://github.com/pykeen/pykeen/actions/workflows/common.yml/badge.svg"
+  <a href="https://github.com/DE-TUM/HPBench/actions/workflows/common.yml">
+    <img src="https://github.com/DE-TUM/HPBench/actions/workflows/common.yml/badge.svg"
          alt="GitHub Actions">
   </a>
 
   <a href='https://opensource.org/licenses/MIT'>
     <img src='https://img.shields.io/badge/License-MIT-blue.svg' alt='License'/>
-  </a>
-
-  <a href="https://zenodo.org/badge/latestdoi/242672435">
-    <img src="https://zenodo.org/badge/242672435.svg" alt="DOI">
   </a>
 
   <a href="https://optuna.org">
@@ -38,40 +34,67 @@
 </p>
 
 <p align="center">
-    <b>PyKEEN</b> (<b>P</b>ython <b>K</b>nowl<b>E</b>dge <b>E</b>mbeddi<b>N</b>gs) is a Python package designed to
-    train and evaluate knowledge graph embedding models (incorporating multi-modal information).
+    <b>HPBench</b> (the <b>H</b>eilbronn–<b>P</b>aris <b>Bench</b>mark for Hierarchical Embeddings) is a benchmarking suite for
+    hierarchy-aware knowledge graph embeddings. It is a fork of
+    <a href="https://github.com/pykeen/pykeen">PyKEEN</a> that adds hyperbolic baselines,
+    hierarchical datasets, and hierarchy-specific evaluation tasks.
 </p>
 
 <p align="center">
+  <a href="#what-hpbench-adds">What HPBench Adds</a> •
   <a href="#installation">Installation</a> •
   <a href="#quickstart">Quickstart</a> •
-  <a href="#datasets">Datasets (51)</a> •
+  <a href="#datasets">Datasets (56)</a> •
   <a href="#inductive-datasets">Inductive Datasets (5)</a> •
-  <a href="#models">Models (42)</a> •
-  <a href="#supporters">Support</a> •
+  <a href="#models">Models (43)</a> •
   <a href="#citation">Citation</a>
 </p>
 
-## Installation ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pykeen) ![PyPI](https://img.shields.io/pypi/v/pykeen)
+## What HPBench Adds
 
-The latest stable version of PyKEEN requires Python 3.9+. It can be downloaded
-and installed from [PyPI](https://pypi.org/project/pykeen) with:
+<p align="center">
+  <img src="figures/hpbench_overview.png" alt="HPBench overview: PyKEEN components in grey, HPBench contributions in blue, across datasets, preprocessing, learning, and evaluation" width="900">
+</p>
+
+On top of everything PyKEEN provides, HPBench contributes:
+
+- **Hyperbolic baselines** — `PoincareE`, `LorentzE`, and `HyperbolicCones`
+  (`pykeen.models`), built on hyperbolic representations and interactions in
+  `pykeen.nn.hyperbolic`, plus Riemannian optimizers in `pykeen.optimizers`.
+- **Hierarchical datasets** — taxonomy-style graphs (WordNet noun hierarchy, ACM-CCS, DOID, MeSH,
+  EuroSciVoc, NASA taxonomy, …) with transitive-closure and metadata utilities in
+  `pykeen.datasets.metadata` and `pykeen.datasets.extended_graph_analysis`.
+- **Hierarchy evaluation tasks** — subsumption / pair classification metrics
+  (`pykeen.evaluation.pair_classification_evaluator`), transitive ancestor–descendant prediction
+  (`pykeen.pipeline.transitive_ancestor_descendant_prediction_pipeline`), and LCA-based
+  hierarchical precision/recall/F1 (`pykeen.evaluation.LCAClassificationEvaluator`).
+- **Hierarchy-aware training** — a hierarchy negative sampler
+  (`pykeen.sampling.HierarchyNegativeSampler`) and a hierarchy pipeline (`pykeen.pipeline.hierarchy`).
+- **k-fold cross-validation** — `pykeen.cross_validation` with k-fold dataset splits.
+
+The import name stays `pykeen`, so existing PyKEEN code runs unchanged.
+
+## Installation
+
+HPBench requires Python 3.9+. Install it from source:
 
 ```shell
-pip install pykeen
+pip install git+https://github.com/DE-TUM/HPBench.git
 ```
 
-The latest version of PyKEEN can be installed directly from the
-source code on [GitHub](https://github.com/pykeen/pykeen) with:
+For development:
 
 ```shell
-pip install git+https://github.com/pykeen/pykeen.git
+git clone https://github.com/DE-TUM/HPBench.git
+cd HPBench
+pip install -e .
 ```
 
-More information about installation (e.g., development mode, Windows installation, Colab, Kaggle, extras)
+HPBench is not published on PyPI — `pip install pykeen` installs upstream PyKEEN, not this fork.
+More information about installation (e.g., Windows installation, Colab, Kaggle, extras)
 can be found in the [installation documentation](https://pykeen.readthedocs.io/en/latest/installation.html).
 
-## Quickstart [![Documentation Status](https://readthedocs.org/projects/pykeen/badge/?version=latest)](https://pykeen.readthedocs.io/en/latest/?badge=latest)
+## Quickstart
 
 This example shows how to train a model on a dataset and test on another dataset.
 
@@ -97,81 +120,87 @@ on [using your own dataset](https://pykeen.readthedocs.io/en/latest/byo/data.htm
 [understanding the evaluation](https://pykeen.readthedocs.io/en/latest/tutorial/understanding_evaluation.html),
 and [making novel link predictions](https://pykeen.readthedocs.io/en/latest/tutorial/making_predictions.html).
 
-PyKEEN is extensible such that:
+HPBench inherits PyKEEN's extensibility:
 
 - Each model has the same API, so anything from ``pykeen.models`` can be dropped in
 - Each training loop has the same API, so ``pykeen.training.LCWATrainingLoop`` can be dropped in
 - Triples factories can be generated by the user with ``from pykeen.triples.TriplesFactory``
 
-The full documentation can be found at https://pykeen.readthedocs.io.
+Documentation for the inherited functionality can be found at https://pykeen.readthedocs.io;
+links in the tables below point there.
 
 ## Implementation
 
-Below are the models, datasets, training modes, evaluators, and metrics implemented
-in ``pykeen``.
+Below are the models, datasets, training modes, evaluators, and metrics available
+in HPBench (inherited from PyKEEN unless noted in [What HPBench Adds](#what-hpbench-adds)).
 
 ### Datasets 
 
-The following 51 datasets are built in to PyKEEN. The citation for each dataset corresponds to either the paper
+The following 56 datasets are built in. The citation for each dataset corresponds to either the paper
 describing the dataset, the first paper published using the dataset with knowledge graph embedding models,
 or the URL for the dataset if neither of the first two are available. If you want to use a custom dataset,
 see the [Bring Your Own Dataset](https://pykeen.readthedocs.io/en/latest/byo/data.html) tutorial. If you
 have a suggestion for another dataset to include in PyKEEN, please let us know
 [here](https://github.com/pykeen/pykeen/issues/new?assignees=cthoyt&labels=New+Dataset&template=dataset-request.md&title=Add+%5BDATASET+NAME%5D).
 
-| Name                               | Documentation                                                                                                       | Citation                                                                                                                |   Entities |   Relations |   Triples |
-|------------------------------------|---------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|------------|-------------|-----------|
-| ACM-CCS                            | [`pykeen.datasets.ACMCCS`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.ACMCCS.html)                 | [Acm *et al*., 2012](https://www.acm.org/publications/class-2012)                                                       |       2114 |           2 |      2113 |
-| Aristo-v4                          | [`pykeen.datasets.AristoV4`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.AristoV4.html)             | [Chen *et al*., 2021](https://openreview.net/pdf?id=Qa3uS3H7-Le)                                                        |      42016 |        1593 |    279425 |
-| BioKG                              | [`pykeen.datasets.BioKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.BioKG.html)                   | [Walsh *et al*., 2019](https://doi.org/10.1145/3340531.3412776)                                                         |     105524 |          17 |   2067997 |
-| Chameleon                          | [`pykeen.datasets.Chameleon`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Chameleon.html)           | [Rozemberczki *et al*., 2021](https://arxiv.org/abs/1909.13021)                                                         |       2277 |           1 |     36101 |
-| CiteSeer                           | [`pykeen.datasets.CiteSeer`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CiteSeer.html)             | [Sen *et al*., 2008](https://linqs-data.soe.ucsc.edu/public/lbc/citeseer.tgz)                                           |       3327 |           1 |      4732 |
-| Clinical Knowledge Graph           | [`pykeen.datasets.CKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CKG.html)                       | [Santos *et al*., 2020](https://doi.org/10.1101/2020.05.09.084897)                                                      |    7617419 |          11 |  26691525 |
-| CN3l Family                        | [`pykeen.datasets.CN3l`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CN3l.html)                     | [Chen *et al*., 2017](https://www.ijcai.org/Proceedings/2017/0209.pdf)                                                  |       3206 |          42 |     21777 |
-| CoDEx (large)                      | [`pykeen.datasets.CoDExLarge`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoDExLarge.html)         | [Safavi *et al*., 2020](https://arxiv.org/abs/2009.07810)                                                               |      77951 |          69 |    612437 |
-| CoDEx (medium)                     | [`pykeen.datasets.CoDExMedium`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoDExMedium.html)       | [Safavi *et al*., 2020](https://arxiv.org/abs/2009.07810)                                                               |      17050 |          51 |    206205 |
-| CoDEx (small)                      | [`pykeen.datasets.CoDExSmall`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoDExSmall.html)         | [Safavi *et al*., 2020](https://arxiv.org/abs/2009.07810)                                                               |       2034 |          42 |     36543 |
-| ConceptNet                         | [`pykeen.datasets.ConceptNet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.ConceptNet.html)         | [Speer *et al*., 2017](https://arxiv.org/abs/1612.03975)                                                                |   28370083 |          50 |  34074917 |
-| Cora                               | [`pykeen.datasets.Cora`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Cora.html)                     | [Mccallum *et al*., 2000](https://link.springer.com/article/10.1023/A:1007379606734)                                    |       2708 |           1 |      5429 |
-| Cora (Original)                    | [`pykeen.datasets.CoraOriginal`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoraOriginal.html)     | [Mccallum *et al*., 2000](https://people.cs.umass.edu/~mccallum/data.html)                                              |     225026 |           1 |    714266 |
-| Countries                          | [`pykeen.datasets.Countries`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Countries.html)           | [Bouchard *et al*., 2015](https://www.aaai.org/ocs/index.php/SSS/SSS15/paper/view/10257/10026)                          |        271 |           2 |      1158 |
-| Crocodile                          | [`pykeen.datasets.Crocodile`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Crocodile.html)           | [Rozemberczki *et al*., 2021](https://arxiv.org/abs/1909.13021)                                                         |      11631 |           1 |    180020 |
-| Commonsense Knowledge Graph        | [`pykeen.datasets.CSKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CSKG.html)                     | [Ilievski *et al*., 2020](http://arxiv.org/abs/2012.11490)                                                              |    2087833 |          58 |   4598728 |
-| DB100K                             | [`pykeen.datasets.DB100K`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DB100K.html)                 | [Ding *et al*., 2018](https://arxiv.org/abs/1805.02408)                                                                 |      99604 |         470 |    697479 |
-| DBpedia50                          | [`pykeen.datasets.DBpedia50`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DBpedia50.html)           | [Shi *et al*., 2017](https://arxiv.org/abs/1711.03438)                                                                  |      24624 |         351 |     34421 |
-| DOID                               | [`pykeen.datasets.DOID`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DOID.html)                     | [`DiseaseOntology/HumanDiseaseOntology`](https://github.com/DiseaseOntology/HumanDiseaseOntology)                       |      12079 |           2 |     17138 |
-| Drug Repositioning Knowledge Graph | [`pykeen.datasets.DRKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DRKG.html)                     | [`gnn4dr/DRKG`](https://github.com/gnn4dr/DRKG)                                                                         |      97238 |         107 |   5874257 |
-| Estat-FSS                          | [`pykeen.datasets.EstatFSS`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.EstatFSS.html)             | [Eurostat *et al*., 2016](https://data.europa.eu/data/datasets?query=fss_2010-16)                                       |        355 |           4 |       452 |
-| EuroSciVoc                         | [`pykeen.datasets.EuroSciVoc`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.EuroSciVoc.html)         | [Publications office of the european union *et al*., 2019](https://op.europa.eu/en/web/eu-vocabularies/euroscivoc)      |       1065 |           2 |      1064 |
-| FB15k                              | [`pykeen.datasets.FB15k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.FB15k.html)                   | [Bordes *et al*., 2013](http://papers.nips.cc/paper/5071-translating-embeddings-for-modeling-multi-relational-data.pdf) |      14951 |        1345 |    592213 |
-| FB15k-237                          | [`pykeen.datasets.FB15k237`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.FB15k237.html)             | [Toutanova *et al*., 2015](https://www.aclweb.org/anthology/W15-4007/)                                                  |      14505 |         237 |    310079 |
-| Global Biotic Interactions         | [`pykeen.datasets.Globi`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Globi.html)                   | [Poelen *et al*., 2014](https://doi.org/10.1016/j.ecoinf.2014.08.005)                                                   |     404207 |          39 |   1966385 |
-| Hetionet                           | [`pykeen.datasets.Hetionet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Hetionet.html)             | [Himmelstein *et al*., 2017](https://doi.org/10.7554/eLife.26726)                                                       |      45158 |          24 |   2250197 |
-| Kinships                           | [`pykeen.datasets.Kinships`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Kinships.html)             | [Kemp *et al*., 2006](https://www.aaai.org/Papers/AAAI/2006/AAAI06-061.pdf)                                             |        104 |          25 |     10686 |
-| MeSH                               | [`pykeen.datasets.MeSH`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.MeSH.html)                     | [National library of medicine *et al*., 2024](https://www.nlm.nih.gov/mesh/meshhome.html)                               |      30837 |           3 |     56383 |
-| NASA                               | [`pykeen.datasets.NASA`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.NASA.html)                     | [Nasa *et al*., 2024](https://www.nasa.gov/technology/technology-taxonomy/)                                             |        495 |           1 |       478 |
-| Nations                            | [`pykeen.datasets.Nations`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Nations.html)               | [`ZhenfengLei/KGDatasets`](https://github.com/ZhenfengLei/KGDatasets)                                                   |         14 |          55 |      1992 |
-| NationsL                           | [`pykeen.datasets.NationsLiteral`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.NationsLiteral.html) | [`pykeen/pykeen`](https://github.com/pykeen/pykeen)                                                                     |         14 |          55 |      1992 |
-| OGB BioKG                          | [`pykeen.datasets.OGBBioKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OGBBioKG.html)             | [Hu *et al*., 2020](https://arxiv.org/abs/2005.00687)                                                                   |      93773 |          51 |   5088434 |
-| OGB WikiKG2                        | [`pykeen.datasets.OGBWikiKG2`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OGBWikiKG2.html)         | [Hu *et al*., 2020](https://arxiv.org/abs/2005.00687)                                                                   |    2500604 |         535 |  17137181 |
-| OpenBioLink                        | [`pykeen.datasets.OpenBioLink`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OpenBioLink.html)       | [Breit *et al*., 2020](https://doi.org/10.1093/bioinformatics/btaa274)                                                  |     180992 |          28 |   4563407 |
-| OpenBioLink LQ                     | [`pykeen.datasets.OpenBioLinkLQ`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OpenBioLinkLQ.html)   | [Breit *et al*., 2020](https://doi.org/10.1093/bioinformatics/btaa274)                                                  |     480876 |          32 |  27320889 |
-| OpenEA Family                      | [`pykeen.datasets.OpenEA`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OpenEA.html)                 | [Sun *et al*., 2020](http://www.vldb.org/pvldb/vol13/p2326-sun.pdf)                                                     |      15000 |         248 |     38265 |
-| PharMeBINet                        | [`pykeen.datasets.PharMeBINet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharMeBINet.html)       | [Königs *et al*., 2022](https://www.nature.com/articles/s41597-022-01510-3)                                             |    2869407 |         208 |  15883653 |
-| PharmKG                            | [`pykeen.datasets.PharmKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharmKG.html)               | [Zheng *et al*., 2020](https://doi.org/10.1093/bib/bbaa344)                                                             |     188296 |          39 |   1093236 |
-| PharmKG8k                          | [`pykeen.datasets.PharmKG8k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharmKG8k.html)           | [Zheng *et al*., 2020](https://doi.org/10.1093/bib/bbaa344)                                                             |       7247 |          28 |    485787 |
-| PPI                                | [`pykeen.datasets.PPI`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PPI.html)                       | [Hamilton *et al*., 2017](https://arxiv.org/abs/1706.02216)                                                             |      56944 |           1 |    818716 |
-| PrimeKG                            | [`pykeen.datasets.PrimeKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PrimeKG.html)               | [Chandak *et al*., 2022](https://doi.org/10.1101/2022.05.01.489928)                                                     |     129375 |          30 |   8100498 |
-| PubMed                             | [`pykeen.datasets.PubMed`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PubMed.html)                 | [Sen *et al*., 2008](https://linqs.org/datasets/#pubmed-diabetes)                                                       |      19717 |           1 |     44338 |
-| Squirrel                           | [`pykeen.datasets.Squirrel`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Squirrel.html)             | [Rozemberczki *et al*., 2021](https://arxiv.org/abs/1909.13021)                                                         |       5201 |           1 |    217073 |
-| Unified Medical Language System    | [`pykeen.datasets.UMLS`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.UMLS.html)                     | [`ZhenfengLei/KGDatasets`](https://github.com/ZhenfengLei/KGDatasets)                                                   |        135 |          46 |      6529 |
-| WD50K (triples)                    | [`pykeen.datasets.WD50KT`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WD50KT.html)                 | [Galkin *et al*., 2020](https://www.aclweb.org/anthology/2020.emnlp-main.596/)                                          |      40107 |         473 |    232344 |
-| Wikidata5M                         | [`pykeen.datasets.Wikidata5M`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Wikidata5M.html)         | [Wang *et al*., 2019](https://arxiv.org/abs/1911.06136)                                                                 |    4594149 |         822 |  20624239 |
-| WK3l-120k Family                   | [`pykeen.datasets.WK3l120k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WK3l120k.html)             | [Chen *et al*., 2017](https://www.ijcai.org/Proceedings/2017/0209.pdf)                                                  |     119748 |        3109 |   1375406 |
-| WK3l-15k Family                    | [`pykeen.datasets.WK3l15k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WK3l15k.html)               | [Chen *et al*., 2017](https://www.ijcai.org/Proceedings/2017/0209.pdf)                                                  |      15126 |        1841 |    209041 |
-| WordNet-18                         | [`pykeen.datasets.WN18`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WN18.html)                     | [Bordes *et al*., 2014](https://arxiv.org/abs/1301.3485)                                                                |      40943 |          18 |    151442 |
-| WordNet-18 (RR)                    | [`pykeen.datasets.WN18RR`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WN18RR.html)                 | [Toutanova *et al*., 2015](https://www.aclweb.org/anthology/W15-4007/)                                                  |      40559 |          11 |     92583 |
-| YAGO3-10                           | [`pykeen.datasets.YAGO310`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.YAGO310.html)               | [Mahdisoltani *et al*., 2015](http://service.tsi.telecom-paristech.fr/cgi-bin//valipub_download.cgi?dId=284)            |     123143 |          37 |   1089000 |
+| Name                               | Documentation                                                                                                                   | Citation                                                                                                                |   Entities |   Relations |   Triples |
+|------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|------------|-------------|-----------|
+| ACM-CCS                            | [`pykeen.datasets.ACMCCS`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.ACMCCS.html)                             | [Acm *et al*., 2012](https://www.acm.org/publications/class-2012)                                                       |       2114 |           2 |      2113 |
+| Aristo-v4                          | [`pykeen.datasets.AristoV4`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.AristoV4.html)                         | [Chen *et al*., 2021](https://openreview.net/pdf?id=Qa3uS3H7-Le)                                                        |      42016 |        1593 |    279425 |
+| BioKG                              | [`pykeen.datasets.BioKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.BioKG.html)                               | [Walsh *et al*., 2019](https://doi.org/10.1145/3340531.3412776)                                                         |     105524 |          17 |   2067997 |
+| Chameleon                          | [`pykeen.datasets.Chameleon`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Chameleon.html)                       | [Rozemberczki *et al*., 2021](https://arxiv.org/abs/1909.13021)                                                         |       2277 |           1 |     36101 |
+| CiteSeer                           | [`pykeen.datasets.CiteSeer`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CiteSeer.html)                         | [Sen *et al*., 2008](https://linqs-data.soe.ucsc.edu/public/lbc/citeseer.tgz)                                           |       3327 |           1 |      4732 |
+| Clinical Knowledge Graph           | [`pykeen.datasets.CKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CKG.html)                                   | [Santos *et al*., 2020](https://doi.org/10.1101/2020.05.09.084897)                                                      |    7617419 |          11 |  26691525 |
+| CN3l Family                        | [`pykeen.datasets.CN3l`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CN3l.html)                                 | [Chen *et al*., 2017](https://www.ijcai.org/Proceedings/2017/0209.pdf)                                                  |       3206 |          42 |     21777 |
+| CoDEx (large)                      | [`pykeen.datasets.CoDExLarge`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoDExLarge.html)                     | [Safavi *et al*., 2020](https://arxiv.org/abs/2009.07810)                                                               |      77951 |          69 |    612437 |
+| CoDEx (medium)                     | [`pykeen.datasets.CoDExMedium`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoDExMedium.html)                   | [Safavi *et al*., 2020](https://arxiv.org/abs/2009.07810)                                                               |      17050 |          51 |    206205 |
+| CoDEx (small)                      | [`pykeen.datasets.CoDExSmall`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoDExSmall.html)                     | [Safavi *et al*., 2020](https://arxiv.org/abs/2009.07810)                                                               |       2034 |          42 |     36543 |
+| ConceptNet                         | [`pykeen.datasets.ConceptNet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.ConceptNet.html)                     | [Speer *et al*., 2017](https://arxiv.org/abs/1612.03975)                                                                |   28370083 |          50 |  34074917 |
+| Cora                               | [`pykeen.datasets.Cora`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Cora.html)                                 | [Mccallum *et al*., 2000](https://link.springer.com/article/10.1023/A:1007379606734)                                    |       2708 |           1 |      5429 |
+| Cora (Original)                    | [`pykeen.datasets.CoraOriginal`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CoraOriginal.html)                 | [Mccallum *et al*., 2000](https://people.cs.umass.edu/~mccallum/data.html)                                              |     225026 |           1 |    714266 |
+| Countries                          | [`pykeen.datasets.Countries`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Countries.html)                       | [Bouchard *et al*., 2015](https://www.aaai.org/ocs/index.php/SSS/SSS15/paper/view/10257/10026)                          |        271 |           2 |      1158 |
+| Crocodile                          | [`pykeen.datasets.Crocodile`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Crocodile.html)                       | [Rozemberczki *et al*., 2021](https://arxiv.org/abs/1909.13021)                                                         |      11631 |           1 |    180020 |
+| Commonsense Knowledge Graph        | [`pykeen.datasets.CSKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.CSKG.html)                                 | [Ilievski *et al*., 2020](http://arxiv.org/abs/2012.11490)                                                              |    2087833 |          58 |   4598728 |
+| DB100K                             | [`pykeen.datasets.DB100K`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DB100K.html)                             | [Ding *et al*., 2018](https://arxiv.org/abs/1805.02408)                                                                 |      99604 |         470 |    697479 |
+| DBpedia50                          | [`pykeen.datasets.DBpedia50`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DBpedia50.html)                       | [Shi *et al*., 2017](https://arxiv.org/abs/1711.03438)                                                                  |      24624 |         351 |     34421 |
+| DOID                               | [`pykeen.datasets.DOID`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DOID.html)                                 | [`DiseaseOntology/HumanDiseaseOntology`](https://github.com/DiseaseOntology/HumanDiseaseOntology)                       |      12079 |           2 |     17138 |
+| Drug Repositioning Knowledge Graph | [`pykeen.datasets.DRKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.DRKG.html)                                 | [`gnn4dr/DRKG`](https://github.com/gnn4dr/DRKG)                                                                         |      97238 |         107 |   5874257 |
+| Estat-FSS                          | [`pykeen.datasets.EstatFSS`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.EstatFSS.html)                         | [Eurostat *et al*., 2016](https://data.europa.eu/data/datasets?query=fss_2010-16)                                       |        355 |           4 |       452 |
+| EuroSciVoc                         | [`pykeen.datasets.EuroSciVoc`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.EuroSciVoc.html)                     | [Publications office of the european union *et al*., 2019](https://op.europa.eu/en/web/eu-vocabularies/euroscivoc)      |       1065 |           2 |      1064 |
+| FB15k                              | [`pykeen.datasets.FB15k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.FB15k.html)                               | [Bordes *et al*., 2013](http://papers.nips.cc/paper/5071-translating-embeddings-for-modeling-multi-relational-data.pdf) |      14951 |        1345 |    592213 |
+| FB15k-237                          | [`pykeen.datasets.FB15k237`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.FB15k237.html)                         | [Toutanova *et al*., 2015](https://www.aclweb.org/anthology/W15-4007/)                                                  |      14505 |         237 |    310079 |
+| Global Biotic Interactions         | [`pykeen.datasets.Globi`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Globi.html)                               | [Poelen *et al*., 2014](https://doi.org/10.1016/j.ecoinf.2014.08.005)                                                   |     404207 |          39 |   1966385 |
+| Hetionet                           | [`pykeen.datasets.Hetionet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Hetionet.html)                         | [Himmelstein *et al*., 2017](https://doi.org/10.7554/eLife.26726)                                                       |      45158 |          24 |   2250197 |
+| Kinships                           | [`pykeen.datasets.Kinships`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Kinships.html)                         | [Kemp *et al*., 2006](https://www.aaai.org/Papers/AAAI/2006/AAAI06-061.pdf)                                             |        104 |          25 |     10686 |
+| MeSH                               | [`pykeen.datasets.MeSH`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.MeSH.html)                                 | [National library of medicine *et al*., 2024](https://www.nlm.nih.gov/mesh/meshhome.html)                               |      30837 |           3 |     56383 |
+| NASA                               | [`pykeen.datasets.NASA`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.NASA.html)                                 | [Nasa *et al*., 2024](https://www.nasa.gov/technology/technology-taxonomy/)                                             |        495 |           1 |       478 |
+| Nations                            | [`pykeen.datasets.Nations`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Nations.html)                           | [`ZhenfengLei/KGDatasets`](https://github.com/ZhenfengLei/KGDatasets)                                                   |         14 |          55 |      1992 |
+| NationsL                           | [`pykeen.datasets.NationsLiteral`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.NationsLiteral.html)             | [`pykeen/pykeen`](https://github.com/pykeen/pykeen)                                                                     |         14 |          55 |      1992 |
+| OGB BioKG                          | [`pykeen.datasets.OGBBioKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OGBBioKG.html)                         | [Hu *et al*., 2020](https://arxiv.org/abs/2005.00687)                                                                   |      93773 |          51 |   5088434 |
+| OGB WikiKG2                        | [`pykeen.datasets.OGBWikiKG2`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OGBWikiKG2.html)                     | [Hu *et al*., 2020](https://arxiv.org/abs/2005.00687)                                                                   |    2500604 |         535 |  17137181 |
+| OpenBioLink                        | [`pykeen.datasets.OpenBioLink`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OpenBioLink.html)                   | [Breit *et al*., 2020](https://doi.org/10.1093/bioinformatics/btaa274)                                                  |     180992 |          28 |   4563407 |
+| OpenBioLink LQ                     | [`pykeen.datasets.OpenBioLinkLQ`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OpenBioLinkLQ.html)               | [Breit *et al*., 2020](https://doi.org/10.1093/bioinformatics/btaa274)                                                  |     480876 |          32 |  27320889 |
+| OpenEA Family                      | [`pykeen.datasets.OpenEA`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.OpenEA.html)                             | [Sun *et al*., 2020](http://www.vldb.org/pvldb/vol13/p2326-sun.pdf)                                                     |      15000 |         248 |     38265 |
+| PharMeBINet                        | [`pykeen.datasets.PharMeBINet`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharMeBINet.html)                   | [Königs *et al*., 2022](https://www.nature.com/articles/s41597-022-01510-3)                                             |    2869407 |         208 |  15883653 |
+| PharmKG                            | [`pykeen.datasets.PharmKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharmKG.html)                           | [Zheng *et al*., 2020](https://doi.org/10.1093/bib/bbaa344)                                                             |     188296 |          39 |   1093236 |
+| PharmKG8k                          | [`pykeen.datasets.PharmKG8k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PharmKG8k.html)                       | [Zheng *et al*., 2020](https://doi.org/10.1093/bib/bbaa344)                                                             |       7247 |          28 |    485787 |
+| PPI                                | [`pykeen.datasets.PPI`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PPI.html)                                   | [Hamilton *et al*., 2017](https://arxiv.org/abs/1706.02216)                                                             |      56944 |           1 |    818716 |
+| PrimeKG                            | [`pykeen.datasets.PrimeKG`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PrimeKG.html)                           | [Chandak *et al*., 2022](https://doi.org/10.1101/2022.05.01.489928)                                                     |     129375 |          30 |   8100498 |
+| PubMed                             | [`pykeen.datasets.PubMed`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.PubMed.html)                             | [Sen *et al*., 2008](https://linqs.org/datasets/#pubmed-diabetes)                                                       |      19717 |           1 |     44338 |
+| Squirrel                           | [`pykeen.datasets.Squirrel`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Squirrel.html)                         | [Rozemberczki *et al*., 2021](https://arxiv.org/abs/1909.13021)                                                         |       5201 |           1 |    217073 |
+| Unified Medical Language System    | [`pykeen.datasets.UMLS`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.UMLS.html)                                 | [`ZhenfengLei/KGDatasets`](https://github.com/ZhenfengLei/KGDatasets)                                                   |        135 |          46 |      6529 |
+| WD50K (triples)                    | [`pykeen.datasets.WD50KT`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WD50KT.html)                             | [Galkin *et al*., 2020](https://www.aclweb.org/anthology/2020.emnlp-main.596/)                                          |      40107 |         473 |    232344 |
+| Wikidata5M                         | [`pykeen.datasets.Wikidata5M`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.Wikidata5M.html)                     | [Wang *et al*., 2019](https://arxiv.org/abs/1911.06136)                                                                 |    4594149 |         822 |  20624239 |
+| WK3l-120k Family                   | [`pykeen.datasets.WK3l120k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WK3l120k.html)                         | [Chen *et al*., 2017](https://www.ijcai.org/Proceedings/2017/0209.pdf)                                                  |     119748 |        3109 |   1375406 |
+| WK3l-15k Family                    | [`pykeen.datasets.WK3l15k`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WK3l15k.html)                           | [Chen *et al*., 2017](https://www.ijcai.org/Proceedings/2017/0209.pdf)                                                  |      15126 |        1841 |    209041 |
+| WordNet-18                         | [`pykeen.datasets.WN18`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WN18.html)                                 | [Bordes *et al*., 2014](https://arxiv.org/abs/1301.3485)                                                                |      40943 |          18 |    151442 |
+| WordNet-18 (RR)                    | [`pykeen.datasets.WN18RR`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WN18RR.html)                             | [Toutanova *et al*., 2015](https://www.aclweb.org/anthology/W15-4007/)                                                  |      40559 |          11 |     92583 |
+| WordNet-Noun-0percent              | [`pykeen.datasets.WordNetNoun0Percent`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WordNetNoun0Percent.html)   | [Ganea *et al*., 2018](https://arxiv.org/abs/1804.01882)                                                                |      82114 |           1 |    142039 |
+| WordNet-Noun-10percent             | [`pykeen.datasets.WordNetNoun10Percent`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WordNetNoun10Percent.html) | [Ganea *et al*., 2018](https://arxiv.org/abs/1804.01882)                                                                |      82114 |           1 |    199715 |
+| WordNet-Noun-25percent             | [`pykeen.datasets.WordNetNoun25Percent`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WordNetNoun25Percent.html) | [Ganea *et al*., 2018](https://arxiv.org/abs/1804.01882)                                                                |      82114 |           1 |    286230 |
+| WordNet-Noun-50percent             | [`pykeen.datasets.WordNetNoun50Percent`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WordNetNoun50Percent.html) | [Ganea *et al*., 2018](https://arxiv.org/abs/1804.01882)                                                                |      82114 |           1 |    430421 |
+| WordNet-Noun-90percent             | [`pykeen.datasets.WordNetNoun90Percent`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.WordNetNoun90Percent.html) | [Ganea *et al*., 2018](https://arxiv.org/abs/1804.01882)                                                                |      82114 |           1 |    661126 |
+| YAGO3-10                           | [`pykeen.datasets.YAGO310`](https://pykeen.readthedocs.io/en/latest/api/pykeen.datasets.YAGO310.html)                           | [Mahdisoltani *et al*., 2015](http://service.tsi.telecom-paristech.fr/cgi-bin//valipub_download.cgi?dId=284)            |     123143 |          37 |   1089000 |
 
 ### Inductive Datasets
 
@@ -219,7 +248,7 @@ The following 25 representations are implemented by PyKEEN.
 
 ### Interactions
 
-The following 36 interactions are implemented by PyKEEN.
+The following 37 interactions are implemented by PyKEEN.
 
 | Name                           | Reference                                                                                                                                   | Citation                                                                                                                   |
 |--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
@@ -238,6 +267,7 @@ The following 36 interactions are implemented by PyKEEN.
 | Hyperbolic Entailment Cones    | [`pykeen.nn.HyperbolicConesInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.HyperbolicConesInteraction.html)     | [Ganea *et al.*, 2018](https://arxiv.org/abs/1804.01882)                                                                   |
 | KG2E                           | [`pykeen.nn.KG2EInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.KG2EInteraction.html)                           | [He *et al.*, 2015](https://dl.acm.org/doi/10.1145/2806416.2806502)                                                        |
 | LineaRE                        | [`pykeen.nn.LineaREInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.LineaREInteraction.html)                     | [Peng *et al.*, 2020](https://arxiv.org/abs/2004.10037)                                                                    |
+| Lorentz Embedding              | [`pykeen.nn.LorentzInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.LorentzInteraction.html)                     | [Nickel *et al.*, 2018](https://arxiv.org/abs/1806.03417)                                                                  |
 | MultiLinearTucker              | [`pykeen.nn.MultiLinearTuckerInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.MultiLinearTuckerInteraction.html) | [Tucker *et al.*, 1966](https://dx.doi.org/10.1007/BF02289464)                                                             |
 | MuRE                           | [`pykeen.nn.MuREInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.MuREInteraction.html)                           | [Balažević *et al.*, 2019](https://arxiv.org/abs/1905.09791)                                                               |
 | NTN                            | [`pykeen.nn.NTNInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.NTNInteraction.html)                             | [Socher *et al.*, 2013](https://proceedings.neurips.cc/paper/2013/file/b337e84de8752b27eda3a12363109e80-Paper.pdf)         |
@@ -262,7 +292,7 @@ The following 36 interactions are implemented by PyKEEN.
 
 ### Models
 
-The following 42 models are implemented by PyKEEN.
+The following 43 models are implemented by PyKEEN.
 
 | Name                           | Model                                                                                                                                                           | Citation                                                                                                                |
 |--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
@@ -288,6 +318,7 @@ The following 42 models are implemented by PyKEEN.
 | InductiveNodePiece             | [`pykeen.models.InductiveNodePiece`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.inductive.inductive_nodepiece.InductiveNodePiece.html)           | [Galkin *et al.*, 2021](https://arxiv.org/abs/2106.12144)                                                               |
 | InductiveNodePieceGNN          | [`pykeen.models.InductiveNodePieceGNN`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.inductive.inductive_nodepiece_gnn.InductiveNodePieceGNN.html) | [Galkin *et al.*, 2021](https://arxiv.org/abs/2106.12144)                                                               |
 | KG2E                           | [`pykeen.models.KG2E`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.kg2e.KG2E.html)                                                       | [He *et al.*, 2015](https://dl.acm.org/doi/10.1145/2806416.2806502)                                                     |
+| LorentzE                       | [`pykeen.models.LorentzE`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.lorentz_e.LorentzE.html)                                          | [Ali *et al.*, 2021](https://jmlr.org/papers/v22/20-825.html)                                                           |
 | MuRE                           | [`pykeen.models.MuRE`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.mure.MuRE.html)                                                       | [Balažević *et al.*, 2019](https://arxiv.org/abs/1905.09791)                                                            |
 | NTN                            | [`pykeen.models.NTN`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.ntn.NTN.html)                                                          | [Socher *et al.*, 2013](https://dl.acm.org/doi/10.5555/2999611.2999715)                                                 |
 | NodePiece                      | [`pykeen.models.NodePiece`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.node_piece.NodePiece.html)                                       | [Galkin *et al.*, 2021](https://arxiv.org/abs/2106.12144)                                                               |
@@ -376,66 +407,66 @@ The following 2 stoppers are implemented in PyKEEN.
 
 ### Evaluators
 
-The following 7 evaluators are implemented in PyKEEN.
+The following 6 evaluators are implemented in PyKEEN.
 
-| Name                       | Reference                                                                                                                                                         | Description                                                                  |
-|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
-| classification             | [`pykeen.evaluation.ClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.ClassificationEvaluator.html)                         | An evaluator that uses a classification metrics.                             |
-| lcaclassification          | [`pykeen.evaluation.LCAClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.LCAClassificationEvaluator.html)                   | An evaluator computing LCA-based hierarchical precision/recall/F1.           |
-| macrorankbased             | [`pykeen.evaluation.MacroRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.MacroRankBasedEvaluator.html)                         | Macro-average rank-based evaluation.                                         |
-| ogb                        | [`pykeen.evaluation.OGBEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.OGBEvaluator.html)                                               | A sampled, rank-based evaluator that applies a custom OGB evaluation.        |
-| rankbased                  | [`pykeen.evaluation.RankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.RankBasedEvaluator.html)                                   | A rank-based evaluator for KGE models.                                       |
-| sampledrankbased           | [`pykeen.evaluation.SampledRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.SampledRankBasedEvaluator.html)                     | A rank-based evaluator using sampled negatives instead of all negatives.     |
+| Name              | Reference                                                                                                                                       | Description                                                                             |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| classification    | [`pykeen.evaluation.ClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.ClassificationEvaluator.html)       | An evaluator that uses a classification metrics.                                        |
+| lcaclassification | [`pykeen.evaluation.LCAClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.LCAClassificationEvaluator.html) | An evaluator computing LCA-based precision/recall/F1 (Kosmopoulos et al. 2015, §2.4.2). |
+| macrorankbased    | [`pykeen.evaluation.MacroRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.MacroRankBasedEvaluator.html)       | Macro-average rank-based evaluation.                                                    |
+| ogb               | [`pykeen.evaluation.OGBEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.OGBEvaluator.html)                             | A sampled, rank-based evaluator that applies a custom OGB evaluation.                   |
+| rankbased         | [`pykeen.evaluation.RankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.RankBasedEvaluator.html)                 | A rank-based evaluator for KGE models.                                                  |
+| sampledrankbased  | [`pykeen.evaluation.SampledRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.SampledRankBasedEvaluator.html)   | A rank-based evaluator using sampled negatives instead of all negatives.                |
 
 ### Metrics
 
-The following 50 metrics are implemented in PyKEEN.
+The following 47 metrics are implemented in PyKEEN.
 
-| Name                                                                                                                                           | Interval                    | Direction   | Description                                                             | Type                        |
-|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|-------------|-------------------------------------------------------------------------|-----------------------------|
-| [Accuracy](https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers#Single_metrics)                                                      | $[0, 1]$                    | 📈           | The ratio of the number of correct classifications to the total number. | Classification              |
-| [Area Under The Receiver Operating Characteristic Curve](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html) | $[0, 1]$                    | 📈           | The area under the receiver operating characteristic curve.             | Classification              |
-| [Average Precision Score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html)                      | $[0, 1]$                    | 📈           | The average precision across different thresholds.                      | Classification              |
-| [Balanced Accuracy Score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html)                      | $[0, 1]$                    | 📈           | The average of recall obtained on each class.                           | Classification              |
-| [Diagnostic Odds Ratio](https://en.wikipedia.org/wiki/Diagnostic_odds_ratio)                                                                   | $[0, ∞)$                    | 📈           | The ratio of positive and negative likelihood ratio.                    | Classification              |
-| [F1 Score](https://en.wikipedia.org/wiki/F1_score)                                                                                             | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification              |
-| [False Discovery Rate](https://en.wikipedia.org/wiki/False_discovery_rate)                                                                     | $[0, 1]$                    | 📉           | The proportion of predicted negatives which are true positive.          | Classification              |
-| [False Negative Rate](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors#False_positive_and_false_negative_rates)                         | $[0, 1]$                    | 📉           | The probability that a truly positive triple is predicted negative.     | Classification              |
-| [False Omission Rate](https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values)                                                   | $[0, 1]$                    | 📉           | The proportion of predicted positives which are true negative.          | Classification              |
-| [False Positive Rate](https://en.wikipedia.org/wiki/False_positive_rate)                                                                       | $[0, 1]$                    | 📉           | The probability that a truly negative triple is predicted positive.     | Classification              |
-| [Fowlkes Mallows Index](https://en.wikipedia.org/wiki/Fowlkes%E2%80%93Mallows_index)                                                           | $[0, 1]$                    | 📈           | The Fowlkes Mallows index.                                              | Classification              |
-| [Informedness](https://en.wikipedia.org/wiki/Informedness)                                                                                     | $[-1, 1]$                   | 📈           | The informedness metric.                                                | Classification              |
-| [Matthews Correlation Coefficient](https://en.wikipedia.org/wiki/Phi_coefficient)                                                              | $[-1, 1]$                   | 📈           | The Matthews Correlation Coefficient (MCC).                             | Classification              |
-| [Negative Likelihood Ratio](https://en.wikipedia.org/wiki/Negative_likelihood_ratio)                                                           | $[0, ∞)$                    | 📉           | The ratio of false positive rate to true positive rate.                 | Classification              |
-| [Negative Predictive Value](https://en.wikipedia.org/wiki/Negative_predictive_value)                                                           | $[0, 1]$                    | 📈           | The proportion of predicted negatives which are true negatives.         | Classification              |
-| [Number of Scores](https://pykeen.readthedocs.io/en/stable/reference/evaluation.html)                                                          | $[0, ∞)$                    | 📈           | The number of scores.                                                   | Classification              |
-| [Positive Likelihood Ratio](https://en.wikipedia.org/wiki/Positive_likelihood_ratio)                                                           | $[0, ∞)$                    | 📈           | The ratio of true positive rate to false positive rate.                 | Classification              |
-| [Positive Predictive Value](https://en.wikipedia.org/wiki/Positive_predictive_value)                                                           | $[0, 1]$                    | 📈           | The proportion of predicted positives which are true positive.          | Classification              |
-| [Prevalence Threshold](https://en.wikipedia.org/wiki/Prevalence_threshold)                                                                     | $[0, ∞)$                    | 📉           | The prevalence threshold.                                               | Classification              |
-| [Threat Score](https://en.wikipedia.org/wiki/Sensitivity_and_specificity)                                                                      | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification              |
-| [True Negative Rate](https://en.wikipedia.org/wiki/Specificity_(tests))                                                                        | $[0, 1]$                    | 📈           | The probability that a truly false triple is predicted negative.        | Classification              |
-| [True Positive Rate](https://en.wikipedia.org/wiki/Sensitivity_(test))                                                                         | $[0, 1]$                    | 📈           | The probability that a truly positive triple is predicted positive.     | Classification              |
+| Name                                                                                                                                           | Interval                    | Direction   | Description                                                             | Type                              |
+|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|-------------|-------------------------------------------------------------------------|-----------------------------------|
+| [Accuracy](https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers#Single_metrics)                                                      | $[0, 1]$                    | 📈           | The ratio of the number of correct classifications to the total number. | Classification                    |
+| [Area Under The Receiver Operating Characteristic Curve](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html) | $[0, 1]$                    | 📈           | The area under the receiver operating characteristic curve.             | Classification                    |
+| [Average Precision Score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html)                      | $[0, 1]$                    | 📈           | The average precision across different thresholds.                      | Classification                    |
+| [Balanced Accuracy Score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html)                      | $[0, 1]$                    | 📈           | The average of recall obtained on each class.                           | Classification                    |
+| [Diagnostic Odds Ratio](https://en.wikipedia.org/wiki/Diagnostic_odds_ratio)                                                                   | $[0, ∞)$                    | 📈           | The ratio of positive and negative likelihood ratio.                    | Classification                    |
+| [F1 Score](https://en.wikipedia.org/wiki/F1_score)                                                                                             | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification                    |
+| [False Discovery Rate](https://en.wikipedia.org/wiki/False_discovery_rate)                                                                     | $[0, 1]$                    | 📉           | The proportion of predicted negatives which are true positive.          | Classification                    |
+| [False Negative Rate](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors#False_positive_and_false_negative_rates)                         | $[0, 1]$                    | 📉           | The probability that a truly positive triple is predicted negative.     | Classification                    |
+| [False Omission Rate](https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values)                                                   | $[0, 1]$                    | 📉           | The proportion of predicted positives which are true negative.          | Classification                    |
+| [False Positive Rate](https://en.wikipedia.org/wiki/False_positive_rate)                                                                       | $[0, 1]$                    | 📉           | The probability that a truly negative triple is predicted positive.     | Classification                    |
+| [Fowlkes Mallows Index](https://en.wikipedia.org/wiki/Fowlkes%E2%80%93Mallows_index)                                                           | $[0, 1]$                    | 📈           | The Fowlkes Mallows index.                                              | Classification                    |
+| [Informedness](https://en.wikipedia.org/wiki/Informedness)                                                                                     | $[-1, 1]$                   | 📈           | The informedness metric.                                                | Classification                    |
+| [Matthews Correlation Coefficient](https://en.wikipedia.org/wiki/Phi_coefficient)                                                              | $[-1, 1]$                   | 📈           | The Matthews Correlation Coefficient (MCC).                             | Classification                    |
+| [Negative Likelihood Ratio](https://en.wikipedia.org/wiki/Negative_likelihood_ratio)                                                           | $[0, ∞)$                    | 📉           | The ratio of false positive rate to true positive rate.                 | Classification                    |
+| [Negative Predictive Value](https://en.wikipedia.org/wiki/Negative_predictive_value)                                                           | $[0, 1]$                    | 📈           | The proportion of predicted negatives which are true negatives.         | Classification                    |
+| [Number of Scores](https://pykeen.readthedocs.io/en/stable/reference/evaluation.html)                                                          | $[0, ∞)$                    | 📈           | The number of scores.                                                   | Classification                    |
+| [Positive Likelihood Ratio](https://en.wikipedia.org/wiki/Positive_likelihood_ratio)                                                           | $[0, ∞)$                    | 📈           | The ratio of true positive rate to false positive rate.                 | Classification                    |
+| [Positive Predictive Value](https://en.wikipedia.org/wiki/Positive_predictive_value)                                                           | $[0, 1]$                    | 📈           | The proportion of predicted positives which are true positive.          | Classification                    |
+| [Prevalence Threshold](https://en.wikipedia.org/wiki/Prevalence_threshold)                                                                     | $[0, ∞)$                    | 📉           | The prevalence threshold.                                               | Classification                    |
+| [Threat Score](https://en.wikipedia.org/wiki/Sensitivity_and_specificity)                                                                      | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification                    |
+| [True Negative Rate](https://en.wikipedia.org/wiki/Specificity_(tests))                                                                        | $[0, 1]$                    | 📈           | The probability that a truly false triple is predicted negative.        | Classification                    |
+| [True Positive Rate](https://en.wikipedia.org/wiki/Sensitivity_(test))                                                                         | $[0, 1]$                    | 📈           | The probability that a truly positive triple is predicted positive.     | Classification                    |
 | [LCA F1](https://doi.org/10.1007/s10618-014-0382-x)                                                                                            | $[0, 1]$                    | 📈           | Harmonic mean of LCA precision and recall.                              | Hierarchical Classification (LCA) |
 | [LCA Precision](https://doi.org/10.1007/s10618-014-0382-x)                                                                                     | $[0, 1]$                    | 📈           | Precision of the LCA-augmented predicted node set.                      | Hierarchical Classification (LCA) |
 | [LCA Recall](https://doi.org/10.1007/s10618-014-0382-x)                                                                                        | $[0, 1]$                    | 📈           | Recall of the LCA-augmented true node set.                              | Hierarchical Classification (LCA) |
-| [Adjusted Arithmetic Mean Rank (AAMR)](https://arxiv.org/abs/2002.06914)                                                                       | $[0, 2)$                    | 📉           | The mean over all ranks divided by its expected value.                  | Ranking                     |
-| [Adjusted Arithmetic Mean Rank Index (AAMRI)](https://arxiv.org/abs/2002.06914)                                                                | $[-1, 1]$                   | 📈           | The re-indexed adjusted mean rank (AAMR)                                | Ranking                     |
-| [Adjusted Geometric Mean Rank Index (AGMRI)](https://arxiv.org/abs/2002.06914)                                                                 | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted geometric mean rank (AGMRI)                     | Ranking                     |
-| [Adjusted Hits at K](https://arxiv.org/abs/2203.07544)                                                                                         | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted hits at K                                       | Ranking                     |
-| [Adjusted Inverse Harmonic Mean Rank](https://arxiv.org/abs/2203.07544)                                                                        | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted MRR                                             | Ranking                     |
-| [Geometric Mean Rank (GMR)](https://arxiv.org/abs/2203.07544)                                                                                  | $[1, ∞)$                    | 📉           | The geometric mean over all ranks.                                      | Ranking                     |
-| [Harmonic Mean Rank (HMR)](https://arxiv.org/abs/2203.07544)                                                                                   | $[1, ∞)$                    | 📉           | The harmonic mean over all ranks.                                       | Ranking                     |
-| [Hits @ K](https://pykeen.readthedocs.io/en/stable/tutorial/understanding_evaluation.html#hits-k)                                              | $[0, 1]$                    | 📈           | The relative frequency of ranks not larger than a given k.              | Ranking                     |
-| [Inverse Arithmetic Mean Rank (IAMR)](https://arxiv.org/abs/2203.07544)                                                                        | $(0, 1]$                    | 📈           | The inverse of the arithmetic mean over all ranks.                      | Ranking                     |
-| [Inverse Geometric Mean Rank (IGMR)](https://arxiv.org/abs/2203.07544)                                                                         | $(0, 1]$                    | 📈           | The inverse of the geometric mean over all ranks.                       | Ranking                     |
-| [Inverse Median Rank](https://arxiv.org/abs/2203.07544)                                                                                        | $(0, 1]$                    | 📈           | The inverse of the median over all ranks.                               | Ranking                     |
-| [Mean Rank (MR)](https://pykeen.readthedocs.io/en/stable/tutorial/understanding_evaluation.html#mean-rank)                                     | $[1, ∞)$                    | 📉           | The arithmetic mean over all ranks.                                     | Ranking                     |
-| [Mean Reciprocal Rank (MRR)](https://en.wikipedia.org/wiki/Mean_reciprocal_rank)                                                               | $(0, 1]$                    | 📈           | The inverse of the harmonic mean over all ranks.                        | Ranking                     |
-| [Median Rank](https://arxiv.org/abs/2203.07544)                                                                                                | $[1, ∞)$                    | 📉           | The median over all ranks.                                              | Ranking                     |
-| [z-Geometric Mean Rank (zGMR)](https://arxiv.org/abs/2203.07544)                                                                               | $(-∞, ∞)$                   | 📈           | The z-scored geometric mean rank                                        | Ranking                     |
-| [z-Hits at K](https://arxiv.org/abs/2203.07544)                                                                                                | $(-∞, ∞)$                   | 📈           | The z-scored hits at K                                                  | Ranking                     |
-| [z-Mean Rank (zMR)](https://arxiv.org/abs/2203.07544)                                                                                          | $(-∞, ∞)$                   | 📈           | The z-scored mean rank                                                  | Ranking                     |
-| [z-Mean Reciprocal Rank (zMRR)](https://arxiv.org/abs/2203.07544)                                                                              | $(-∞, ∞)$                   | 📈           | The z-scored mean reciprocal rank                                       | Ranking                     |
+| [Adjusted Arithmetic Mean Rank (AAMR)](https://arxiv.org/abs/2002.06914)                                                                       | $[0, 2)$                    | 📉           | The mean over all ranks divided by its expected value.                  | Ranking                           |
+| [Adjusted Arithmetic Mean Rank Index (AAMRI)](https://arxiv.org/abs/2002.06914)                                                                | $[-1, 1]$                   | 📈           | The re-indexed adjusted mean rank (AAMR)                                | Ranking                           |
+| [Adjusted Geometric Mean Rank Index (AGMRI)](https://arxiv.org/abs/2002.06914)                                                                 | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted geometric mean rank (AGMRI)                     | Ranking                           |
+| [Adjusted Hits at K](https://arxiv.org/abs/2203.07544)                                                                                         | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted hits at K                                       | Ranking                           |
+| [Adjusted Inverse Harmonic Mean Rank](https://arxiv.org/abs/2203.07544)                                                                        | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted MRR                                             | Ranking                           |
+| [Geometric Mean Rank (GMR)](https://arxiv.org/abs/2203.07544)                                                                                  | $[1, ∞)$                    | 📉           | The geometric mean over all ranks.                                      | Ranking                           |
+| [Harmonic Mean Rank (HMR)](https://arxiv.org/abs/2203.07544)                                                                                   | $[1, ∞)$                    | 📉           | The harmonic mean over all ranks.                                       | Ranking                           |
+| [Hits @ K](https://pykeen.readthedocs.io/en/stable/tutorial/understanding_evaluation.html#hits-k)                                              | $[0, 1]$                    | 📈           | The relative frequency of ranks not larger than a given k.              | Ranking                           |
+| [Inverse Arithmetic Mean Rank (IAMR)](https://arxiv.org/abs/2203.07544)                                                                        | $(0, 1]$                    | 📈           | The inverse of the arithmetic mean over all ranks.                      | Ranking                           |
+| [Inverse Geometric Mean Rank (IGMR)](https://arxiv.org/abs/2203.07544)                                                                         | $(0, 1]$                    | 📈           | The inverse of the geometric mean over all ranks.                       | Ranking                           |
+| [Inverse Median Rank](https://arxiv.org/abs/2203.07544)                                                                                        | $(0, 1]$                    | 📈           | The inverse of the median over all ranks.                               | Ranking                           |
+| [Mean Rank (MR)](https://pykeen.readthedocs.io/en/stable/tutorial/understanding_evaluation.html#mean-rank)                                     | $[1, ∞)$                    | 📉           | The arithmetic mean over all ranks.                                     | Ranking                           |
+| [Mean Reciprocal Rank (MRR)](https://en.wikipedia.org/wiki/Mean_reciprocal_rank)                                                               | $(0, 1]$                    | 📈           | The inverse of the harmonic mean over all ranks.                        | Ranking                           |
+| [Median Rank](https://arxiv.org/abs/2203.07544)                                                                                                | $[1, ∞)$                    | 📉           | The median over all ranks.                                              | Ranking                           |
+| [z-Geometric Mean Rank (zGMR)](https://arxiv.org/abs/2203.07544)                                                                               | $(-∞, ∞)$                   | 📈           | The z-scored geometric mean rank                                        | Ranking                           |
+| [z-Hits at K](https://arxiv.org/abs/2203.07544)                                                                                                | $(-∞, ∞)$                   | 📈           | The z-scored hits at K                                                  | Ranking                           |
+| [z-Mean Rank (zMR)](https://arxiv.org/abs/2203.07544)                                                                                          | $(-∞, ∞)$                   | 📈           | The z-scored mean rank                                                  | Ranking                           |
+| [z-Mean Reciprocal Rank (zMRR)](https://arxiv.org/abs/2203.07544)                                                                              | $(-∞, ∞)$                   | 📈           | The z-scored mean reciprocal rank                                       | Ranking                           |
 
 ### Trackers
 
@@ -499,10 +530,14 @@ at https://github.com/pykeen/benchmarking.
 Contributions, whether filing an issue, making a pull request, or forking, are appreciated.
 See [CONTRIBUTING.md](/CONTRIBUTING.md) for more information on getting involved.
 
-If you have questions, please use the GitHub discussions feature at
-https://github.com/pykeen/pykeen/discussions/new.
+If you have questions about HPBench, please open an issue at
+https://github.com/DE-TUM/HPBench/issues. For questions about the upstream library, use the
+PyKEEN GitHub discussions at https://github.com/pykeen/pykeen/discussions/new.
 
 ## Acknowledgements
+
+HPBench is built on [PyKEEN](https://github.com/pykeen/pykeen); the acknowledgements below
+are inherited from that project.
 
 ### Supporters
 
@@ -541,8 +576,8 @@ The PyKEEN logo was designed by [Carina Steinborn](https://www.xing.com/profile/
 
 ## Citation
 
-If you have found PyKEEN useful in your work, please consider citing
-[our article](http://jmlr.org/papers/v22/20-825.html):
+If you have found HPBench useful in your work, please cite the underlying PyKEEN
+[article](http://jmlr.org/papers/v22/20-825.html) and link to this repository:
 
 ```bibtex
 @article{ali2021pykeen,

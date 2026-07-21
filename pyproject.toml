@@ -4,10 +4,11 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pykeen"
+name = "hpbench"
 version = "1.11.2-dev"
-description = "A package for training and evaluating multimodal knowledge graph embeddings"
+description = "A benchmarking suite for hierarchy-aware knowledge graph embeddings (a fork of PyKEEN)"
 readme = "README.md"
+# ponytail: import name stays `pykeen` so upstream code and docs links keep working
 authors = [
     { name = "Mehdi Ali", email = "pykeen2019@gmail.com" },
     { name = "Max Berrendorf", email = "max.berrendorf@gmail.com" },
@@ -116,9 +117,10 @@ pyg = [
 
 # See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
 [project.urls]
-"Bug Tracker" = "https://github.com/pykeen/pykeen/issues"
-Homepage = "https://github.com/pykeen/pykeen"
-Repository = "https://github.com/pykeen/pykeen.git"
+"Bug Tracker" = "https://github.com/DE-TUM/HPBench/issues"
+Homepage = "https://github.com/DE-TUM/HPBench"
+Repository = "https://github.com/DE-TUM/HPBench.git"
+Upstream = "https://github.com/pykeen/pykeen"
 Documentation = "https://pykeen.readthedocs.io"
 
 [tool.setuptools]
