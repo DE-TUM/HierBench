@@ -2,6 +2,11 @@ graft src
 graft tests
 graft scripts
 
+include *.py
+recursive-include figures *.pdf
+recursive-include figures *.png
+recursive-include figures *.tex
+
 prune docs/source/api
 prune notebooks
 prune benchmarking

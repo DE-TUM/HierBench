@@ -142,6 +142,7 @@ class _LCAGraph:
         ancestors: Mapping[int, frozenset[int]],
         max_paths: int = 64,
     ) -> None:
+        """Build the parent index from ``edges``, keeping ``ancestors`` as the inclusive closure."""
         self.ancestors = ancestors
         self.max_paths = max_paths
         self.parents: dict[int, list[int]] = defaultdict(list)
@@ -230,6 +231,7 @@ def _get_best_lcas(connections: Mapping[tuple[int, int], frozenset[int]]) -> set
     sorted_lcas = sorted(counts, key=lambda lca: (-counts[lca], lca))
 
     def satisfied(candidate: set[int]) -> bool:
+        """Check that ``candidate`` covers every connection that has at least one LCA."""
         return all(not lcas or lcas & candidate for lcas in connections.values())
 
     best: set[int] = set()
@@ -358,10 +360,7 @@ class LCAClassificationEvaluator(Evaluator[LCAMetricKey]):
             means = (0.0, 0.0, 0.0)
         else:
             means = cast(_LCAScore, tuple(float(np.mean(column)) for column in zip(*values, strict=True)))
-        return {
-            LCAMetricKey(side=side, metric=metric): value
-            for metric, value in zip(LCA_METRICS, means, strict=True)
-        }
+        return {LCAMetricKey(side=side, metric=metric): value for metric, value in zip(LCA_METRICS, means, strict=True)}
 
     # docstr-coverage: inherited
     def finalize(self) -> LCAMetricResults:  # noqa: D102

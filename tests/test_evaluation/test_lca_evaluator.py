@@ -81,18 +81,14 @@ def test_perfect_prediction(paper_graph):
 
 def test_no_positives_returns_none(paper_graph):
     """A query without positives cannot be scored."""
-    result = _lca_scores(
-        y_true=np.zeros(PAPER_DAG_NUM_NODES), y_score=np.ones(PAPER_DAG_NUM_NODES), graph=paper_graph
-    )
+    result = _lca_scores(y_true=np.zeros(PAPER_DAG_NUM_NODES), y_score=np.ones(PAPER_DAG_NUM_NODES), graph=paper_graph)
     assert result is None
 
 
 def test_deredundancy(paper_graph):
     """A true set containing a node and its ancestor scores as if the ancestor were absent (p. 840)."""
     y_score = _score_vector(PAPER_DAG_NUM_NODES, [10])
-    without_ancestor = _lca_scores(
-        y_true=_label_vector(PAPER_DAG_NUM_NODES, [10]), y_score=y_score, graph=paper_graph
-    )
+    without_ancestor = _lca_scores(y_true=_label_vector(PAPER_DAG_NUM_NODES, [10]), y_score=y_score, graph=paper_graph)
     # 3.2 and 3 are ancestors of 3.2.1; note |Y| changes the top-|Y| cut, so fix Yhat via scores
     with_ancestors = _lca_scores(
         y_true=_label_vector(PAPER_DAG_NUM_NODES, [10, 8, 3]),
@@ -145,6 +141,4 @@ def test_evaluator_requires_positive_mask():
     edges = [(0, 1)]
     evaluator = LCAClassificationEvaluator(edges=edges, ancestors=_ancestor_closure(edges, 2))
     with pytest.raises(KeyError, match="positive mask"):
-        evaluator.process_scores_(
-            hrt_batch=torch.as_tensor([[0, 0, 1]]), target=LABEL_TAIL, scores=torch.rand(1, 2)
-        )
+        evaluator.process_scores_(hrt_batch=torch.as_tensor([[0, 0, 1]]), target=LABEL_TAIL, scores=torch.rand(1, 2))

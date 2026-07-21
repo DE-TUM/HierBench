@@ -328,7 +328,7 @@ def _draw_negative(
     paths: Mapping[int, frozenset[int]],
     num_entities: int,
     rng: np.random.Generator,
-    seen: set[tuple[int, int, int]],
+    seen: set[tuple[int, ...]],
 ) -> int | None:
     """Draw an entity replacing one slot of ``(head, tail)`` such that the pair leaves the closure.
 
@@ -341,6 +341,7 @@ def _draw_negative(
     """
 
     def valid(entity: int) -> bool:
+        """Check that ``entity`` leaves the closure in the corrupted slot and was not emitted yet."""
         if corrupt_head:
             return entity not in paths[tail] and (entity, relation, tail) not in seen
         return head not in paths[entity] and (head, relation, entity) not in seen
@@ -382,7 +383,7 @@ def _sample_negatives(
     negatives: list[list[int]] = []
     for head, relation, tail in positives:
         rows: list[list[int]] = []
-        seen: set[tuple[int, int, int]] = set()  # emitted rows, to draw without replacement per positive
+        seen: set[tuple[int, ...]] = set()  # emitted rows, to draw without replacement per positive
         if siblings is not None:
             hard = [[head, relation, s] for s in siblings.get(head, ()) if head not in paths[s]]
             hard += [[s, relation, tail] for s in siblings.get(tail, ()) if s not in paths[tail]]
