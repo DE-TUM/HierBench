@@ -74,11 +74,11 @@ ISA_ALPHAS = (0.1, 1.0, 10.0, 100.0, 1000.0)
 #: WN18RR is excluded (pruned hypernym chains, not the paper's WordNet — WordNetNoun50Percent is
 #: Ganea's own split); EstatFSS is excluded (closure pool of 23 pairs, degenerate eval).
 DATASET_CLASSES = [
-    # datasets.NASA,
-    # datasets.DOID,
-    # datasets.ACMCCS,
-    # datasets.EuroSciVoc,
-    # datasets.MeSH,
+    datasets.NASA,
+    datasets.DOID,
+    datasets.ACMCCS,
+    datasets.EuroSciVoc,
+    datasets.MeSH,
     # Ganea et al. (2018)'s actual Table 1 dataset (predefined closure split; the pipeline ignores
     # CLOSURE_RATIOS for it — the 0% variant matches the swept 0.0 ratio by construction).
     datasets.WordNetNoun0Percent,
@@ -208,56 +208,56 @@ def build_configs(
     cones_initializer = _pretrain_poincare_initializer(dataset, hierarchy_relation, closure_ratio, embedding_dim)
     isa_score_factory = partial(_make_hyperbolic_isa_score, dataset, hierarchy_relation)
     return [
-        # (
-        #     "PoincareE (Nickel & Kiela 2017)",
-        #     PoincareE,
-        #     {"embedding_dim": embedding_dim, "curvature": 1.0},
-        #     {
-        #         "optimizer": "RiemannianSGD",
-        #         "optimizer_kwargs": {"lr": 0.3},
-        #         "lr_scheduler": "constant",
-        #         "lr_scheduler_kwargs": {"factor": 0.1, "total_iters": BURN_IN_EPOCHS},
-        #         "loss": "crossentropy",
-        #         "negative_sampler_kwargs": {"num_negs_per_pos": TRAIN_NEGATIVES},
-        #         "training_kwargs": {"batch_size": TRAIN_BATCH_SIZE},
-        #         "eval_score_factory": isa_score_factory,
-        #     },
-        # ),
-        # (
-        #     "LorentzE (Nickel & Kiela 2018)",
-        #     LorentzE,
-        #     {"embedding_dim": embedding_dim, "curvature": 1.0},
-        #     {
-        #         "optimizer": "RiemannianSGD",
-        #         "optimizer_kwargs": {"lr": 0.3},
-        #         "lr_scheduler": "constant",
-        #         "lr_scheduler_kwargs": {"factor": 0.1, "total_iters": BURN_IN_EPOCHS},
-        #         "loss": "crossentropy",
-        #         "negative_sampler_kwargs": {"num_negs_per_pos": TRAIN_NEGATIVES},
-        #         "training_kwargs": {"batch_size": TRAIN_BATCH_SIZE},
-        #         "eval_score_factory": isa_score_factory,
-        #     },
-        # ),
-        # (
-        #     "HyperbolicCones (Ganea et al. 2018)",
-        #     HyperbolicCones,
-        #     {
-        #         "embedding_dim": embedding_dim,
-        #         "k": 0.1,
-        #         "curvature": 1.0,
-        #         "entity_initializer": cones_initializer,
-        #     },
-        #     {
-        #         # Adaptive lr: the paper's SGD lr=1e-4 assumes batch size 10 (~25-100x more steps
-        #         # than pykeen's default batching) and barely moves the model here.
-        #         "optimizer": "RiemannianAdam",
-        #         "optimizer_kwargs": {"lr": 1e-3},
-        #         # Ganea et al. (2018) Eq. 32: pointwise hinge (see HyperbolicCones.loss_default).
-        #         "loss": "pointwisehinge",
-        #         "loss_kwargs": {"margin": 0.01},
-        #         "negative_sampler_kwargs": {"num_negs_per_pos": TRAIN_NEGATIVES},
-        #     },
-        # ),
+        (
+            "PoincareE (Nickel & Kiela 2017)",
+            PoincareE,
+            {"embedding_dim": embedding_dim, "curvature": 1.0},
+            {
+                "optimizer": "RiemannianSGD",
+                "optimizer_kwargs": {"lr": 0.3},
+                "lr_scheduler": "constant",
+                "lr_scheduler_kwargs": {"factor": 0.1, "total_iters": BURN_IN_EPOCHS},
+                "loss": "crossentropy",
+                "negative_sampler_kwargs": {"num_negs_per_pos": TRAIN_NEGATIVES},
+                "training_kwargs": {"batch_size": TRAIN_BATCH_SIZE},
+                "eval_score_factory": isa_score_factory,
+            },
+        ),
+        (
+            "LorentzE (Nickel & Kiela 2018)",
+            LorentzE,
+            {"embedding_dim": embedding_dim, "curvature": 1.0},
+            {
+                "optimizer": "RiemannianSGD",
+                "optimizer_kwargs": {"lr": 0.3},
+                "lr_scheduler": "constant",
+                "lr_scheduler_kwargs": {"factor": 0.1, "total_iters": BURN_IN_EPOCHS},
+                "loss": "crossentropy",
+                "negative_sampler_kwargs": {"num_negs_per_pos": TRAIN_NEGATIVES},
+                "training_kwargs": {"batch_size": TRAIN_BATCH_SIZE},
+                "eval_score_factory": isa_score_factory,
+            },
+        ),
+        (
+            "HyperbolicCones (Ganea et al. 2018)",
+            HyperbolicCones,
+            {
+                "embedding_dim": embedding_dim,
+                "k": 0.1,
+                "curvature": 1.0,
+                "entity_initializer": cones_initializer,
+            },
+            {
+                # Adaptive lr: the paper's SGD lr=1e-4 assumes batch size 10 (~25-100x more steps
+                # than pykeen's default batching) and barely moves the model here.
+                "optimizer": "RiemannianAdam",
+                "optimizer_kwargs": {"lr": 1e-3},
+                # Ganea et al. (2018) Eq. 32: pointwise hinge (see HyperbolicCones.loss_default).
+                "loss": "pointwisehinge",
+                "loss_kwargs": {"margin": 0.01},
+                "negative_sampler_kwargs": {"num_negs_per_pos": TRAIN_NEGATIVES},
+            },
+        ),
         (
             "RotatE (Sun et al. 2019)",
             "RotatE",
