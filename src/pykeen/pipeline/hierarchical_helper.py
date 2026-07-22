@@ -235,7 +235,7 @@ def _hpo_and_refit(
 
 
 def _default_hierarchy_sampler(kwargs: dict[str, Any], hierarchy_relation: int | None) -> dict[str, Any]:
-    """Default hierarchy-completion training to same-depth negatives + filtering (sLCWA only).
+    """Set hierarchy-completion training to same-depth negatives + filtering (sLCWA only).
 
     Sets :class:`~pykeen.sampling.HierarchyNegativeSampler` as the negative sampler unless the caller
     chose one explicitly, so ``negative_sampler="pseudotyped"`` / ``"basic"`` (or any registered
