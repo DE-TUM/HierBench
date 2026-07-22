@@ -122,6 +122,30 @@ statistics following the measures described in *Zloch et al., 2019*.
     print(analysis.h_index)       # directed h-index
     print(analysis.undirected_h_index)
 
+Gromov Hyperbolicity
+--------------------
+
+The :meth:`~ExtendedGraphAnalysis.gromov_hyperbolicity` method measures how
+*metrically tree-like* the graph is, following the 4-point :math:`\delta`
+definition of `Adcock, Sullivan & Mahoney, 2013
+<https://doi.org/10.1109/ICDM.2013.77>`_. Small :math:`\delta` means tree-like
+(a tree is 0-hyperbolic); a 4-cycle has :math:`\delta = 1`.
+
+.. code-block:: python
+
+    # delta over the giant component of the undirected projection
+    print(analysis.gromov_hyperbolicity())            # float, a multiple of 0.5
+
+    # exact when the giant component has <= max_sample_nodes nodes,
+    # otherwise a lower-bound estimate over sampled landmark quadruplets
+    print(analysis.gromov_hyperbolicity(max_sample_nodes=400, seed=1))
+
+Exact :math:`\delta` is :math:`O(n^4)`, so on large graphs the method samples
+``max_sample_nodes`` landmark nodes and returns the exact :math:`\delta` over
+that submatrix — a lower bound on the true value, matching the paper's
+quadruplet-sampling scheme. Firm up the bound by taking the maximum across
+several seeds.
+
 Per-Node Degree Access
 ----------------------
 
