@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import functools
 import math
+import warnings
 from collections import deque
 from typing import TYPE_CHECKING, Literal
 
@@ -396,6 +397,13 @@ class ExtendedGraphAnalysis:
         :returns: Variance of leaf depths V >= 0.0. Returns 0.0 for fewer than
             two leaves.
         """
+        if not self.is_dag:
+            warnings.warn(
+                "leaf_depth_variance is a tree-balance index; the graph has a cycle "
+                "(not a DAG), so leaf depths are ill-defined and the value may not be "
+                "meaningful.",
+                stacklevel=2,
+            )
         depths = self._node_depths
         leaf_depths = [depths[leaf] for leaf in self.leaf_nodes]
         n = len(leaf_depths)
@@ -438,6 +446,13 @@ class ExtendedGraphAnalysis:
         :returns: J¹ in ``[0, 1]``. Returns 0.0 for a graph with no internal nodes
             (empty, single-node, or fully linear).
         """
+        if not self.is_dag:
+            warnings.warn(
+                "balance is a tree-balance index; the graph has a cycle (not a DAG), "
+                "so the notion of leaf depth is ill-defined and the value may not be "
+                "meaningful.",
+                stacklevel=2,
+            )
         graph = self._digraph
         leaves = self.leaf_nodes
         # n_i: distinct leaves reachable from each node. Each leaf contributes 1 to

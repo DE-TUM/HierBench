@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import pytest
 import torch
 
@@ -280,6 +282,23 @@ def test_balance_symmetric_beats_caterpillar() -> None:
     # Caterpillar: 0→{1,2}, 2→{3,4}, 4→{5,6} (leaves 1,3,5,6).
     caterpillar = _make_dataset([[0, 0, 1], [0, 0, 2], [2, 0, 3], [2, 0, 4], [4, 0, 5], [4, 0, 6]], num_entities=7)
     assert ExtendedGraphAnalysis(balanced).balance > ExtendedGraphAnalysis(caterpillar).balance
+
+
+def test_tree_metrics_warn_on_cycle() -> None:
+    """leaf_depth_variance and balance warn when the graph is not a DAG."""
+    with pytest.warns(UserWarning, match="not a DAG"):
+        _ = ExtendedGraphAnalysis(_cycle4_dataset()).leaf_depth_variance
+    with pytest.warns(UserWarning, match="not a DAG"):
+        _ = ExtendedGraphAnalysis(_cycle4_dataset()).balance
+
+
+def test_tree_metrics_no_warning_on_dag() -> None:
+    """No warning is emitted when the graph is a DAG."""
+    ha = ExtendedGraphAnalysis(_star_dataset())
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        _ = ha.leaf_depth_variance
+        _ = ha.balance
 
 
 # ---------------------------------------------------------------------------
