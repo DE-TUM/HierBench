@@ -173,6 +173,18 @@ def test_max_hierarchy_depth_star() -> None:
     assert ExtendedGraphAnalysis(_star_dataset()).max_hierarchy_depth == 1
 
 
+def test_node_depth_chain() -> None:
+    """Chain 0→1→2→3: node_depth returns 0,1,2,3."""
+    ha = ExtendedGraphAnalysis(_chain_dataset())
+    assert [ha.node_depth(n) for n in range(4)] == [0, 1, 2, 3]
+
+
+def test_node_depth_cycle() -> None:
+    """Rootless 4-cycle: every node gets depth 0."""
+    ha = ExtendedGraphAnalysis(_cycle4_dataset())
+    assert all(ha.node_depth(n) == 0 for n in range(4))
+
+
 def test_levels_alias_chain() -> None:
     """Levels is an alias for max_hierarchy_depth."""
     ha = ExtendedGraphAnalysis(_chain_dataset())

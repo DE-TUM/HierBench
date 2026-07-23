@@ -637,6 +637,29 @@ class ExtendedGraphAnalysis:
         """Out-degree d_out(v) for a single vertex (Zloch et al. 2019)."""
         return int(self._multigraph.out_degree(node_id))
 
+    def node_depth(self, node_id: int) -> int:
+        r"""Shortest-path depth of a single vertex from its nearest root node.
+
+        .. math:: \delta(v) = \min_{r \in R} d(r, v)
+
+        where :math:`R` is the set of root nodes (see :attr:`root_nodes`) and
+        :math:`d(r, v)` the directed shortest-path distance. Roots have depth 0;
+        a node under several roots takes the shallower one. Computed by a single
+        multi-source traversal from all roots (:attr:`_node_depths`), so cycles
+        never inflate it. Isolated or cycle-only nodes (unreachable from any
+        root) are assigned depth 0.
+
+        The mean and max of this quantity over all nodes are
+        :attr:`avg_hierarchy_depth` and :attr:`max_hierarchy_depth`.
+
+        :param node_id: The entity ID to query.
+
+        :returns: Shortest-path depth >= 0.
+
+        :raises KeyError: If ``node_id`` is not a valid entity ID.
+        """
+        return self._node_depths[node_id]
+
     @property
     def max_degree(self) -> int:
         """Maximum total degree d_max across all vertices (Zloch et al. 2019)."""
