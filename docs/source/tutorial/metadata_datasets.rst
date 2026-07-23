@@ -1,7 +1,7 @@
 Datasets with Entity Metadata
 ==============================
 
-Several datasets in PyKEEN (HPBench) ship with per-entity metadata alongside the
+Several datasets in PyKEEN ship with per-entity metadata alongside the
 knowledge graph triples. These datasets inherit from
 :class:`~pykeen.datasets.MetadataDataset` and expose the metadata as a
 :class:`pandas.DataFrame` via the :attr:`~pykeen.datasets.MetadataDataset.entity_metadata`

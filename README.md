@@ -3,17 +3,21 @@
 </p>
 
 <h1 align="center">
-  HPBench
+  PyKEEN
 </h1>
 
 <p align="center">
-  <a href="https://github.com/DE-TUM/HPBench/actions/workflows/common.yml">
-    <img src="https://github.com/DE-TUM/HPBench/actions/workflows/common.yml/badge.svg"
+  <a href="https://github.com/pykeen/pykeen/actions/workflows/common.yml">
+    <img src="https://github.com/pykeen/pykeen/actions/workflows/common.yml/badge.svg"
          alt="GitHub Actions">
   </a>
 
   <a href='https://opensource.org/licenses/MIT'>
     <img src='https://img.shields.io/badge/License-MIT-blue.svg' alt='License'/>
+  </a>
+
+  <a href="https://zenodo.org/badge/latestdoi/242672435">
+    <img src="https://zenodo.org/badge/242672435.svg" alt="DOI">
   </a>
 
   <a href="https://optuna.org">
@@ -34,67 +38,40 @@
 </p>
 
 <p align="center">
-    <b>HPBench</b> (the <b>H</b>eilbronn–<b>P</b>aris <b>Bench</b>mark for Hierarchical Embeddings) is a benchmarking suite for
-    hierarchy-aware knowledge graph embeddings. It is a fork of
-    <a href="https://github.com/pykeen/pykeen">PyKEEN</a> that adds hyperbolic baselines,
-    hierarchical datasets, and hierarchy-specific evaluation tasks.
+    <b>PyKEEN</b> (<b>P</b>ython <b>K</b>nowl<b>E</b>dge <b>E</b>mbeddi<b>N</b>gs) is a Python package designed to
+    train and evaluate knowledge graph embedding models (incorporating multi-modal information).
 </p>
 
 <p align="center">
-  <a href="#what-hpbench-adds">What HPBench Adds</a> •
   <a href="#installation">Installation</a> •
   <a href="#quickstart">Quickstart</a> •
-  <a href="#datasets">Datasets (56)</a> •
+  <a href="#datasets">Datasets (51)</a> •
   <a href="#inductive-datasets">Inductive Datasets (5)</a> •
-  <a href="#models">Models (43)</a> •
+  <a href="#models">Models (42)</a> •
+  <a href="#supporters">Support</a> •
   <a href="#citation">Citation</a>
 </p>
 
-## What HPBench Adds
+## Installation ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pykeen) ![PyPI](https://img.shields.io/pypi/v/pykeen)
 
-<p align="center">
-  <img src="figures/hpbench_overview.png" alt="HPBench overview: PyKEEN components in grey, HPBench contributions in blue, across datasets, preprocessing, learning, and evaluation" width="900">
-</p>
-
-On top of everything PyKEEN provides, HPBench contributes:
-
-- **Hyperbolic baselines** — `PoincareE`, `LorentzE`, and `HyperbolicCones`
-  (`pykeen.models`), built on hyperbolic representations and interactions in
-  `pykeen.nn.hyperbolic`, plus Riemannian optimizers in `pykeen.optimizers`.
-- **Hierarchical datasets** — taxonomy-style graphs (WordNet noun hierarchy, ACM-CCS, DOID, MeSH,
-  EuroSciVoc, NASA taxonomy, …) with transitive-closure and metadata utilities in
-  `pykeen.datasets.metadata` and `pykeen.datasets.extended_graph_analysis`.
-- **Hierarchy evaluation tasks** — subsumption / pair classification metrics
-  (`pykeen.evaluation.pair_classification_evaluator`), transitive ancestor–descendant prediction
-  (`pykeen.pipeline.transitive_ancestor_descendant_prediction_pipeline`), and LCA-based
-  hierarchical precision/recall/F1 (`pykeen.evaluation.LCAClassificationEvaluator`).
-- **Hierarchy-aware training** — a hierarchy negative sampler
-  (`pykeen.sampling.HierarchyNegativeSampler`) and a hierarchy pipeline (`pykeen.pipeline.hierarchy`).
-- **k-fold cross-validation** — `pykeen.cross_validation` with k-fold dataset splits.
-
-The import name stays `pykeen`, so existing PyKEEN code runs unchanged.
-
-## Installation
-
-HPBench requires Python 3.9+. Install it from source:
+The latest stable version of PyKEEN requires Python 3.9+. It can be downloaded
+and installed from [PyPI](https://pypi.org/project/pykeen) with:
 
 ```shell
-pip install git+https://github.com/DE-TUM/HPBench.git
+pip install pykeen
 ```
 
-For development:
+The latest version of PyKEEN can be installed directly from the
+source code on [GitHub](https://github.com/pykeen/pykeen) with:
 
 ```shell
-git clone https://github.com/DE-TUM/HPBench.git
-cd HPBench
-pip install -e .
+pip install git+https://github.com/pykeen/pykeen.git
 ```
 
-HPBench is not published on PyPI — `pip install pykeen` installs upstream PyKEEN, not this fork.
-More information about installation (e.g., Windows installation, Colab, Kaggle, extras)
+More information about installation (e.g., development mode, Windows installation, Colab, Kaggle, extras)
 can be found in the [installation documentation](https://pykeen.readthedocs.io/en/latest/installation.html).
 
-## Quickstart
+## Quickstart [![Documentation Status](https://readthedocs.org/projects/pykeen/badge/?version=latest)](https://pykeen.readthedocs.io/en/latest/?badge=latest)
 
 This example shows how to train a model on a dataset and test on another dataset.
 
@@ -120,23 +97,22 @@ on [using your own dataset](https://pykeen.readthedocs.io/en/latest/byo/data.htm
 [understanding the evaluation](https://pykeen.readthedocs.io/en/latest/tutorial/understanding_evaluation.html),
 and [making novel link predictions](https://pykeen.readthedocs.io/en/latest/tutorial/making_predictions.html).
 
-HPBench inherits PyKEEN's extensibility:
+PyKEEN is extensible such that:
 
 - Each model has the same API, so anything from ``pykeen.models`` can be dropped in
 - Each training loop has the same API, so ``pykeen.training.LCWATrainingLoop`` can be dropped in
 - Triples factories can be generated by the user with ``from pykeen.triples.TriplesFactory``
 
-Documentation for the inherited functionality can be found at https://pykeen.readthedocs.io;
-links in the tables below point there.
+The full documentation can be found at https://pykeen.readthedocs.io.
 
 ## Implementation
 
-Below are the models, datasets, training modes, evaluators, and metrics available
-in HPBench (inherited from PyKEEN unless noted in [What HPBench Adds](#what-hpbench-adds)).
+Below are the models, datasets, training modes, evaluators, and metrics implemented
+in ``pykeen``.
 
 ### Datasets 
 
-The following 56 datasets are built in. The citation for each dataset corresponds to either the paper
+The following 51 datasets are built in to PyKEEN. The citation for each dataset corresponds to either the paper
 describing the dataset, the first paper published using the dataset with knowledge graph embedding models,
 or the URL for the dataset if neither of the first two are available. If you want to use a custom dataset,
 see the [Bring Your Own Dataset](https://pykeen.readthedocs.io/en/latest/byo/data.html) tutorial. If you
@@ -248,7 +224,7 @@ The following 25 representations are implemented by PyKEEN.
 
 ### Interactions
 
-The following 37 interactions are implemented by PyKEEN.
+The following 36 interactions are implemented by PyKEEN.
 
 | Name                           | Reference                                                                                                                                   | Citation                                                                                                                   |
 |--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
@@ -267,7 +243,6 @@ The following 37 interactions are implemented by PyKEEN.
 | Hyperbolic Entailment Cones    | [`pykeen.nn.HyperbolicConesInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.HyperbolicConesInteraction.html)     | [Ganea *et al.*, 2018](https://arxiv.org/abs/1804.01882)                                                                   |
 | KG2E                           | [`pykeen.nn.KG2EInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.KG2EInteraction.html)                           | [He *et al.*, 2015](https://dl.acm.org/doi/10.1145/2806416.2806502)                                                        |
 | LineaRE                        | [`pykeen.nn.LineaREInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.LineaREInteraction.html)                     | [Peng *et al.*, 2020](https://arxiv.org/abs/2004.10037)                                                                    |
-| Lorentz Embedding              | [`pykeen.nn.LorentzInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.LorentzInteraction.html)                     | [Nickel *et al.*, 2018](https://arxiv.org/abs/1806.03417)                                                                  |
 | MultiLinearTucker              | [`pykeen.nn.MultiLinearTuckerInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.MultiLinearTuckerInteraction.html) | [Tucker *et al.*, 1966](https://dx.doi.org/10.1007/BF02289464)                                                             |
 | MuRE                           | [`pykeen.nn.MuREInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.MuREInteraction.html)                           | [Balažević *et al.*, 2019](https://arxiv.org/abs/1905.09791)                                                               |
 | NTN                            | [`pykeen.nn.NTNInteraction`](https://pykeen.readthedocs.io/en/latest/api/pykeen.nn.modules.NTNInteraction.html)                             | [Socher *et al.*, 2013](https://proceedings.neurips.cc/paper/2013/file/b337e84de8752b27eda3a12363109e80-Paper.pdf)         |
@@ -292,7 +267,7 @@ The following 37 interactions are implemented by PyKEEN.
 
 ### Models
 
-The following 43 models are implemented by PyKEEN.
+The following 42 models are implemented by PyKEEN.
 
 | Name                           | Model                                                                                                                                                           | Citation                                                                                                                |
 |--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
@@ -318,7 +293,6 @@ The following 43 models are implemented by PyKEEN.
 | InductiveNodePiece             | [`pykeen.models.InductiveNodePiece`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.inductive.inductive_nodepiece.InductiveNodePiece.html)           | [Galkin *et al.*, 2021](https://arxiv.org/abs/2106.12144)                                                               |
 | InductiveNodePieceGNN          | [`pykeen.models.InductiveNodePieceGNN`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.inductive.inductive_nodepiece_gnn.InductiveNodePieceGNN.html) | [Galkin *et al.*, 2021](https://arxiv.org/abs/2106.12144)                                                               |
 | KG2E                           | [`pykeen.models.KG2E`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.kg2e.KG2E.html)                                                       | [He *et al.*, 2015](https://dl.acm.org/doi/10.1145/2806416.2806502)                                                     |
-| LorentzE                       | [`pykeen.models.LorentzE`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.lorentz_e.LorentzE.html)                                          | [Ali *et al.*, 2021](https://jmlr.org/papers/v22/20-825.html)                                                           |
 | MuRE                           | [`pykeen.models.MuRE`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.mure.MuRE.html)                                                       | [Balažević *et al.*, 2019](https://arxiv.org/abs/1905.09791)                                                            |
 | NTN                            | [`pykeen.models.NTN`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.ntn.NTN.html)                                                          | [Socher *et al.*, 2013](https://dl.acm.org/doi/10.5555/2999611.2999715)                                                 |
 | NodePiece                      | [`pykeen.models.NodePiece`](https://pykeen.readthedocs.io/en/latest/api/pykeen.models.unimodal.node_piece.NodePiece.html)                                       | [Galkin *et al.*, 2021](https://arxiv.org/abs/2106.12144)                                                               |
@@ -407,66 +381,66 @@ The following 2 stoppers are implemented in PyKEEN.
 
 ### Evaluators
 
-The following 6 evaluators are implemented in PyKEEN.
+The following 7 evaluators are implemented in PyKEEN.
 
-| Name              | Reference                                                                                                                                       | Description                                                                             |
-|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| classification    | [`pykeen.evaluation.ClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.ClassificationEvaluator.html)       | An evaluator that uses a classification metrics.                                        |
-| lcaclassification | [`pykeen.evaluation.LCAClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.LCAClassificationEvaluator.html) | An evaluator computing LCA-based precision/recall/F1 (Kosmopoulos et al. 2015, §2.4.2). |
-| macrorankbased    | [`pykeen.evaluation.MacroRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.MacroRankBasedEvaluator.html)       | Macro-average rank-based evaluation.                                                    |
-| ogb               | [`pykeen.evaluation.OGBEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.OGBEvaluator.html)                             | A sampled, rank-based evaluator that applies a custom OGB evaluation.                   |
-| rankbased         | [`pykeen.evaluation.RankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.RankBasedEvaluator.html)                 | A rank-based evaluator for KGE models.                                                  |
-| sampledrankbased  | [`pykeen.evaluation.SampledRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.SampledRankBasedEvaluator.html)   | A rank-based evaluator using sampled negatives instead of all negatives.                |
+| Name                       | Reference                                                                                                                                                         | Description                                                                  |
+|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| classification             | [`pykeen.evaluation.ClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.ClassificationEvaluator.html)                         | An evaluator that uses a classification metrics.                             |
+| lcaclassification          | [`pykeen.evaluation.LCAClassificationEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.LCAClassificationEvaluator.html)                   | An evaluator computing LCA-based hierarchical precision/recall/F1.           |
+| macrorankbased             | [`pykeen.evaluation.MacroRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.MacroRankBasedEvaluator.html)                         | Macro-average rank-based evaluation.                                         |
+| ogb                        | [`pykeen.evaluation.OGBEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.OGBEvaluator.html)                                               | A sampled, rank-based evaluator that applies a custom OGB evaluation.        |
+| rankbased                  | [`pykeen.evaluation.RankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.RankBasedEvaluator.html)                                   | A rank-based evaluator for KGE models.                                       |
+| sampledrankbased           | [`pykeen.evaluation.SampledRankBasedEvaluator`](https://pykeen.readthedocs.io/en/latest/api/pykeen.evaluation.SampledRankBasedEvaluator.html)                     | A rank-based evaluator using sampled negatives instead of all negatives.     |
 
 ### Metrics
 
-The following 47 metrics are implemented in PyKEEN.
+The following 50 metrics are implemented in PyKEEN.
 
-| Name                                                                                                                                           | Interval                    | Direction   | Description                                                             | Type                              |
-|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|-------------|-------------------------------------------------------------------------|-----------------------------------|
-| [Accuracy](https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers#Single_metrics)                                                      | $[0, 1]$                    | 📈           | The ratio of the number of correct classifications to the total number. | Classification                    |
-| [Area Under The Receiver Operating Characteristic Curve](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html) | $[0, 1]$                    | 📈           | The area under the receiver operating characteristic curve.             | Classification                    |
-| [Average Precision Score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html)                      | $[0, 1]$                    | 📈           | The average precision across different thresholds.                      | Classification                    |
-| [Balanced Accuracy Score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html)                      | $[0, 1]$                    | 📈           | The average of recall obtained on each class.                           | Classification                    |
-| [Diagnostic Odds Ratio](https://en.wikipedia.org/wiki/Diagnostic_odds_ratio)                                                                   | $[0, ∞)$                    | 📈           | The ratio of positive and negative likelihood ratio.                    | Classification                    |
-| [F1 Score](https://en.wikipedia.org/wiki/F1_score)                                                                                             | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification                    |
-| [False Discovery Rate](https://en.wikipedia.org/wiki/False_discovery_rate)                                                                     | $[0, 1]$                    | 📉           | The proportion of predicted negatives which are true positive.          | Classification                    |
-| [False Negative Rate](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors#False_positive_and_false_negative_rates)                         | $[0, 1]$                    | 📉           | The probability that a truly positive triple is predicted negative.     | Classification                    |
-| [False Omission Rate](https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values)                                                   | $[0, 1]$                    | 📉           | The proportion of predicted positives which are true negative.          | Classification                    |
-| [False Positive Rate](https://en.wikipedia.org/wiki/False_positive_rate)                                                                       | $[0, 1]$                    | 📉           | The probability that a truly negative triple is predicted positive.     | Classification                    |
-| [Fowlkes Mallows Index](https://en.wikipedia.org/wiki/Fowlkes%E2%80%93Mallows_index)                                                           | $[0, 1]$                    | 📈           | The Fowlkes Mallows index.                                              | Classification                    |
-| [Informedness](https://en.wikipedia.org/wiki/Informedness)                                                                                     | $[-1, 1]$                   | 📈           | The informedness metric.                                                | Classification                    |
-| [Matthews Correlation Coefficient](https://en.wikipedia.org/wiki/Phi_coefficient)                                                              | $[-1, 1]$                   | 📈           | The Matthews Correlation Coefficient (MCC).                             | Classification                    |
-| [Negative Likelihood Ratio](https://en.wikipedia.org/wiki/Negative_likelihood_ratio)                                                           | $[0, ∞)$                    | 📉           | The ratio of false positive rate to true positive rate.                 | Classification                    |
-| [Negative Predictive Value](https://en.wikipedia.org/wiki/Negative_predictive_value)                                                           | $[0, 1]$                    | 📈           | The proportion of predicted negatives which are true negatives.         | Classification                    |
-| [Number of Scores](https://pykeen.readthedocs.io/en/stable/reference/evaluation.html)                                                          | $[0, ∞)$                    | 📈           | The number of scores.                                                   | Classification                    |
-| [Positive Likelihood Ratio](https://en.wikipedia.org/wiki/Positive_likelihood_ratio)                                                           | $[0, ∞)$                    | 📈           | The ratio of true positive rate to false positive rate.                 | Classification                    |
-| [Positive Predictive Value](https://en.wikipedia.org/wiki/Positive_predictive_value)                                                           | $[0, 1]$                    | 📈           | The proportion of predicted positives which are true positive.          | Classification                    |
-| [Prevalence Threshold](https://en.wikipedia.org/wiki/Prevalence_threshold)                                                                     | $[0, ∞)$                    | 📉           | The prevalence threshold.                                               | Classification                    |
-| [Threat Score](https://en.wikipedia.org/wiki/Sensitivity_and_specificity)                                                                      | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification                    |
-| [True Negative Rate](https://en.wikipedia.org/wiki/Specificity_(tests))                                                                        | $[0, 1]$                    | 📈           | The probability that a truly false triple is predicted negative.        | Classification                    |
-| [True Positive Rate](https://en.wikipedia.org/wiki/Sensitivity_(test))                                                                         | $[0, 1]$                    | 📈           | The probability that a truly positive triple is predicted positive.     | Classification                    |
+| Name                                                                                                                                           | Interval                    | Direction   | Description                                                             | Type                        |
+|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|-------------|-------------------------------------------------------------------------|-----------------------------|
+| [Accuracy](https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers#Single_metrics)                                                      | $[0, 1]$                    | 📈           | The ratio of the number of correct classifications to the total number. | Classification              |
+| [Area Under The Receiver Operating Characteristic Curve](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html) | $[0, 1]$                    | 📈           | The area under the receiver operating characteristic curve.             | Classification              |
+| [Average Precision Score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html)                      | $[0, 1]$                    | 📈           | The average precision across different thresholds.                      | Classification              |
+| [Balanced Accuracy Score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html)                      | $[0, 1]$                    | 📈           | The average of recall obtained on each class.                           | Classification              |
+| [Diagnostic Odds Ratio](https://en.wikipedia.org/wiki/Diagnostic_odds_ratio)                                                                   | $[0, ∞)$                    | 📈           | The ratio of positive and negative likelihood ratio.                    | Classification              |
+| [F1 Score](https://en.wikipedia.org/wiki/F1_score)                                                                                             | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification              |
+| [False Discovery Rate](https://en.wikipedia.org/wiki/False_discovery_rate)                                                                     | $[0, 1]$                    | 📉           | The proportion of predicted negatives which are true positive.          | Classification              |
+| [False Negative Rate](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors#False_positive_and_false_negative_rates)                         | $[0, 1]$                    | 📉           | The probability that a truly positive triple is predicted negative.     | Classification              |
+| [False Omission Rate](https://en.wikipedia.org/wiki/Positive_and_negative_predictive_values)                                                   | $[0, 1]$                    | 📉           | The proportion of predicted positives which are true negative.          | Classification              |
+| [False Positive Rate](https://en.wikipedia.org/wiki/False_positive_rate)                                                                       | $[0, 1]$                    | 📉           | The probability that a truly negative triple is predicted positive.     | Classification              |
+| [Fowlkes Mallows Index](https://en.wikipedia.org/wiki/Fowlkes%E2%80%93Mallows_index)                                                           | $[0, 1]$                    | 📈           | The Fowlkes Mallows index.                                              | Classification              |
+| [Informedness](https://en.wikipedia.org/wiki/Informedness)                                                                                     | $[-1, 1]$                   | 📈           | The informedness metric.                                                | Classification              |
+| [Matthews Correlation Coefficient](https://en.wikipedia.org/wiki/Phi_coefficient)                                                              | $[-1, 1]$                   | 📈           | The Matthews Correlation Coefficient (MCC).                             | Classification              |
+| [Negative Likelihood Ratio](https://en.wikipedia.org/wiki/Negative_likelihood_ratio)                                                           | $[0, ∞)$                    | 📉           | The ratio of false positive rate to true positive rate.                 | Classification              |
+| [Negative Predictive Value](https://en.wikipedia.org/wiki/Negative_predictive_value)                                                           | $[0, 1]$                    | 📈           | The proportion of predicted negatives which are true negatives.         | Classification              |
+| [Number of Scores](https://pykeen.readthedocs.io/en/stable/reference/evaluation.html)                                                          | $[0, ∞)$                    | 📈           | The number of scores.                                                   | Classification              |
+| [Positive Likelihood Ratio](https://en.wikipedia.org/wiki/Positive_likelihood_ratio)                                                           | $[0, ∞)$                    | 📈           | The ratio of true positive rate to false positive rate.                 | Classification              |
+| [Positive Predictive Value](https://en.wikipedia.org/wiki/Positive_predictive_value)                                                           | $[0, 1]$                    | 📈           | The proportion of predicted positives which are true positive.          | Classification              |
+| [Prevalence Threshold](https://en.wikipedia.org/wiki/Prevalence_threshold)                                                                     | $[0, ∞)$                    | 📉           | The prevalence threshold.                                               | Classification              |
+| [Threat Score](https://en.wikipedia.org/wiki/Sensitivity_and_specificity)                                                                      | $[0, 1]$                    | 📈           | The harmonic mean of precision and recall.                              | Classification              |
+| [True Negative Rate](https://en.wikipedia.org/wiki/Specificity_(tests))                                                                        | $[0, 1]$                    | 📈           | The probability that a truly false triple is predicted negative.        | Classification              |
+| [True Positive Rate](https://en.wikipedia.org/wiki/Sensitivity_(test))                                                                         | $[0, 1]$                    | 📈           | The probability that a truly positive triple is predicted positive.     | Classification              |
 | [LCA F1](https://doi.org/10.1007/s10618-014-0382-x)                                                                                            | $[0, 1]$                    | 📈           | Harmonic mean of LCA precision and recall.                              | Hierarchical Classification (LCA) |
 | [LCA Precision](https://doi.org/10.1007/s10618-014-0382-x)                                                                                     | $[0, 1]$                    | 📈           | Precision of the LCA-augmented predicted node set.                      | Hierarchical Classification (LCA) |
 | [LCA Recall](https://doi.org/10.1007/s10618-014-0382-x)                                                                                        | $[0, 1]$                    | 📈           | Recall of the LCA-augmented true node set.                              | Hierarchical Classification (LCA) |
-| [Adjusted Arithmetic Mean Rank (AAMR)](https://arxiv.org/abs/2002.06914)                                                                       | $[0, 2)$                    | 📉           | The mean over all ranks divided by its expected value.                  | Ranking                           |
-| [Adjusted Arithmetic Mean Rank Index (AAMRI)](https://arxiv.org/abs/2002.06914)                                                                | $[-1, 1]$                   | 📈           | The re-indexed adjusted mean rank (AAMR)                                | Ranking                           |
-| [Adjusted Geometric Mean Rank Index (AGMRI)](https://arxiv.org/abs/2002.06914)                                                                 | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted geometric mean rank (AGMRI)                     | Ranking                           |
-| [Adjusted Hits at K](https://arxiv.org/abs/2203.07544)                                                                                         | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted hits at K                                       | Ranking                           |
-| [Adjusted Inverse Harmonic Mean Rank](https://arxiv.org/abs/2203.07544)                                                                        | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted MRR                                             | Ranking                           |
-| [Geometric Mean Rank (GMR)](https://arxiv.org/abs/2203.07544)                                                                                  | $[1, ∞)$                    | 📉           | The geometric mean over all ranks.                                      | Ranking                           |
-| [Harmonic Mean Rank (HMR)](https://arxiv.org/abs/2203.07544)                                                                                   | $[1, ∞)$                    | 📉           | The harmonic mean over all ranks.                                       | Ranking                           |
-| [Hits @ K](https://pykeen.readthedocs.io/en/stable/tutorial/understanding_evaluation.html#hits-k)                                              | $[0, 1]$                    | 📈           | The relative frequency of ranks not larger than a given k.              | Ranking                           |
-| [Inverse Arithmetic Mean Rank (IAMR)](https://arxiv.org/abs/2203.07544)                                                                        | $(0, 1]$                    | 📈           | The inverse of the arithmetic mean over all ranks.                      | Ranking                           |
-| [Inverse Geometric Mean Rank (IGMR)](https://arxiv.org/abs/2203.07544)                                                                         | $(0, 1]$                    | 📈           | The inverse of the geometric mean over all ranks.                       | Ranking                           |
-| [Inverse Median Rank](https://arxiv.org/abs/2203.07544)                                                                                        | $(0, 1]$                    | 📈           | The inverse of the median over all ranks.                               | Ranking                           |
-| [Mean Rank (MR)](https://pykeen.readthedocs.io/en/stable/tutorial/understanding_evaluation.html#mean-rank)                                     | $[1, ∞)$                    | 📉           | The arithmetic mean over all ranks.                                     | Ranking                           |
-| [Mean Reciprocal Rank (MRR)](https://en.wikipedia.org/wiki/Mean_reciprocal_rank)                                                               | $(0, 1]$                    | 📈           | The inverse of the harmonic mean over all ranks.                        | Ranking                           |
-| [Median Rank](https://arxiv.org/abs/2203.07544)                                                                                                | $[1, ∞)$                    | 📉           | The median over all ranks.                                              | Ranking                           |
-| [z-Geometric Mean Rank (zGMR)](https://arxiv.org/abs/2203.07544)                                                                               | $(-∞, ∞)$                   | 📈           | The z-scored geometric mean rank                                        | Ranking                           |
-| [z-Hits at K](https://arxiv.org/abs/2203.07544)                                                                                                | $(-∞, ∞)$                   | 📈           | The z-scored hits at K                                                  | Ranking                           |
-| [z-Mean Rank (zMR)](https://arxiv.org/abs/2203.07544)                                                                                          | $(-∞, ∞)$                   | 📈           | The z-scored mean rank                                                  | Ranking                           |
-| [z-Mean Reciprocal Rank (zMRR)](https://arxiv.org/abs/2203.07544)                                                                              | $(-∞, ∞)$                   | 📈           | The z-scored mean reciprocal rank                                       | Ranking                           |
+| [Adjusted Arithmetic Mean Rank (AAMR)](https://arxiv.org/abs/2002.06914)                                                                       | $[0, 2)$                    | 📉           | The mean over all ranks divided by its expected value.                  | Ranking                     |
+| [Adjusted Arithmetic Mean Rank Index (AAMRI)](https://arxiv.org/abs/2002.06914)                                                                | $[-1, 1]$                   | 📈           | The re-indexed adjusted mean rank (AAMR)                                | Ranking                     |
+| [Adjusted Geometric Mean Rank Index (AGMRI)](https://arxiv.org/abs/2002.06914)                                                                 | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted geometric mean rank (AGMRI)                     | Ranking                     |
+| [Adjusted Hits at K](https://arxiv.org/abs/2203.07544)                                                                                         | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted hits at K                                       | Ranking                     |
+| [Adjusted Inverse Harmonic Mean Rank](https://arxiv.org/abs/2203.07544)                                                                        | $(\frac{-E[f]}{1-E[f]}, 1]$ | 📈           | The re-indexed adjusted MRR                                             | Ranking                     |
+| [Geometric Mean Rank (GMR)](https://arxiv.org/abs/2203.07544)                                                                                  | $[1, ∞)$                    | 📉           | The geometric mean over all ranks.                                      | Ranking                     |
+| [Harmonic Mean Rank (HMR)](https://arxiv.org/abs/2203.07544)                                                                                   | $[1, ∞)$                    | 📉           | The harmonic mean over all ranks.                                       | Ranking                     |
+| [Hits @ K](https://pykeen.readthedocs.io/en/stable/tutorial/understanding_evaluation.html#hits-k)                                              | $[0, 1]$                    | 📈           | The relative frequency of ranks not larger than a given k.              | Ranking                     |
+| [Inverse Arithmetic Mean Rank (IAMR)](https://arxiv.org/abs/2203.07544)                                                                        | $(0, 1]$                    | 📈           | The inverse of the arithmetic mean over all ranks.                      | Ranking                     |
+| [Inverse Geometric Mean Rank (IGMR)](https://arxiv.org/abs/2203.07544)                                                                         | $(0, 1]$                    | 📈           | The inverse of the geometric mean over all ranks.                       | Ranking                     |
+| [Inverse Median Rank](https://arxiv.org/abs/2203.07544)                                                                                        | $(0, 1]$                    | 📈           | The inverse of the median over all ranks.                               | Ranking                     |
+| [Mean Rank (MR)](https://pykeen.readthedocs.io/en/stable/tutorial/understanding_evaluation.html#mean-rank)                                     | $[1, ∞)$                    | 📉           | The arithmetic mean over all ranks.                                     | Ranking                     |
+| [Mean Reciprocal Rank (MRR)](https://en.wikipedia.org/wiki/Mean_reciprocal_rank)                                                               | $(0, 1]$                    | 📈           | The inverse of the harmonic mean over all ranks.                        | Ranking                     |
+| [Median Rank](https://arxiv.org/abs/2203.07544)                                                                                                | $[1, ∞)$                    | 📉           | The median over all ranks.                                              | Ranking                     |
+| [z-Geometric Mean Rank (zGMR)](https://arxiv.org/abs/2203.07544)                                                                               | $(-∞, ∞)$                   | 📈           | The z-scored geometric mean rank                                        | Ranking                     |
+| [z-Hits at K](https://arxiv.org/abs/2203.07544)                                                                                                | $(-∞, ∞)$                   | 📈           | The z-scored hits at K                                                  | Ranking                     |
+| [z-Mean Rank (zMR)](https://arxiv.org/abs/2203.07544)                                                                                          | $(-∞, ∞)$                   | 📈           | The z-scored mean rank                                                  | Ranking                     |
+| [z-Mean Reciprocal Rank (zMRR)](https://arxiv.org/abs/2203.07544)                                                                              | $(-∞, ∞)$                   | 📈           | The z-scored mean reciprocal rank                                       | Ranking                     |
 
 ### Trackers
 
@@ -530,14 +504,10 @@ at https://github.com/pykeen/benchmarking.
 Contributions, whether filing an issue, making a pull request, or forking, are appreciated.
 See [CONTRIBUTING.md](/CONTRIBUTING.md) for more information on getting involved.
 
-If you have questions about HPBench, please open an issue at
-https://github.com/DE-TUM/HPBench/issues. For questions about the upstream library, use the
-PyKEEN GitHub discussions at https://github.com/pykeen/pykeen/discussions/new.
+If you have questions, please use the GitHub discussions feature at
+https://github.com/pykeen/pykeen/discussions/new.
 
 ## Acknowledgements
-
-HPBench is built on [PyKEEN](https://github.com/pykeen/pykeen); the acknowledgements below
-are inherited from that project.
 
 ### Supporters
 
@@ -576,8 +546,8 @@ The PyKEEN logo was designed by [Carina Steinborn](https://www.xing.com/profile/
 
 ## Citation
 
-If you have found HPBench useful in your work, please cite the underlying PyKEEN
-[article](http://jmlr.org/papers/v22/20-825.html) and link to this repository:
+If you have found PyKEEN useful in your work, please consider citing
+[our article](http://jmlr.org/papers/v22/20-825.html):
 
 ```bibtex
 @article{ali2021pykeen,
