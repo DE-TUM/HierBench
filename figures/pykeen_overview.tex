@@ -1,5 +1,5 @@
 %%% PyKEEN hierarchical extensions overview — figure for the 4-page ISWC poster-track paper.
-%%% PyKEEN module pipeline (gray chips) with extension contributions (blue chips),
+%%% PyKEEN module pipeline (gray chips) with our contributions (blue chips),
 %%% pluggable task band configuring preprocessing + evaluation.
 \documentclass[tikz,border=0pt]{standalone}
 \usepackage{amsmath,amssymb}
@@ -83,7 +83,7 @@
 \node[group label] at (\Dcx,-0.85) {pykeen};
 \node[pyk chip=\chipW] at (\Dcx,-1.30) {FB15k-237 $\cdot$ WN18RR $\cdot$ $\cdots$};
 
-\node[group label] at (\Dcx,-2.00) {extension};
+\node[group label] at (\Dcx,-2.00) {ours};
 \node[hp chip=\chipW] at (\Dcx,-2.90)
     {8 hierarchical taxonomies\\NASA $\cdot$ DOID $\cdot$ MeSH $\cdot$\\WordNet-Noun $\cdot$ $\cdots$};
 \node[hp chip=\chipW] at (\Dcx,-4.45)
@@ -95,7 +95,7 @@
 \node[group label] at (\Pcx,-0.85) {pykeen};
 \node[pyk chip=\chipW] at (\Pcx,-1.30) {random triple split};
 
-\node[group label] at (\Pcx,-2.00) {extension};
+\node[group label] at (\Pcx,-2.00) {ours};
 \node[hp chip=\chipW] at (\Pcx,-2.65)
     {transitive closure\\\& reduction};
 \node[hp chip=\chipW] at (\Pcx,-3.75)
@@ -125,7 +125,7 @@
 \node[pyk chip=\chipW] at (\Ecx,-1.55)
     {metrics: MRR $\cdot$ Hits@$k$\\mAP $\cdot$ AUROC};
 
-\node[group label] at (\Ecx,-2.55) {extension};
+\node[group label] at (\Ecx,-2.55) {ours};
 \node[hp chip=\chipW] at (\Ecx,-3.25)
     {pair-classification protocol\\hard negatives, tuned threshold};
 \node[hp chip=\chipW] at (\Ecx,-4.55)
@@ -170,7 +170,7 @@
 \node[pyk chip=1.7cm] at (1.0,-6.85) {\strut};
 \node[sub label, anchor=west] at (2.1,-6.85) {PyKEEN component};
 \node[hp chip=1.7cm] at (1.0,-7.50) {\strut};
-\node[sub label, anchor=west] at (2.1,-7.50) {PyKEEN extension};
+\node[sub label, anchor=west] at (2.1,-7.50) {Our contributions};
 
 \end{tikzpicture}
 \end{document}
