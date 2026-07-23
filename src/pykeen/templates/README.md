@@ -43,6 +43,7 @@
 </p>
 
 <p align="center">
+  <a href="#hierarchy-extensions">Hierarchy Extensions</a> •
   <a href="#installation">Installation</a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#datasets">Datasets ({{ n_datasets }})</a> •
@@ -52,24 +53,68 @@
   <a href="#citation">Citation</a>
 </p>
 
-## Installation ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pykeen) ![PyPI](https://img.shields.io/pypi/v/pykeen)
+## Hierarchy Extensions
 
-The latest stable version of PyKEEN requires Python 3.9+. It can be downloaded
-and installed from [PyPI](https://pypi.org/project/pykeen) with:
+<p align="center">
+  <img src="figures/pykeen_overview.png" alt="Overview: PyKEEN components in grey and hierarchy-specific contributions in blue, across datasets, preprocessing, learning, and evaluation" width="900">
+</p>
+
+In addition to the core PyKEEN functionality, this repository provides:
+
+- **Hyperbolic baselines** — `PoincareE`, `LorentzE`, and `HyperbolicCones`
+  (`pykeen.models`), built on hyperbolic representations and interactions in
+  `pykeen.nn.hyperbolic`, plus Riemannian optimizers in `pykeen.optimizers`.
+- **Hierarchical datasets** — taxonomy-style graphs (WordNet noun hierarchy, ACM-CCS, DOID, MeSH,
+  EuroSciVoc, NASA taxonomy, …) with transitive-closure and metadata utilities in
+  `pykeen.datasets.metadata` and `pykeen.datasets.extended_graph_analysis`.
+- **Hierarchy evaluation tasks** — subsumption / pair classification metrics
+  (`pykeen.evaluation.pair_classification_evaluator`), transitive ancestor–descendant prediction
+  (`pykeen.pipeline.transitive_ancestor_descendant_prediction_pipeline`), and LCA-based
+  hierarchical precision/recall/F1 (`pykeen.evaluation.LCAClassificationEvaluator`).
+- **Hierarchy-aware training** — hierarchy negative samplers (`pykeen.sampling`)
+  and a hierarchy pipeline (`pykeen.pipeline.hierarchy`).
+- **k-fold cross-validation** — `pykeen.cross_validation` with k-fold dataset splits.
+
+The import name is `pykeen`, so existing PyKEEN code runs unchanged.
+
+## Installation
+
+Python 3.9+ is required. This package is **not published on PyPI** — `pip install pykeen`
+installs upstream PyKEEN, not this one.
+
+Download this repository as a ZIP archive and extract it. Create a virtual environment, then
+install from the extracted directory (or pass its path in place of `.`).
+
+With [uv](https://docs.astral.sh/uv/):
 
 ```shell
-pip install pykeen
+uv venv
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
+uv pip install -e .
 ```
 
-The latest version of PyKEEN can be installed directly from the
-source code on [GitHub](https://github.com/pykeen/pykeen) with:
+Or with pip:
 
 ```shell
-pip install git+https://github.com/pykeen/pykeen.git
+python3 -m venv .venv
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
+pip install -e .
 ```
 
-More information about installation (e.g., development mode, Windows installation, Colab, Kaggle, extras)
-can be found in the [installation documentation](https://pykeen.readthedocs.io/en/latest/installation.html).
+`uv sync` is an alternative to the uv commands above: it creates `.venv` and installs the exact
+versions pinned in the checked-in `uv.lock` rather than resolving fresh.
+
+Verify the installation with:
+
+```shell
+pykeen version
+```
+
+Extras use bracket notation, e.g. `pip install -e ".[plotting,docs]"`. See the
+[installation documentation](https://pykeen.readthedocs.io/en/latest/installation.html) for the
+list of extras and for Windows notes.
+
+The import name is `pykeen`, so existing PyKEEN code runs unchanged.
 
 ## Quickstart [![Documentation Status](https://readthedocs.org/projects/pykeen/badge/?version=latest)](https://pykeen.readthedocs.io/en/latest/?badge=latest)
 

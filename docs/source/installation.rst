@@ -1,86 +1,73 @@
 Installation
 ============
 
+.. warning::
+
+    This package is **not published on PyPI**. Running ``pip install pykeen`` installs upstream
+    PyKEEN, which does **not** contain the hierarchy extensions documented here. Always install
+    from the source archive as described below. The import name stays ``pykeen``, so existing
+    PyKEEN code runs unchanged.
+
+Python 3.9 or newer is required.
+
 Linux and Mac Users
 -------------------
 
-The latest stable version of PyKEEN can be downloaded and installed from `PyPI <https://pypi.org/project/pykeen>`_ with:
+Download this repository as a ZIP archive and extract it. Create a virtual environment, then
+install from the extracted directory (or pass its path in place of ``.``).
+
+With `uv <https://docs.astral.sh/uv/>`_:
 
 .. code-block:: bash
 
-    $ pip install pykeen
+    $ uv venv
+    $ source .venv/bin/activate
+    $ uv pip install -e .
 
-The latest version of PyKEEN can be installed directly from the source on `GitHub <https://github.com/pykeen/pykeen>`_
-with:
+Or with pip:
 
 .. code-block:: bash
 
-    $ pip install git+https://github.com/pykeen/pykeen.git
+    $ python3 -m venv .venv
+    $ source .venv/bin/activate
+    $ pip install -e .
 
-Google Colab and Kaggle Users
------------------------------
+``uv sync`` is an alternative to the uv commands above: it creates ``.venv`` and installs the
+exact versions pinned in the checked-in ``uv.lock`` rather than resolving fresh.
 
-`Google Colab <https://colab.research.google.com>`_ and `Kaggle <https://www.kaggle.com>`_ both provide a hosted version
-of Google's custom Jupyter notebook environment that work similarly. After opening a new notebook on one of these
-service, start your notebook with the following two lines:
+Extras use bracket notation, e.g. ``pip install -e ".[plotting]"``; see :ref:`extras` below.
 
-.. code-block::
+Verify the installation with:
 
-    ! pip install git+https://github.com/pykeen/pykeen.git
-    pykeen.env()
+.. code-block:: bash
 
-This will install the latest code, then output relevant system and environment information with :func:`pykeen.env`. It
-works because Jupyter interprets any line beginning with a bang ``!`` that the remainder of the line should be
-interpreted as a bash command. If you want to make your notebook compatible on both hosted and local installations,
-change it slightly to check if PyKEEN is already installed:
-
-.. code-block::
-
-    ! python -c "import pykeen" || pip install git+https://github.com/pykeen/pykeen.git
-    pykeen.env()
-
-.. note::
-
-    Old versions of PyKEEN that used :mod:`class_resolve` version 0.3.4 and below loaded datasets via entrypoints. This
-    was unpredictable on Kaggle and Google Colab, so it was removed in https://github.com/pykeen/pykeen/pull/832. More
-    information can also be found on `PyKEEN issue #373 <https://github.com/pykeen/pykeen/issues/373>`_.
-
-To enable GPU usage, go to the Runtime -> Change runtime type menu to enable a GPU with your notebook.
+    $ pykeen version
 
 Windows Users
 -------------
 
-We've added experimental support for Windows as of `!95 <https://github.com/pykeen/pykeen/pull/95>`_. However, be
-warned, it's much less straightforward to install PyTorch and therefore PyKEEN on Windows.
+Windows support is experimental, and installing PyTorch is less straightforward. Install
+`Anaconda <https://www.anaconda.com/>`_ and follow the instructions on the `PyTorch website
+<https://pytorch.org/get-started/locally/>`_ first, then proceed as above with the Windows
+activation script:
 
-First, to install PyTorch, you must install `Anaconda <https://www.anaconda.com/>`_ and follow the instructions on the
-`PyTorch website <https://pytorch.org/get-started/locally/>`_. Then, assuming your `python` and `pip` command are linked
-to the same place where conda is installing, you can proceed with the normal installation (or the installation from
-GitHub as shown above):
+.. code-block:: bat
 
-.. code-block:: bash
+    > uv venv
+    > .venv\Scripts\activate
+    > uv pip install -e .
 
-    $ pip install pykeen
-
-If you're having trouble with ``pip`` or ``sqlite``, you might also have to use ``conda install pip setuptools wheel
-sqlite``. See our `GitHub Actions configuration
-<https://github.com/pykeen/pykeen/blob/master/.github/workflows/tests.yml>`_ on GitHub for inspiration.
-
-If you know better ways to install on Windows or would like to share some references, we'd really appreciate it.
+If you're having trouble with ``pip`` or ``sqlite``, you might also have to run ``conda install
+pip setuptools wheel sqlite``.
 
 Development
 -----------
 
-The latest code can be installed in development mode with:
+The regular installation above already uses editable mode (``-e``), so local changes to the
+source take effect immediately. To include the development dependencies, install the
+corresponding extras, e.g. ``pip install -e ".[tests,docs]"``.
 
-.. code-block:: bash
-
-    $ git clone https://github.com/pykeen/pykeeen.git pykeen
-    $ cd pykeen
-    $ pip install -e .
-
-If you're interested in making contributions, please see our `contributing guide
-<https://github.com/pykeen/pykeen/blob/master/CONTRIBUTING.md>`_.
+If you're interested in making contributions, please see ``CONTRIBUTING.md`` in the repository root.
 
 To automatically ensure compliance to our style guide, please install pre-commit hooks using the following code block
 from in the same directory.
@@ -90,12 +77,15 @@ from in the same directory.
     $ pip install pre-commit
     $ pre-commit install
 
+.. _extras:
+
 Extras
 ------
 
-PyKEEN has several extras for installation that are defined in the ``[options.extras_require]`` section of the
-``setup.cfg``. They can be included with installation using the bracket notation like in ``pip install pykeen[docs]`` or
-``pip install -e .[docs]``. Several can be listed, comma-delimited like in ``pip install pykeen[docs,plotting]``.
+PyKEEN has several extras for installation that are defined in the ``[project.optional-dependencies]`` section of
+``pyproject.toml``. They can be included with installation using the bracket notation like in
+``pip install -e ".[docs]"``. Several can be listed, comma-delimited like in
+``pip install -e ".[docs,plotting]"``. The same syntax works with ``uv pip install``.
 
 ================ =========================================================================================
 Name             Description

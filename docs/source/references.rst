@@ -6,6 +6,9 @@ References
 .. [ali2020a] Ali, M., *et al.* (2020). `Bringing Light Into the Dark: A Large-scale Evaluation of Knowledge
    Graph Embedding Models Under a Unified Framework <http://arxiv.org/abs/2006.13365>`_. *arXiv*, 2006.13365.
 
+.. [ganea2018] Ganea, O.-E., Bécigneul, G., & Hofmann, T. (2018). `Hyperbolic Entailment Cones for
+   Learning Hierarchical Embeddings <https://arxiv.org/abs/1804.01882>`_. *ICML 2018*.
+
 .. [safavi2020] Safavi, T. & Koutra, D. (2020). `CoDEx: A Comprehensive Knowledge Graph
    Completion Benchmark <http://arxiv.org/abs/2009.07810>`_.  *arXiv*, 2009.07810.
 
@@ -129,3 +132,36 @@ References
 
 .. [yin2022] Yin, C., *et al* (2022) `Nimble GNN Embedding with Tensor-Train Decomposition
    <https://arxiv.org/abs/2206.10581>`_, *SIGKDD'22*.
+
+.. [adcock2013] Adcock, A. B., Sullivan, B. D., & Mahoney, M. W. (2013). `Tree-Like Structure in Large Social
+   and Information Networks <https://doi.org/10.1109/ICDM.2013.77>`_. *2013 IEEE 13th International Conference
+   on Data Mining*, 1–10.
+
+.. [coronado2020] Coronado, T. M., *et al* (2020). `On Sackin's original proposal: the variance of the leaves'
+   depths as a phylogenetic balance index <https://doi.org/10.1186/s12859-020-3405-1>`_.
+   *BMC Bioinformatics*, **21**\ (1), 154.
+
+.. [lemant2022] Lemant, J., *et al* (2022). `Robust, Universal Tree Balance Indices
+   <https://doi.org/10.1093/sysbio/syac027>`_. *Systematic Biology*, **71**\ (5), 1210–1224.
+
+.. [bai2021] Bai, Y., *et al* (2021). `Modeling Heterogeneous Hierarchies with Relation-specific Hyperbolic
+   Cones <https://arxiv.org/abs/2110.14923>`_. *arXiv*, 2110.14923.
+
+.. [yang2024] Yang, M., *et al* (2024). `UHCone: Universal Hyperbolic Cone For Implicit Hierarchical Learning
+   <https://openreview.net/forum?id=BBgop7vYvX>`_. *ICML 2024 Workshop on Geometry-grounded Representation
+   Learning and Generative Modeling*.
+
+.. [he2024] He, Y., *et al* (2024). `Language Models as Hierarchy Encoders
+   <https://proceedings.neurips.cc/paper_files/paper/2024>`_. *Advances in Neural Information Processing
+   Systems*, **37**, 14690–14711.
+
+.. [aliakbarisani2026] Aliakbarisani, R., *et al* (2026). `HypBench: Hyperbolic Benchmark for Graph Neural
+   Network Performance <https://doi.org/10.1109/TNNLS.2026.3697597>`_. *IEEE Transactions on Neural Networks
+   and Learning Systems*, 1–14.
+
+.. [sadat2026] Sadat, S. A., *et al* (2026). `Hyperbolic graph embedding: A survey and an evaluation on
+   anomaly detection <https://doi.org/10.1016/j.patcog.2026.114385>`_. *Pattern Recognition*, **180**, 114385.
+
+.. [ali2021pykeen] Ali, M., *et al* (2021). `PyKEEN 1.0: A Python Library for Training and Evaluating Knowledge
+   Graph Embeddings <http://jmlr.org/papers/v22/20-825.html>`_. *Journal of Machine Learning Research*,
+   **22**\ (82), 1–6.

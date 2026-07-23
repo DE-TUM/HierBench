@@ -185,7 +185,11 @@ class ExtendedGraphAnalysis:
 
     @functools.cached_property
     def root_nodes(self) -> frozenset[int]:
-        """Top-level nodes: entities that never appear as a tail.
+        r"""Top-level nodes: entities that never appear as a tail.
+
+        .. math:: R = \{v \in V \mid d^-(v) = 0\}
+
+        where :math:`d^-(v)` is the in-degree of :math:`v`.
 
         :returns: Frozenset of entity IDs with in-degree zero.
         """
@@ -193,7 +197,11 @@ class ExtendedGraphAnalysis:
 
     @functools.cached_property
     def leaf_nodes(self) -> frozenset[int]:
-        """Bottom-level nodes: entities that never appear as a head.
+        r"""Bottom-level nodes: entities that never appear as a head.
+
+        .. math:: L = \{v \in V \mid d^+(v) = 0\}
+
+        where :math:`d^+(v)` is the out-degree of :math:`v`.
 
         :returns: Frozenset of entity IDs with out-degree zero.
         """
@@ -209,7 +217,12 @@ class ExtendedGraphAnalysis:
 
     @functools.cached_property
     def max_hierarchy_depth(self) -> int:
-        """Maximum shortest-path distance reachable from any root node.
+        r"""Maximum shortest-path distance reachable from any root node.
+
+        The *depth* :math:`\delta(v)` of a node is its shortest-path distance from
+        the nearest root node, and
+
+        .. math:: \text{Max depth} = \max_{v \in V} \delta(v)
 
         For each root node, the shortest-path distances to all reachable nodes
         are computed; the deepest such distance across all roots is returned.
@@ -231,7 +244,12 @@ class ExtendedGraphAnalysis:
 
     @property
     def avg_hierarchy_depth(self) -> float:
-        """Mean shortest-path depth across all nodes (from the nearest root).
+        r"""Mean shortest-path depth across all nodes (from the nearest root).
+
+        .. math:: \text{Avg depth} = \frac{1}{|V|} \sum_{v \in V} \delta(v)
+
+        where :math:`\delta(v)` is the shortest-path distance of :math:`v` from
+        its nearest root node.
 
         :returns: Average depth from roots. Returns 0.0 for an empty graph.
         """
@@ -242,7 +260,12 @@ class ExtendedGraphAnalysis:
 
     @property
     def min_hierarchy_depth(self) -> int:
-        """Minimum shortest-path depth across all nodes (from the nearest root).
+        r"""Minimum shortest-path depth across all nodes (from the nearest root).
+
+        .. math:: \text{Min depth} = \min_{v \in V} \delta(v)
+
+        where :math:`\delta(v)` is the shortest-path distance of :math:`v` from
+        its nearest root node. This is 0 whenever a root node exists.
 
         :returns: Minimum depth from roots. Returns 0 for an empty or rootless graph.
         """
@@ -261,7 +284,12 @@ class ExtendedGraphAnalysis:
 
     @property
     def avg_fan_out(self) -> float:
-        """Average number of children per node (average out-degree = ``m / n``).
+        r"""Average number of children per node (average out-degree).
+
+        .. math:: \bar z_\text{out} = \frac{m}{n}
+
+        where :math:`m` is the number of edges and :math:`n = |V|` the number of
+        nodes; equivalently the mean out-degree over *all* nodes, including leaves.
 
         :returns: Mean out-degree. Returns 0.0 for a graph with no nodes.
         """
@@ -271,7 +299,11 @@ class ExtendedGraphAnalysis:
 
     @property
     def max_fan_out(self) -> int:
-        """Maximum number of children any single node has.
+        r"""Maximum number of children any single node has.
+
+        .. math:: z_\text{out,max} = \max_{v \in V} d^+(v)
+
+        where :math:`d^+(v)` is the out-degree of :math:`v`.
 
         :returns: Maximum out-degree across all entity IDs. Returns 0 for an
             empty graph.
@@ -281,7 +313,13 @@ class ExtendedGraphAnalysis:
 
     @property
     def avg_branch_out(self) -> float:
-        """Mean out-degree of non-leaf nodes (nodes with at least one child).
+        r"""Mean out-degree of non-leaf nodes (nodes with at least one child).
+
+        .. math:: \text{Avg branch-out} = \frac{1}{|\widetilde V|}
+            \sum_{v \in \widetilde V} d^+(v)
+
+        where :math:`\widetilde V = \{v \in V \mid d^+(v) \ge 1\}` is the set of
+        internal (non-leaf) nodes.
 
         This is **not** the paper's z_out (Zloch et al. 2019), which averages
         out-degree over *all* entities (see :attr:`avg_fan_out`). Excluding
@@ -298,7 +336,11 @@ class ExtendedGraphAnalysis:
 
     @property
     def min_branch_out(self) -> int:
-        """Minimum out-degree among non-leaf nodes (nodes with at least one child).
+        r"""Minimum out-degree among non-leaf nodes (nodes with at least one child).
+
+        .. math:: \text{Min branch-out} = \min_{v \in \widetilde V} d^+(v)
+
+        where :math:`\widetilde V` is the set of internal (non-leaf) nodes.
 
         :returns: Smallest branching factor of a parent node. Returns 0 if there
             are no parent nodes.
@@ -309,7 +351,11 @@ class ExtendedGraphAnalysis:
 
     @property
     def max_branch_out(self) -> int:
-        """Maximum out-degree among non-leaf nodes.
+        r"""Maximum out-degree among non-leaf nodes.
+
+        .. math:: \text{Max branch-out} = \max_{v \in \widetilde V} d^+(v)
+
+        where :math:`\widetilde V` is the set of internal (non-leaf) nodes.
 
         Equals :attr:`max_fan_out` for any non-empty graph (the node with the
         largest out-degree is by definition a parent); kept for symmetry with

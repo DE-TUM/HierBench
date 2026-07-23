@@ -1,6 +1,13 @@
 PyKEEN
 ======
 
+In addition to the core PyKEEN functionality, this repository provides hyperbolic baselines
+(:class:`pykeen.models.PoincareE`, :class:`pykeen.models.LorentzE`,
+:class:`pykeen.models.HyperbolicCones`), hierarchical datasets, and hierarchy-specific
+evaluation tasks (pair/subsumption classification, transitive ancestor-descendant prediction, and
+LCA-based hierarchical precision/recall/F1). The import name remains ``pykeen``, so existing
+PyKEEN code runs unchanged.
+
 .. automodule:: pykeen
 
 .. toctree::
