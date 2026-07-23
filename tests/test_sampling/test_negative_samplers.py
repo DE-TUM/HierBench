@@ -221,9 +221,7 @@ def test_hierarchy_relation_warning_silent_when_single_relation():
     """A single-relation graph is unambiguous, so no warning is emitted."""
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        SiblingNegativeSampler(
-            mapped_triples=torch.as_tensor([[0, 0, 1], [0, 0, 2]]), num_entities=3, num_relations=1
-        )
+        SiblingNegativeSampler(mapped_triples=torch.as_tensor([[0, 0, 1], [0, 0, 2]]), num_entities=3, num_relations=1)
 
 
 class NegativeSamplerMetaTestCase(unittest_templates.MetaTestCase):
