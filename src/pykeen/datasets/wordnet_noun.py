@@ -47,7 +47,6 @@ class WordNetNoun0Percent(RemoteMetadataDataset, HierarchicalGraph):
         training: 84363
         testing: 28838
         validation: 28838
-        triples: 142039
     """
 
     training_url = _BASE_URL + "wordnet-noun-0percent/train.tsv"
@@ -79,7 +78,6 @@ class WordNetNoun10Percent(RemoteMetadataDataset, HierarchicalGraph):
         training: 142039
         testing: 28838
         validation: 28838
-        triples: 199715
     """
 
     training_url = _BASE_URL + "wordnet-noun-10percent/train.tsv"
@@ -111,7 +109,6 @@ class WordNetNoun25Percent(RemoteMetadataDataset, HierarchicalGraph):
         training: 228554
         testing: 28838
         validation: 28838
-        triples: 286230
     """
 
     training_url = _BASE_URL + "wordnet-noun-25percent/train.tsv"
@@ -143,7 +140,6 @@ class WordNetNoun50Percent(RemoteMetadataDataset, HierarchicalGraph):
         training: 372745
         testing: 28838
         validation: 28838
-        triples: 430421
     """
 
     training_url = _BASE_URL + "wordnet-noun-50percent/train.tsv"
@@ -175,7 +171,6 @@ class WordNetNoun90Percent(RemoteMetadataDataset, HierarchicalGraph):
         training: 603450
         testing: 28838
         validation: 28838
-        triples: 661126
     """
 
     training_url = _BASE_URL + "wordnet-noun-90percent/train.tsv"

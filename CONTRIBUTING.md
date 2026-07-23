@@ -1,14 +1,14 @@
 # Contributing
 
 Contributions, whether big or small, are appreciated! You can get involved by submitting an
-issue, making a suggestion, or adding code to the project. HPBench builds on PyKEEN, which is young and wants to address
+issue, making a suggestion, or adding code to the project. PyKEEN is young and wants to address
 the problems the KGE community is currently facing, and has a lot of excited people working on it!
 
 ## Having a Problem? Submit an Issue.
 
-1. Check that you have the latest version of HPBench
+1. Check that you have the latest version of `pykeen`
 2. Check that StackOverflow hasn't already solved your problem
-3. Go here: https://github.com/DE-TUM/HPBench/issues
+3. Go here: https://github.com/pykeen/pykeen/issues
 4. Check that this issue hasn't been solved
 5. Click "new issue"
 6. Choose the appropriate issue template then follow its instructions.
@@ -25,10 +25,10 @@ model for code contributions. Follow these steps:
 
 1. [Create a fork](https://help.github.com/articles/fork-a-repo) of the upstream
    repository
-   at [`DE-TUM/HPBench`](https://github.com/DE-TUM/HPBench)
+   at [`pykeen/pykeen`](https://github.com/pykeen/pykeen)
    on your GitHub account (or in one of your organizations)
 2. [Clone your fork](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
-   with `git clone https://github.com/<your namespace here>/HPBench.git`
+   with `git clone https://github.com/<your namespace here>/pykeen.git`
 3. Make and commit changes to your fork with `git commit`
 4. Push changes to your fork with `git push`
 5. Repeat steps 3 and 4 as needed
@@ -108,7 +108,7 @@ resolve conflicts against the main branch. After cloning, you should add the
 upstream repository with
 
 ```shell
-$ git remote add origin https://github.com/DE-TUM/HPBench.git
+$ git remote add pykeen https://github.com/pykeen/pykeen.git
 ```
 
 Then, you can merge upstream code into your branch. You can also use the GitHub
