@@ -880,3 +880,54 @@ def test_hpo_pipeline_refits_best_trial():
     assert outcome.result is not None
     mrr = outcome.result.get_metric("both.realistic.inverse_harmonic_mean_rank")
     assert 0.0 <= mrr <= 1.0
+
+
+def _make_labeled_chain_dataset() -> EagerDataset:
+    """Return a labeled hierarchy ``a->b->c`` with the redundant shortcut ``a->c`` and branch ``a->d``.
+
+    The shortcut is non-basic, so the non-direct closure pool is exactly ``{(a, c)}`` — enough to
+    exercise both the transitive reduction and the closure-file round-trip.
+    """
+    labels = np.array(
+        [("a", "narrower", "b"), ("b", "narrower", "c"), ("a", "narrower", "c"), ("a", "narrower", "d")],
+        dtype=str,
+    )
+    triples = TriplesFactory.from_labeled_triples(labels)
+    return EagerDataset(training=triples, testing=triples, validation=triples)
+
+
+def test_closure_file_reproduces_computed_pool(tmp_path, monkeypatch):
+    """A cached ``closure.tsv`` reproduces exactly the computed paths, direct edges, and pool."""
+    from pykeen.datasets import metadata as metadata_module
+    from pykeen.pipeline.hierarchical_helper import _closure_pool
+
+    dataset = _make_labeled_chain_dataset()
+    computed = _closure_pool(dataset, None)
+
+    monkeypatch.setattr(metadata_module, "PYKEEN_DATASETS", tmp_path)
+    cache_dir = tmp_path / type(dataset).__name__.lower()
+    cache_dir.mkdir()
+    entity_label = dataset.training.entity_id_to_label
+    (cache_dir / "closure.tsv").write_text(
+        "".join(f"{entity_label[h]}\tnarrower\t{entity_label[t]}\n" for h, t in computed[3]),
+        encoding="utf-8",
+    )
+    dataset.closure_url = "https://example.invalid/closure.tsv"  # cached, so never downloaded
+
+    assert _closure_pool(dataset, None) == computed
+
+
+def test_closure_download_failure_falls_back_to_computing(tmp_path, monkeypatch):
+    """An unreachable ``closure_url`` warns and falls back to the on-demand computation."""
+    from pykeen.datasets import metadata as metadata_module
+    from pykeen.pipeline.hierarchical_helper import _closure_pool
+
+    dataset = _make_labeled_chain_dataset()
+    expected = _closure_pool(dataset, None)
+
+    monkeypatch.setattr(metadata_module, "PYKEEN_DATASETS", tmp_path)
+    dataset.closure_url = "https://example.invalid/closure.tsv"
+
+    with pytest.warns(UserWarning, match="could not download closure file"):
+        actual = _closure_pool(dataset, None)
+    assert actual == expected

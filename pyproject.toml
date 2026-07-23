@@ -329,7 +329,7 @@ ignore = [
     "T201",   # allow prints
     "PTH",    # os.path instead of pathlib
 ]
-"benchmarking/**/*.py" = ["INP001"] # benchmarking scripts are not a package
+"benchmarking/**/*.py" = ["INP001", "T201"] # benchmarking scripts are not a package; prints are the output
 "scripts/**/*.py" = [
     "INP001", # scripts are not a package
     "T201",   # allow prints

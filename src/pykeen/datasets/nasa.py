@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import HierarchicalGraph, SingleFileRemoteMetadataDataset
+from .metadata import LOCAL_DATA_URL, HierarchicalGraph, SingleFileRemoteMetadataDataset
 
 __all__ = [
     "NASA",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/nasa/"
+_BASE_URL = LOCAL_DATA_URL + "nasa/"
 
 
 @parse_docdata
@@ -25,6 +25,11 @@ class NASA(SingleFileRemoteMetadataDataset, HierarchicalGraph):
     train/test/validation split cannot cover all entities. Training, testing, and validation
     therefore all point at the full hierarchy; use
     :func:`pykeen.pipeline.hierarchy.hierarchy_completion_split` to build an evaluation split.
+
+    Ships a precomputed transitive closure (``closure_url``) consumed by
+    :func:`pykeen.datasets.metadata.load_closure_pool`, so hierarchy-closure splits skip the
+    transitive-reduction computation; see :class:`~pykeen.datasets.ancestor_descendant.NASATransitive0Percent`
+    for a frozen ancestor-descendant split that already bakes in the transitive edges.
 
     ---
     name: NASA
@@ -43,5 +48,6 @@ class NASA(SingleFileRemoteMetadataDataset, HierarchicalGraph):
 
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
+    closure_url = _BASE_URL + "closure.tsv"
     ratios = None
     hierarchical_relation = "has_subclass"

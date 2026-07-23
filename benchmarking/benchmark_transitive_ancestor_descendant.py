@@ -202,12 +202,25 @@ def _pretrain_poincare_initializer(
 
 
 def build_configs(
-    dataset: object, hierarchy_relation: int | None, closure_ratio: float, embedding_dim: int = EMBEDDING_DIM
+    dataset: object,
+    hierarchy_relation: int | None,
+    closure_ratio: float,
+    embedding_dim: int = EMBEDDING_DIM,
+    *,
+    include_cones: bool = True,
 ) -> list[tuple[str, object, dict, dict]]:
-    """Build the per-dataset config list, including a freshly pretrained HyperbolicCones entry."""
-    cones_initializer = _pretrain_poincare_initializer(dataset, hierarchy_relation, closure_ratio, embedding_dim)
+    """Build the per-dataset config list, including a freshly pretrained HyperbolicCones entry.
+
+    ``include_cones=False`` skips the config *and* its 100-epoch Poincaré pretraining pass, for
+    quick partial sweeps (e.g. ``check_predefined_splits.py``).
+    """
+    cones_initializer = (
+        _pretrain_poincare_initializer(dataset, hierarchy_relation, closure_ratio, embedding_dim)
+        if include_cones
+        else None
+    )
     isa_score_factory = partial(_make_hyperbolic_isa_score, dataset, hierarchy_relation)
-    return [
+    configs = [
         (
             "PoincareE (Nickel & Kiela 2017)",
             PoincareE,
@@ -269,6 +282,7 @@ def build_configs(
             },
         ),
     ]
+    return [config for config in configs if include_cones or config[1] is not HyperbolicCones]
 
 
 def _get(results: object, key: str) -> float:
@@ -283,6 +297,7 @@ def _evaluate_config(
     model: object,
     model_kwargs: dict,
     extra: dict,
+    epochs: int = EPOCHS,
 ) -> tuple[dict[str, float], dict]:
     """Train one configuration, then score the held-out ancestor-descendant pairs under both negative settings.
 
@@ -296,7 +311,7 @@ def _evaluate_config(
         dataset,
         model=model,
         model_kwargs=model_kwargs,
-        epochs=EPOCHS,
+        epochs=epochs,
         closure_ratio=closure_ratio,
         eval_ratio=EVAL_RATIO,
         num_negatives=NUM_NEGATIVES,

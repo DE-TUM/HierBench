@@ -24,6 +24,7 @@ from scipy import sparse
 
 from .api import PipelineResult, pipeline
 from ..datasets.base import Dataset
+from ..datasets.metadata import load_closure_pool
 from ..evaluation.lca_classification_evaluator import LCAMetricResults
 from ..evaluation.pair_classification_evaluator import PairClassificationMetricResults
 from ..models.nbase import ERModel
@@ -287,6 +288,13 @@ def _closure_pool(
     ``A->B->C`` already implies it) is a non-basic closure edge and joins the eval ``pool`` instead
     of being pinned into training. Falls back to the asserted edges (with a warning) when the
     hierarchy is not a DAG, since the transitive reduction is only defined on acyclic graphs.
+
+    Datasets shipping a precomputed closure file
+    (:attr:`~pykeen.datasets.metadata.HierarchicalGraph.closure_url`) skip the reduction and the
+    closure enumeration entirely: the file *is* the ``pool``, ``direct`` follows as the asserted
+    edges outside it, and the ancestor map is grouped straight from ``direct | pool`` (their union
+    is the full closure) — reproducing exactly what this function would compute, including the
+    non-DAG fallback (there ``pool`` excludes all asserted edges, so ``direct`` = asserted).
     """
     if hierarchy_relation is None and dataset.num_relations > 1:
         warnings.warn(
@@ -296,10 +304,18 @@ def _closure_pool(
             stacklevel=4,
         )
     all_rows = _canonical_rows(dataset.training.mapped_triples, dataset, hierarchy_relation)
-    paths = build_ancestor_paths(torch.as_tensor(all_rows), dataset.num_entities, hierarchy_relation)
     # Ganea et al. (2018 §5): basic edges = transitive reduction of the closure. Asserted redundant
     # (shortcut) edges are non-basic and must be eligible for the eval pool, not pinned into training.
     asserted = {(h, t) for h, r, t in all_rows if hierarchy_relation is None or r == hierarchy_relation}
+    pool = load_closure_pool(dataset)
+    if pool is not None:
+        direct = asserted - set(pool)
+        ancestors: dict[int, set[int]] = {n: {n} for n in range(dataset.num_entities)}
+        for ancestor, descendant in [*direct, *pool]:
+            ancestors[descendant].add(ancestor)
+        paths = {n: frozenset(members) for n, members in ancestors.items()}
+        return paths, all_rows, direct, pool
+    paths = build_ancestor_paths(torch.as_tensor(all_rows), dataset.num_entities, hierarchy_relation)
     graph = nx.DiGraph()
     graph.add_nodes_from(range(dataset.num_entities))
     graph.add_edges_from(asserted)

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import HierarchicalGraph, SingleFileRemoteMetadataDataset
+from .metadata import LOCAL_DATA_URL, HierarchicalGraph, SingleFileRemoteMetadataDataset
 
 __all__ = [
     "DOID",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/doid/"
+_BASE_URL = LOCAL_DATA_URL + "doid/"
 
 
 @parse_docdata
@@ -22,6 +22,11 @@ class DOID(SingleFileRemoteMetadataDataset, HierarchicalGraph):
     Each entity carries structured metadata.
 
     Source: https://disease-ontology.org/downloads/
+
+    Ships a precomputed transitive closure (``closure_url``) consumed by
+    :func:`pykeen.datasets.metadata.load_closure_pool`, so hierarchy-closure splits skip the
+    transitive-reduction computation; see :class:`~pykeen.datasets.ancestor_descendant.DOIDTransitive0Percent`
+    for a frozen ancestor-descendant split that already bakes in the transitive edges.
 
     ---
     name: DOID
@@ -41,4 +46,5 @@ class DOID(SingleFileRemoteMetadataDataset, HierarchicalGraph):
 
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
+    closure_url = _BASE_URL + "closure.tsv"
     hierarchical_relation = "has_subclass"

@@ -11,6 +11,13 @@ import logging
 from class_resolver import ClassResolver
 
 from .acm_ccs import ACMCCS
+from .ancestor_descendant import (
+    ACMCCSTransitive0Percent,
+    DOIDTransitive0Percent,
+    EuroSciVocTransitive0Percent,
+    MeSHTransitive0Percent,
+    NASATransitive0Percent,
+)
 from .aristo import AristoV4
 from .base import (  # noqa:F401
     CompressedSingleDataset,
@@ -43,7 +50,6 @@ from .dbpedia import DBpedia50
 from .doid import DOID
 from .drkg import DRKG
 from .ea import CN3l, EADataset, MTransEDataset, OpenEA, WK3l15k, WK3l120k
-from .estat_fss import EstatFSS
 from .euroscivoc import EuroSciVoc
 from .freebase import FB15k, FB15k237
 from .globi import Globi
@@ -148,7 +154,12 @@ __all__ = [
     "PharMeBINet",
     "NASA",
     "MeSH",
-    "EstatFSS",
+    # Predefined transitive ancestor-descendant splits
+    "ACMCCSTransitive0Percent",
+    "DOIDTransitive0Percent",
+    "EuroSciVocTransitive0Percent",
+    "MeSHTransitive0Percent",
+    "NASATransitive0Percent",
 ]
 
 logger = logging.getLogger(__name__)
