@@ -1,6 +1,9 @@
 """Test that samplers can be executed."""
 
+import warnings
+
 import numpy.testing
+import pytest
 import torch
 import unittest_templates
 
@@ -10,6 +13,7 @@ from pykeen.sampling import (
     HierarchyNegativeSampler,
     NegativeSampler,
     PseudoTypedNegativeSampler,
+    SiblingNegativeSampler,
 )
 from pykeen.sampling.pseudo_type import create_index
 from tests.test_sampling import cases
@@ -141,6 +145,85 @@ def test_hierarchy_sampler_star_fallback():
     assert (heads != 0).all()  # uniform fallback never reproduces the root itself
     assert (heads >= 0).all()
     assert (heads < 5).all()
+
+
+class SiblingNegativeSamplerTest(cases.NegativeSamplerGenericTestCase):
+    """Test the sibling (hard) negative sampler."""
+
+    cls = SiblingNegativeSampler
+
+    def test_entity_corruption(self):
+        """Verify entity corruption."""
+        _verify_entity_corruption(instance=self.instance, positive_batch=self.positive_batch)
+
+
+def test_sibling_sampler_pairs_with_own_sibling():
+    """A corrupted endpoint is replaced by a sibling of the entity that was kept."""
+    # parent->child tree: siblings are {1,2}, {3,4} (under 1) and {5,6} (under 2)
+    mapped = torch.as_tensor([[0, 0, 1], [0, 0, 2], [1, 0, 3], [1, 0, 4], [2, 0, 5], [2, 0, 6]])
+    sampler = SiblingNegativeSampler(
+        mapped_triples=mapped,
+        num_entities=7,
+        num_relations=1,
+        hard_ratio=1.0,  # never fall back to uniform
+        head_corruption_prob=0.0,  # always corrupt the tail, so the head supplies the siblings
+        num_negs_per_pos=20,
+    )
+    # only the depth-1 heads (1 and 2, siblings of each other) have a sibling to draw from;
+    # the root 0 has none, which test_sibling_sampler_only_child_fallback covers instead
+    positives = torch.as_tensor([[1, 0, 3], [1, 0, 4], [2, 0, 5], [2, 0, 6]])
+    negative_batch = sampler.corrupt_batch(positive_batch=positives)
+
+    # heads are left untouched, and every new tail is a sibling of that head
+    assert (negative_batch[..., 0] == positives[:, 0].unsqueeze(dim=-1)).all()
+    for (head, _, _), negatives in zip(positives.tolist(), negative_batch.tolist(), strict=True):
+        start, end = sampler.offsets[head].item(), sampler.offsets[head + 1].item()
+        siblings = set(sampler.data[start:end].tolist())
+        assert siblings, "fixture must give every head at least one sibling"
+        assert {t for _, _, t in negatives}.issubset(siblings)
+
+
+def test_sibling_sampler_only_child_fallback():
+    """An entity whose partner has no sibling falls back to uniform without error."""
+    # chain 0 -> 1 -> 2: every node is an only child, so no entity has a sibling at all
+    mapped = torch.as_tensor([[0, 0, 1], [1, 0, 2]])
+    sampler = SiblingNegativeSampler(
+        mapped_triples=mapped,
+        num_entities=3,
+        num_relations=1,
+        hard_ratio=1.0,
+        head_corruption_prob=1.0,
+        num_negs_per_pos=15,
+    )
+    negative_batch = sampler.corrupt_batch(positive_batch=mapped)
+    heads = negative_batch[..., 0]
+    assert (heads != mapped[:, 0].unsqueeze(dim=-1)).all()  # uniform fallback never reproduces the original
+    assert (heads >= 0).all()
+    assert (heads < 3).all()
+
+
+@pytest.mark.parametrize("cls", [HierarchyNegativeSampler, SiblingNegativeSampler])
+def test_hierarchy_relation_warning(cls):
+    """Leaving ``hierarchy_relation`` unset on a multi-relational graph warns, setting it does not."""
+    # two relations: only relation 0 is the hierarchy, relation 1 is unrelated structure
+    mapped = torch.as_tensor([[0, 0, 1], [0, 0, 2], [1, 1, 2]])
+    kwargs = {"mapped_triples": mapped, "num_entities": 3, "num_relations": 2}
+
+    with pytest.warns(UserWarning, match="hierarchy_relation"):
+        cls(**kwargs)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # any warning here fails the test
+        cls(**kwargs, hierarchy_relation=0)
+
+
+def test_hierarchy_relation_warning_silent_when_single_relation():
+    """A single-relation graph is unambiguous, so no warning is emitted."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        SiblingNegativeSampler(
+            mapped_triples=torch.as_tensor([[0, 0, 1], [0, 0, 2]]), num_entities=3, num_relations=1
+        )
 
 
 class NegativeSamplerMetaTestCase(unittest_templates.MetaTestCase):

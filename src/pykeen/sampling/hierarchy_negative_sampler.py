@@ -1,5 +1,6 @@
 """Hierarchy-aware negative sampling via same-depth ("near-miss") corruption."""
 
+import warnings
 from collections import defaultdict, deque
 
 import torch
@@ -13,6 +14,26 @@ __all__ = [
 
 #: triple slot indices for head / tail corruption
 _HEAD, _TAIL = 0, 2
+
+
+def _warn_if_multi_relational(mapped_triples: MappedTriples, hierarchy_relation: int | None) -> None:
+    """Warn when every relation is about to be treated as a hierarchy edge.
+
+    With ``hierarchy_relation=None`` the whole graph defines the hierarchy. On a genuinely
+    multi-relational dataset that silently dilutes the structure — depth buckets and sibling
+    groups pick up entities related by anything at all — so the "hard" negatives degrade
+    towards uniform ones without any visible signal in the metrics.
+    """
+    if hierarchy_relation is not None:
+        return
+    num_relations = mapped_triples[:, 1].unique().numel()
+    if num_relations > 1:
+        warnings.warn(
+            f"hierarchy_relation is None, so all {num_relations} relations are treated as hierarchy edges. "
+            "Pass hierarchy_relation=<relation id> to restrict the hierarchy, or the hard negatives will "
+            "be close to uniform ones.",
+            stacklevel=3,
+        )
 
 
 def _compute_depths(mapped_triples: MappedTriples, num_entities: int, hierarchy_relation: int | None) -> list[int]:
@@ -119,6 +140,9 @@ class HierarchyNegativeSampler(NegativeSampler):
 
         :param mapped_triples: the positive training triples; their depths define the buckets.
         :param hierarchy_relation: if given, only edges with this relation id define the hierarchy.
+            Leaving it ``None`` treats *every* relation as a hierarchy edge, which on a
+            multi-relational dataset flattens the depth buckets and makes the hard negatives
+            nearly uniform; a warning is emitted in that case.
         :param hard_ratio: probability that a negative is a same-depth ("hard") draw rather than
             uniform. ``0.0`` reproduces uniform sampling, ``1.0`` is fully same-depth.
         :param head_corruption_prob: probability of corrupting the head (vs. the tail) of a positive.
@@ -127,6 +151,7 @@ class HierarchyNegativeSampler(NegativeSampler):
         super().__init__(mapped_triples=mapped_triples, **kwargs)
         self.hard_ratio = hard_ratio
         self.head_corruption_prob = head_corruption_prob
+        _warn_if_multi_relational(mapped_triples, hierarchy_relation)
         depth = _compute_depths(mapped_triples, self.num_entities, hierarchy_relation)
         data, offsets, entity_pos = _build_depth_index(depth, self.num_entities)
         self.register_buffer("data", data)
