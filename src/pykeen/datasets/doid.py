@@ -23,6 +23,11 @@ class DOID(SingleFileRemoteMetadataDataset, HierarchicalGraph):
 
     Source: https://disease-ontology.org/downloads/
 
+    Ships a precomputed transitive closure (``closure_url``) consumed by
+    :func:`pykeen.datasets.metadata.load_closure_pool`, so hierarchy-closure splits skip the
+    transitive-reduction computation; see :class:`~pykeen.datasets.ancestor_descendant.DOIDTransitive0Percent`
+    for a frozen ancestor-descendant split that already bakes in the transitive edges.
+
     ---
     name: DOID
     citation:
@@ -41,4 +46,5 @@ class DOID(SingleFileRemoteMetadataDataset, HierarchicalGraph):
 
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
+    closure_url = _BASE_URL + "closure.tsv"
     hierarchical_relation = "has_subclass"

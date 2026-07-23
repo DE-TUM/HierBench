@@ -66,7 +66,13 @@ In addition to the core PyKEEN functionality, this repository provides:
   `pykeen.nn.hyperbolic`, plus Riemannian optimizers in `pykeen.optimizers`.
 - **Hierarchical datasets** — taxonomy-style graphs (WordNet noun hierarchy, ACM-CCS, DOID, MeSH,
   EuroSciVoc, NASA taxonomy, …) with transitive-closure and metadata utilities in
-  `pykeen.datasets.metadata` and `pykeen.datasets.extended_graph_analysis`.
+  `pykeen.datasets.metadata` and `pykeen.datasets.extended_graph_analysis`. Each raw taxonomy
+  optionally ships a precomputed transitive closure (`HierarchicalGraph.closure_url`), downloaded
+  and reused instead of recomputing the transitive reduction; missing or unreachable, it falls back
+  to computing the closure on demand. The `*Transitive0Percent` classes additionally ship a frozen
+  ancestor–descendant split whose training portion already includes the direct hierarchy edges and
+  whose validation/test portions already hold their share of the (non-direct) transitive closure —
+  no split derivation needed at load time.
 - **Hierarchy evaluation tasks** — subsumption / pair classification metrics
   (`pykeen.evaluation.pair_classification_evaluator`), transitive ancestor–descendant prediction
   (`pykeen.pipeline.transitive_ancestor_descendant_prediction_pipeline`), and LCA-based

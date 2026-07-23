@@ -27,6 +27,12 @@ class MeSH(SingleFileRemoteMetadataDataset, HierarchicalGraph):
     therefore all point at the full hierarchy; use
     :func:`pykeen.pipeline.hierarchy.hierarchy_completion_split` to build an evaluation split.
 
+    MeSH's hierarchy is not a DAG, so the transitive reduction is undefined; ships a precomputed
+    transitive closure (``closure_url``) consumed by :func:`pykeen.datasets.metadata.load_closure_pool`
+    computed with the asserted-edges fallback, so hierarchy-closure splits skip re-deriving it; see
+    :class:`~pykeen.datasets.ancestor_descendant.MeSHTransitive0Percent` for a frozen
+    ancestor-descendant split that already bakes in the transitive edges.
+
     ---
     name: MeSH
     citation:
@@ -44,5 +50,6 @@ class MeSH(SingleFileRemoteMetadataDataset, HierarchicalGraph):
 
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
+    closure_url = _BASE_URL + "closure.tsv"
     ratios = None
     hierarchical_relation = "narrower"

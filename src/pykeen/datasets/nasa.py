@@ -26,6 +26,11 @@ class NASA(SingleFileRemoteMetadataDataset, HierarchicalGraph):
     therefore all point at the full hierarchy; use
     :func:`pykeen.pipeline.hierarchy.hierarchy_completion_split` to build an evaluation split.
 
+    Ships a precomputed transitive closure (``closure_url``) consumed by
+    :func:`pykeen.datasets.metadata.load_closure_pool`, so hierarchy-closure splits skip the
+    transitive-reduction computation; see :class:`~pykeen.datasets.ancestor_descendant.NASATransitive0Percent`
+    for a frozen ancestor-descendant split that already bakes in the transitive edges.
+
     ---
     name: NASA
     citation:
@@ -43,5 +48,6 @@ class NASA(SingleFileRemoteMetadataDataset, HierarchicalGraph):
 
     triples_url = _BASE_URL + "dataset.tsv"
     entity_metadata_url = _BASE_URL + "metadata.tsv"
+    closure_url = _BASE_URL + "closure.tsv"
     ratios = None
     hierarchical_relation = "has_subclass"

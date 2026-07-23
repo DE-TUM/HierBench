@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import pathlib
+import warnings
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
@@ -23,6 +24,7 @@ __all__ = [
     "MetadataDataset",
     "RemoteMetadataDataset",
     "SingleFileRemoteMetadataDataset",
+    "load_closure_pool",
     "resolve_hierarchy_relation",
 ]
 
@@ -53,6 +55,14 @@ class HierarchicalGraph:
     #: (which would leak closure edges already present in training back into evaluation).
     predefined_closure_split: ClassVar[bool] = False
 
+    #: Optional URL of the precomputed *non-direct* transitive closure: a label TSV of every
+    #: (ancestor, hierarchy relation, descendant) closure pair that is not a basic/direct edge, in
+    #: canonical parent->child orientation (regenerate with
+    #: ``scripts/export_transitive_ancestor_descendant_splits.py``). When set, closure-based splits
+    #: load it via :func:`load_closure_pool` instead of computing the transitive reduction and
+    #: closure enumeration; ``None`` (or a failed download) falls back to on-demand computation.
+    closure_url: ClassVar[str | None] = None
+
 
 def resolve_hierarchy_relation(dataset: Dataset, hierarchy_relation: int | str | None) -> int | None:
     """Resolve the hierarchy relation to a relation id.
@@ -70,6 +80,39 @@ def resolve_hierarchy_relation(dataset: Dataset, hierarchy_relation: int | str |
         except (AttributeError, KeyError) as exc:
             raise KeyError(f"hierarchy relation {hierarchy_relation!r} not found in dataset relations") from exc
     return hierarchy_relation
+
+
+def load_closure_pool(dataset: Dataset) -> list[tuple[int, int]] | None:
+    """Load the precomputed non-direct transitive closure pool of a dataset, if it ships one.
+
+    Downloads :attr:`HierarchicalGraph.closure_url` into the dataset's cache directory (skipped
+    when already cached), maps the label pairs to the dataset's entity ids, and returns them
+    sorted — the exact ``pool`` that on-demand computation would produce, so seeded splits are
+    reproduced identically. Returns ``None`` when the dataset declares no ``closure_url`` or the
+    download fails (with a warning), letting callers fall back to computing the closure.
+    """
+    url = getattr(dataset, "closure_url", None)
+    if url is None:
+        return None
+    path = PYKEEN_DATASETS.joinpath(type(dataset).__name__.lower(), "closure.tsv")
+    if not path.is_file():
+        from pystow.utils import download
+
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            download(url=url, path=path)  # noqa: S310
+        except Exception as exc:  # noqa: BLE001 - any download failure must fall back, not crash
+            path.unlink(missing_ok=True)  # drop a partial download so the next call retries
+            warnings.warn(
+                f"could not download closure file {url} ({exc}); computing the closure on demand",
+                stacklevel=2,
+            )
+            return None
+    entity_to_id = dataset.training.entity_to_id
+    return sorted(
+        (entity_to_id[head], entity_to_id[tail])
+        for head, _relation, tail in (line.split("\t") for line in path.read_text(encoding="utf-8").splitlines())
+    )
 
 
 def _load_metadata_file(path: pathlib.Path) -> pd.DataFrame:
