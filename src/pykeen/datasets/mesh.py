@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import HierarchicalGraph, SingleFileRemoteMetadataDataset
+from .metadata import LOCAL_DATA_URL, HierarchicalGraph, SingleFileRemoteMetadataDataset
 
 __all__ = [
     "MeSH",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/mesh/"
+_BASE_URL = LOCAL_DATA_URL + "mesh/"
 
 
 @parse_docdata

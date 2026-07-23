@@ -33,7 +33,7 @@ from __future__ import annotations
 
 from docdata import parse_docdata
 
-from .metadata import HierarchicalGraph, RemoteMetadataDataset
+from .metadata import LOCAL_DATA_URL, HierarchicalGraph, RemoteMetadataDataset
 
 __all__ = [
     "ACMCCSTransitive0Percent",
@@ -43,7 +43,7 @@ __all__ = [
     "NASATransitive0Percent",
 ]
 
-_BASE_URL = "https://syncandshare.lrz.de/dl/fiLx8c9PzQoaLR4LjvZjyg/"
+_BASE_URL = LOCAL_DATA_URL
 
 
 def _split_urls(slug: str, closure_percent: int) -> tuple[str, str, str]:

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from .base import Dataset
 
 __all__ = [
+    "LOCAL_DATA_URL",
     "HierarchicalGraph",
     "MetadataDataset",
     "RemoteMetadataDataset",
@@ -30,6 +31,12 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 Metadata: TypeAlias = Mapping[str, Any]
+
+#: ``file://`` base URL of the repo-local benchmark data in ``datasets/`` at the project root (a
+#: checkout sibling of ``src/``). The taxonomy datasets point their ``_BASE_URL`` here so the data
+#: ships with the checkout and downloads copy from disk (urllib's ``file://`` handler) instead of the
+#: remote host.
+LOCAL_DATA_URL = pathlib.Path(__file__).resolve().parents[3].joinpath("datasets").as_uri() + "/"
 
 
 class HierarchicalGraph:

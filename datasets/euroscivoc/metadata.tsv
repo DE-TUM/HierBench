@@ -1,0 +1,1065 @@
+entity	label
+ebebac98-d45e-4a65-95dc-4fcfbebe0632	microfluidics
+594795fd-81a0-47bb-8676-fb24f97a0213	fluid mechanics
+546f93d1-4503-4a57-90d9-8ec927ab112e	classical mechanics
+9c3ce95c-91ca-414c-9992-6cf1a2181165	fluid statics
+8aa08c31-d3ac-401e-939d-65876f7b9b08	fluid dynamics
+3d76a7f4-5a16-411e-ae44-7b712d5222ee	natural sciences
+9b9abbee-82f5-4766-bd4d-feb73cf06573	agricultural sciences
+9e8e1abb-1a14-40ef-9658-782092fa5cf6	medical and health sciences
+64605fff-1946-4fd4-b021-e2e83b71dcac	engineering and technology
+12c980a5-034f-4cd5-8ce7-fcfe109c675c	social sciences
+7a2dcf7b-2c20-468a-a81c-76d67c14de31	humanities
+d3b09b78-ac5c-4fc3-b58a-9573daf0e304	physical sciences
+9d9b93f7-14ac-44fd-9fbd-d15dff2768ed	statistical mechanics
+40c73d84-142b-42bd-b0e5-6f9a9b3f6a91	solid mechanics
+3e083223-d46f-4cab-b93a-95598b4f6be1	computational fluid dynamics
+4a8788fc-4172-461c-ae94-40be4f39043f	earth and related environmental sciences
+bce870dd-43f3-4656-8866-d76b0d71f5b8	chemical sciences
+e437ed99-4a4e-4fb3-af7e-fae6a2c2a800	computer and information sciences
+803cff73-504b-41ae-9873-1836c76c15d1	biological sciences
+5ac3ab8e-7d50-4091-94e2-0eec71c915db	mathematics
+e5178751-bb89-45c6-802b-2d2374b3ecc3	other natural sciences
+4df60e5a-a143-45d2-b1a6-c2dcb31d977a	agriculture, forestry, and fisheries
+b33c5338-c5bb-4026-8b86-7e2ff7cd2e3c	animal and dairy science
+1d8b779c-f72c-40fe-a8b9-22608c4e9df4	agricultural biotechnology
+fba9976f-0a7e-410c-8fce-3a6cef46f5e1	other agricultural sciences
+55e533c2-cad7-45bc-a66f-e813cda04e70	veterinary sciences
+34b9c059-9e6c-4ec1-8a96-845c95c1a978	health sciences
+5c631d7c-2a8c-40b4-9ba9-71121e2d5e63	basic medicine
+a348fcd2-3bdd-46f9-aa2c-a91301f1e12e	clinical medicine
+a357cf4d-48e6-4d5d-b8bf-3e39cbbbe713	other medical sciences
+495b214f-06c8-45b9-a5d2-64e2df5dc2e3	medical biotechnology
+dc9a4100-9eb3-4956-8fd8-b67ea07a70ad	materials engineering
+26770c2b-64ce-4611-896f-cdefb4893317	civil engineering
+325a846e-9c47-4aca-9358-5c8facd2e812	electrical engineering, electronic engineering, information engineering
+531bd18a-eedd-4345-8b2f-5464f96615f8	environmental engineering
+14e75836-6f05-46f9-9c82-ca12468b0452	other engineering and technologies
+12df4518-adab-4191-a79f-74eb18ad1688	industrial biotechnology
+ea994073-d367-4ed7-9df3-4477a9c6cf6f	mechanical engineering
+739766f0-539e-4fba-8144-9249bb38719a	nanotechnology
+10352c4c-328e-4dac-a89c-44b6be1420e9	chemical engineering
+776bf529-b4bb-458b-ad4f-50b327a822ce	environmental biotechnology
+742439ad-5d62-4e2d-bd77-0eb7caaa75f4	medical engineering
+839b7158-09d9-4799-aacc-bb07d00c1668	sociology
+052bc92d-760c-43ab-958e-2330c72a4212	economics and business
+8614801c-e2ae-4e99-93b0-cfecb09c4f35	social geography
+77030c6f-37d5-46d0-961c-b2a053ecb8d7	law
+f8714203-d97f-4852-b051-3b63b2795faa	political sciences
+5c66325e-b247-4e52-92ec-544ae4d061cc	psychology
+734e0a2e-5a5f-4bee-aff1-39389370e524	educational sciences
+0bf709d0-834b-4448-a89c-7fb04cece64a	other social sciences
+8d3657d8-563a-47fb-a5c2-5592b08365b5	media and communications
+1ad04442-4f97-4a5e-aba8-4fc2889faeca	languages and literature
+de62b610-a9d3-430b-92ff-366f28f7b1c7	history and archaeology
+a55114ca-1ad7-4c52-a261-d753fbeb3529	arts
+866c484a-44d8-4fde-b54f-3b1d9f8ca612	philosophy, ethics and religion
+e2120c91-f57d-4f96-8992-59c109634f1c	other humanities
+f3cb3d46-1a4f-4c29-9e80-46a854f53382	optics
+41d8a14d-6def-402e-b6e5-09d1cd8d3fc4	astronomy
+c61cf6c6-8b52-4fbb-9b30-b09659e476cf	condensed matter physics
+bc599515-b5e0-4b5b-9c0a-1f794d197ed3	nuclear physics
+a87e992b-13ab-47e9-bc25-1dc24d69d1f2	atomic physics
+05cb3438-9392-4a86-b945-2ff240183683	electromagnetism and electronics
+31b37bab-06b5-46e0-a76e-d18c04ddb2b4	acoustics
+5f6d0ee3-74d2-4fba-829b-24ef3fdf33fa	theoretical physics
+bfd5c444-49dd-4da9-9ad8-d242f724f036	quantum physics
+da85f15b-d00c-4b04-a525-e9406e1f81ea	plasma physics
+f904fbe4-cff9-4f2c-9e7e-7b964cb2318f	molecular and chemical physics
+dccbb79d-0f5e-4efd-853f-826e04e32f5d	relativistic mechanics
+0fce4b31-70e0-42f1-b844-5f7f0ce74914	thermodynamics
+65f1cb53-0694-477b-9900-61ac8ad78c67	geology
+2660be39-041b-4cee-9bfc-32b28b884bd7	atmospheric sciences
+8a64da82-b46e-4940-b896-bfc79ad3f6f8	palaeontology
+8e469a25-b5fd-4bf3-8cc1-d14800e650e0	environmental sciences
+b0edf9eb-127a-41bc-b0cf-eb3ed9039f0c	oceanography
+4fc54e32-5c0e-4f9f-aec1-18bb20609eba	geochemistry
+fca43b97-3619-4883-8fc8-15630cf240d9	physical geography
+84a41eb4-356e-40a4-bc70-216beaf3d33d	geophysics
+a90b6f46-eb48-46d0-81c2-37cf667fd4a5	hydrology
+b486d48d-b7d5-46d8-9c7a-3e921eebe3d5	soil sciences
+2d07f15f-2b3a-45d7-a246-411d3a061f15	organic chemistry
+57ae94b9-b0e2-4066-b910-3b58c015c17e	physical chemistry
+dc1b3723-476f-453c-a596-c7ccfde9b4b1	analytical chemistry
+4e705211-8770-4a2a-8596-dbc25b41c83b	electrochemistry
+4940967c-1739-49c6-8474-6bb8ad7ff588	nuclear chemistry
+45e374e6-da15-44da-9995-9ddd9b01fea9	inorganic chemistry
+9db99312-b7aa-4a85-ba0e-b2dd05135539	polymer sciences
+b3f4a4bc-41a0-4bd8-abff-f182893550c6	catalysis
+46889256-2431-4fb0-bee0-184f2c8a24c4	computer security
+b078d965-cd9f-438b-888e-a86a2137ca10	data science
+4c8f4b46-6f5c-41d9-9079-7de85c16431d	artificial intelligence
+b05801b2-037a-454e-b0d7-3f3cb7a63cfb	knowledge engineering
+aafff649-e02a-496e-b436-284ce76044c4	software
+e2c0aa46-c26e-468a-8800-45e85e038ec2	internet
+dd6b64d9-afef-4d5e-8a93-6c251d2565cf	computational science
+1f6c74df-a512-462e-99aa-8dcbaa98972a	databases
+bf927f14-c975-45e6-bedd-a383152aa7d3	genetics
+288627c1-4e51-42b3-b773-f68b39c3b0a9	marine biology
+36734fd7-bed0-4ac6-9445-a35869e83091	ecology
+d8bca3d6-cd94-4597-8d72-39fd31699728	microbiology
+763cdd4c-3c18-4fa5-91be-fc6c8754d116	zoology
+dde8eea3-9315-4c49-8464-f26a2deb949f	biochemistry
+a9aa37ce-d8d5-4d68-9123-ffbced0aed12	cell biology
+5b85e891-a025-4270-9b5d-df61c39b79f2	biological behavioural sciences
+1d61ac8a-6360-432d-9729-f180ba76f24b	molecular biology
+32983fb5-b823-4830-a924-773611dc4e25	biological morphology
+9cfaafe4-7fee-41fc-ba8d-cf23a2a176e6	biophysics
+a74ddb9f-5ad3-4cf4-942d-9dd83fcc041b	synthetic biology
+021bf00b-fbb1-487a-b79c-feacbb17b814	neurobiology
+bd0efc6b-d9bf-4519-b8e5-7f319401526e	other biological topics
+584d9d66-018f-4bb9-812c-7fafd5b1abd4	developmental biology
+0adb1597-9fb5-43ec-81ba-09af6670352d	biodiversity conservation
+93205ae1-235c-4259-a94d-ca9453a2ce17	botany
+749ae797-df54-47c9-9298-60812c03e3e5	reproductive biology
+33f31d80-b8e4-44b3-832f-02b975a9b549	evolutionary biology
+838f3474-df6f-4654-958e-38b8d7e4b0c9	histology
+d65148fb-16db-4577-809d-e6c9c4aadead	freshwater biology
+5294e080-9aee-4eb6-99c6-c77afc5dc846	pure mathematics
+96c3e7e8-7584-4f61-a90d-39652b83f41e	applied mathematics
+91dbf78e-ec96-4fc8-9ba3-706d26b85a15	agriculture
+d5486acf-7f05-4e9d-80ce-f035987b41bc	forestry
+0b94b07d-b3bc-4b89-9d2a-5815d4fadb83	fisheries
+ed1f12b1-12f0-4109-b592-d86f4a5c7b30	domestic animals
+ae3cfca8-a6b6-453b-baad-1a470c4ff238	dairy
+4e2d5d05-e6af-41fa-abc0-5ef8a0d09661	apiculture
+7aaec0f1-299a-4440-af7f-400f5bf6f785	biomass
+a4440832-246b-4287-9e41-3ee3fa79f944	agricultural genetics
+51375078-2b2e-438e-afa1-49bed3b06349	marker assisted selection
+4cec15e9-0570-49e3-91d7-cebe00d0fadf	tropical medicine
+9285d0c4-93e0-4cd7-bc24-4cb0b0b9a06e	speech-language pathology
+b533acc2-aff1-4c65-80ca-5d5bee865ba9	public health
+4825264c-ff40-46ee-b7a9-dc5093003929	parasitology
+fa2ceeab-3b2f-45e9-9243-e5a8005b98de	infectious diseases
+99e6da50-737b-41fa-9ad3-50f4152e79f6	health care services
+c513670f-f553-4a89-8bfd-d021f267d078	personalized medicine
+678cdc97-e688-4736-a884-8b6bb5b9b68d	social biomedical sciences
+f0844378-9f30-4873-b19b-5bff8c184a36	inflammatory diseases
+ff9e9276-586f-44d1-a309-368cbd77bdcb	sport and fitness sciences
+71cd7e43-dbf6-420f-8338-b444439e4e41	nutrition
+79c581d5-f4f7-47b5-b582-ee6e88ee1815	nursing
+8beec404-182b-4d02-a005-3d30761e3b0c	health care sciences
+8190a2e4-d944-4a7e-bb2f-adb488442622	dietetics
+42d645e0-f58d-40ed-9917-5b227ff41a92	substance abuse
+cbb6f86d-b5c6-4649-9b06-3712653ca459	medical ethics
+e2a7fab2-7027-40e8-b189-f401a23818c8	pharmacology and pharmacy
+a2f16477-c745-46f0-b832-586b1c0e468b	physiology
+7a3cf568-46ba-4840-be8f-f22fc030139f	immunology
+c4793dfe-e80e-49dd-9fcc-a1a742de1b25	neurology
+01fc32f3-a4fb-4c1b-8340-888f2fca1a90	pathology
+8e2d297f-5880-4d7a-969d-79026aa0779c	medical genetics
+24811189-bac9-436c-b2ee-5c59ed383169	toxicology
+38089427-13ee-4c1a-a7cf-4cd6c4802e33	anatomy and morphology
+4f3b304b-f7cc-4fd0-bcc6-a27183089456	medicinal chemistry
+284ca20c-beb4-4abe-99fa-ef4513358bad	obstetrics
+5375c411-6db9-40ed-a854-6554102a587b	dermatology
+5754a839-d714-4849-9789-e831eb4af6f1	odontology
+cb061cc1-dd52-46a4-a8fe-065838d5b44a	venereal diseases
+5e1591e2-d02b-436c-8216-6b8912eee467	emergency medicine
+e92e8adc-8256-4a4c-a052-b3cad420db7d	anaesthesiology
+d90d8dbf-c4b3-46c0-bf2c-55a4a3d9ba8b	urology
+4455c187-2f2f-4cd1-a4dd-449f59d73b39	cardiology
+d1dd1bac-5313-4ab3-837f-4acd3ec521a7	endocrinology
+c4538836-ae58-4941-b544-50f53e979e20	orthopaedics
+621ef1ce-2ebd-43d9-a6c7-ecd962d27269	ophthalmology
+f6e18c52-6087-4662-904c-5c4b8174e40e	pneumology
+3961e9d2-ab3b-451b-b246-20fc0ec3b0c4	nephrology
+00a5c4f4-b7ee-41a4-bcdf-3a02e6be1660	clinical neurology
+4ae9faed-32ab-4b7c-adb1-90f54d10c540	angiology
+5784b7f1-c7ce-49d9-9f38-aebcda0ff41d	oncology
+e7e1c80b-2874-482d-bd67-ce672af5cfb4	critical care medicine
+38e57437-b2cc-4d26-a46e-c5b639c01e5f	physiotherapy
+432746d6-998b-431f-b22f-d3abe0e8aada	surgery
+d37e4d8c-a978-40c7-ba4f-eee841851073	gerontology
+7341b8bd-fcb0-44c1-9ca9-8752b542ed59	andrology
+a3898340-a42d-4f5e-a822-1de204a9a867	gastroenterology
+3de50dee-da1c-4791-a386-56bca24a5fed	psychiatry
+b469121d-9e7d-478a-890c-56c73607a917	radiology
+27c456a1-051a-42f6-b52a-3beff0487da7	hepatology
+ce3293cb-700b-4b49-a91b-56ddfc97181f	embryology
+71137b04-547d-4329-8db3-251df3e84589	transplantation
+af65e2bf-afc5-45e8-a0fc-364dfb48f0a4	allergology
+9239f328-78c9-40a5-a0b9-8e66fd9b6245	hematology
+bf8aaaac-ddee-41cd-bb8a-c5a63de3fcbd	paediatrics
+9c3a57c5-68bd-4ee7-a9cc-aa8ba07bde94	otorhinolaryngology
+7de64596-5b0d-4977-8f98-b982ff2ec17d	gynaecology
+4b9f8efb-68dd-45a1-b04c-d23d457d6898	general medicine
+0d45044a-74d5-4bd7-b920-b92af3388576	internal medicine
+134581fe-5bce-4d8a-9279-bbb69c824ea3	clinical microbiology
+bfb0bafd-7894-45ba-84fc-ddab5fd6c537	rheumatology
+c42fc6ec-b216-4a24-9e9d-f5e781c175a0	peripheral vascular disease
+c3c03909-fc4b-4082-9de2-3a105efcb1aa	integrative and complementary medicine
+163e8940-1568-42a7-a52d-b66b18db16e0	history of medicine
+fafbe5ea-68fc-490c-8920-c1c6b5c8006e	forensic sciences
+be9c7e2f-d88d-4e49-9116-ef752aeca290	genetic engineering
+582a0b32-79e8-4b30-abf9-c7b6a6708683	tissue engineering
+ee1d85aa-6280-4a27-9580-f5245768c72a	implants
+3aa7fb7c-2eba-4211-a8f4-8d1ccaddc7e2	cells technologies
+8a8f7c98-1ab7-4280-b763-b87de70cea7c	nanomedicine
+7a868b71-b645-4d74-9c49-8e9ced9e8c1b	coating and films
+b235ad52-5fbd-4bad-b83f-60b1b43757f3	metallurgy
+5f29c33d-99e2-40f8-82f8-30b71a5e7b79	textiles
+c570a89b-766b-4a16-9443-533d33d9b0ea	liquid crystals
+950e524e-2e57-4026-9624-0f308a042961	amorphous solids
+2fba9c5c-193c-47ec-81f5-518020bff496	ceramics
+c835a32d-04c8-493b-9644-203414287c92	composites
+0b5b841c-e4a3-4179-9c06-166041fd4254	synthetic dyes
+61a310a8-87ce-448c-b5e5-28feab37defe	crystals
+678ba79d-add4-4a4c-89df-9bf13d8de22b	colors
+ce6666e1-e816-4f32-8094-2634e44630d3	woodworking
+c790f6e2-c1e0-44c1-a413-7f60e950f09d	fibers
+4215b6cb-66f0-4ace-a270-8ae68bdd1a76	nanocomposites
+ca74d281-1a02-4330-bb9d-c37be452d597	transportation engineering
+53d318ec-2f1b-41e4-8317-24b35f9a9120	structural engineering
+5e784778-9a21-483e-8435-37d7af93c92d	construction engineering
+0bccc6b0-7563-4056-aff7-5436488dc37e	water engineering
+38ee72d6-1158-4d1f-a6c8-e60f7b913c33	architecture engineering
+d2a63922-c4ee-42a3-bef3-77eb49ebfb03	urban engineering
+8f88c01b-6255-42c7-af87-1dda2ae9af1a	information engineering
+380ec7da-dd0e-49e8-9914-ca5c72a5c2de	electronic engineering
+5d08280c-4bca-41ff-9034-81d4210a7b6b	electrical engineering
+a8ec011b-2e01-4088-8f7c-28fa848ade2d	ecosystem-based management
+0432df49-4127-42da-9eae-d07d8061f62d	energy and fuels
+62d2a84e-3f7d-4164-890a-bac80360105b	waste management
+8f5a6a53-4d7c-471d-8af2-3f4b57e4655e	natural resources management
+060a0080-34de-404c-b235-ee69daa67ada	mining and mineral processing
+195984de-c722-4aa8-b43f-0a3365cecae6	water treatment processes
+acfa84a9-7d59-42ba-8028-92bdad6272d1	remote sensing
+4a174a1e-bab0-4d76-988c-9712b5703e35	carbon capture engineering
+e9b542e3-aca9-4ff3-b906-72b6cd838a29	geological engineering
+3118146b-5f40-4d76-b18a-01d28b9995b6	air pollution engineering
+969ab3ad-46f6-4637-a09b-92670ed60152	geotechnics
+e4062af9-fc49-4826-9bdb-e549f3f0f191	food technology
+0d3c1001-9a67-4245-bc15-2aef8b239df1	nuclear engineering
+22f80759-3d33-4ae9-9489-a5aefedc54c3	microtechnology
+3c7d4f8a-c885-4c6d-a41b-b3ff1cb3669c	biomaterials
+e0e6ab19-9e03-4033-bc70-d0d1affa0ce1	metabolic engineering
+432182f0-ede2-4b63-8b2c-fd36f487fb53	bioprocessing technologies
+aa18770d-daaf-4ef7-8229-d371b933adab	vehicle engineering
+54157b12-04fe-4eb2-b707-6a46f992fdce	thermodynamic engineering
+8de72c5d-c07e-4665-9d31-5aa4e1aa44f8	tribology
+3e3b69cb-7cab-41d8-bd6c-6945f9c982ad	manufacturing engineering
+34c57135-1b8a-4263-a942-68b658a1d663	applied mechanics
+6e37f121-a5d4-4054-b685-fec1c2d5e6c8	mechatronics
+9f2d4860-d6ab-446c-bad7-a6e7e4801cf1	nano-materials
+0d082a10-ed95-4992-9df1-b4f4b301edfa	nanoelectronics
+80ac9c16-fb4f-4fb0-a9b8-af068f3e0e3f	nano-processes
+46414b4c-ea2c-4a35-b8ba-8f110dd8eb13	nanoelectromechanical systems
+c3a86a9d-749f-4873-8060-1d3957c02bf8	nanophotonics
+0e362272-f233-4787-bfb1-1917f4c7c43a	biochemical engineering
+4d3e0b8f-ce04-475e-933f-a82f26f1086f	separation technologies
+03b527bb-d9bd-4191-a424-775f6af730f0	chemical process engineering
+f5bf3404-60d3-43a9-a12c-ad98d9168abe	bioremediation
+946d8857-22c1-4073-af96-a721c13878fd	biosensing
+ca1e1ea1-e379-4260-9eba-deb9094ca8ce	wearable medical technology
+045d8dc4-1d48-4d18-b8ad-47e9df29100e	diagnostic imaging
+fa9934c6-3223-4927-a17b-0095b3e73ae7	medical laboratory technology
+bc439c68-e0c9-4af7-ac71-891e3b60761d	governance
+989f7a0a-1ab0-4896-b0e1-338eb7b25f9b	ideologies
+abd12e91-2d1b-4b99-9b4d-6ed39420bb10	gender studies
+76144833-3f5b-4f6e-8568-f3511da61f95	social issues
+ea0a553e-d35a-43ca-9bc2-a75f32da5c79	industrial relations
+cf97c48c-d28c-4928-b6d0-d7cad57be273	demography
+65672057-bb45-47a9-9b2d-5dd7c15dae10	anthropology
+6bab1ac0-71ae-46aa-a7fa-26531ebf5b11	family studies
+bcf62221-aa96-4628-bf0e-3274da49032a	social work
+37412f1c-d90a-43cf-86fb-d29e9fc29c6f	business and management
+e27cd9b6-055c-480d-8d63-e2d366ca94d7	economics
+e56eb495-973e-46c1-b2b2-a446852952f4	transport
+bb471542-b763-46c5-babd-c5669b5bca86	urban studies
+9193c76f-0e67-47d6-819b-19c3122a535e	cultural and economic geography
+55ef58a8-cd43-4d3a-8f4f-57d3671d3db5	constitutional law
+ca0b52b4-4d64-4b75-a231-06ea45752be6	human rights
+7d7dcbeb-e9ca-427e-9817-7594e56a81bc	law enforcement
+31f7d054-da72-42f1-bde9-b44f4cbf58d9	penology
+40cbd681-c84f-4af3-887a-beb6d9857f0f	international law
+f22f962e-29bd-49af-ad01-adc27b8d8922	admiralty law
+6cdfa437-5876-4fe0-9e66-d7ba81001787	criminology
+e60d2b6c-d516-498d-b4eb-005f183b4eec	environmental law
+149f7cd2-b593-4307-bf6f-77fbfd3ee961	government systems
+562f2b97-7578-4fbc-a53c-b9603aad1db9	public administration
+c4128628-2048-41ab-b3a8-e0c45a3be10d	political policies
+b525048b-4d08-420b-b2ac-5cccaaa26d91	political transitions
+034233ce-1065-4da8-b501-54f951afd7ab	political communication
+85d38bff-6c87-4717-81d9-f249ee6a7f64	cognitive psychology
+83e22162-07bd-48eb-a6ae-d003d6910aff	psychotherapy
+a5f238d6-be16-4968-8a0b-61384f7b6e1a	ergonomics
+5734c649-766d-4880-8891-daee21d64bb4	social psychology
+0f7327f0-f241-40a5-9728-5ed61a7ef5d3	psycholinguistics
+6ec4c796-f249-4113-bcc4-2b026afaaed4	developmental psychology
+189bf165-64c4-423e-bab1-eac6a2db721d	behavioural psychology
+4715fd38-1233-4283-8247-32eda72784c8	pedagogy
+46b4c7fc-fae5-4925-a2f9-6ecbdfec5109	inclusive education
+4ad75c3c-205c-420e-b9cd-18ee54258c43	didactics
+b61af0db-fa53-40bf-99ca-14af26f6b08a	special education
+c35a5815-ee59-4223-88d0-1973837a6b58	development studies
+0b3acff8-05e8-448e-ba5e-db6fee0e6d32	journalism
+65ae294f-010f-4735-9e8e-aa522a33bbbe	graphic design
+46bb355e-acf6-4eb1-8c29-18efb51f0ec0	literature studies
+61bab820-648f-4f84-9f2d-71b5f80c5835	linguistics
+3eaeff93-c40a-4806-b3a3-74e6c69cc9ef	general language studies
+192cfa59-26ab-465e-9338-2b957e3d79ba	history
+76da466d-e78f-44b0-990a-db42f87b9454	archaeology
+403e6b96-4460-4e8a-9500-a854d8f25b57	modern and contemporary art
+07313c54-6fb7-493e-90ce-d40c14615f6c	performing arts
+47eb9d78-a29d-4759-8c86-d7d4a8065997	musicology
+62e0b84b-ccbb-4cd9-a8b3-9fafb942904e	visual arts
+afe0f21c-5863-4628-a909-829d12618497	architectural design
+9f06ae95-d41a-4621-9152-8a6e1eb46334	art history
+20e77e46-571d-42a4-b3f1-8eb284bc4034	philosophy
+61735be0-41d4-4c93-a7a0-9fdca27e92c1	religions
+50df14de-3934-4dc8-a6e1-c0008963aa0e	ethics
+2dbfd0d0-fc0e-4426-986e-ad00a7ea7810	library sciences
+0c67e976-ff93-4ca9-8ec7-ac06876e3e41	microscopy
+fcb515f2-b24c-40d6-ab2f-56a5ba589f67	cavity optomechanics
+7b38f8b4-3f5a-4a59-84f8-d270c33146c8	spectroscopy
+e39eb923-d810-425b-a740-954a93eaf8d9	laser physics
+e7fb08ba-d408-439c-a4d4-bb8270ac37cb	fibre optics
+5ccac6a4-396a-4789-9506-de4ee54aae3d	nonlinear optics
+828fbc8f-af57-4946-a4bd-219cc9ea615d	space exploration
+74f1f6d9-2480-440a-a168-82967a9677ef	planetary sciences
+6c45311d-08ee-4e0d-865f-2cf01b9804d5	physical cosmology
+d5bf8fe0-33cb-4355-b9a6-e759dbf567d1	stellar astronomy
+42d56c99-ce08-429f-9751-4f711910a804	observational astronomy
+257bb258-ba7e-46da-a91d-1b925c963886	astrophysics
+7433fd60-f5ac-4eef-aba0-b184ce116fe9	history of astronomy
+00a28aba-3218-4825-a8ed-5929fde51130	galactic astronomy
+1a9b237f-0900-4033-b430-90faca7629a4	extragalactic astronomy
+53157b24-5ec5-4b97-bbeb-b1af580cf101	astrochemistry
+979542e2-8e0e-492b-8801-15f54ed7e7d5	quasiparticles
+1e41a6e4-0f75-496a-964e-adf5c3ec4b98	solid-state physics
+77ad429e-855b-4878-959b-ba8f73c58113	bose-einstein condensates
+996cbe8a-bba0-42a1-8f91-6ee04f30f5cc	mesoscopic physics
+ece3a974-692c-4da9-900b-dfc49c8d1dd9	quantum gases
+081ec693-4e8c-46cb-b4d7-4deb186b534a	soft matter physics
+85646b5c-6f6b-4670-abd1-1304a438556c	nuclear decay
+9ba3f7b6-d0f6-4168-b6d1-e48fa267ed2c	nuclear fission
+fcce0967-c6db-49f5-acba-4a3491bfc47f	nuclear fusion
+064e41de-ff96-4ad5-b27d-452957cb0c1e	spintronics
+aa916836-94a3-4ae6-8d69-8d9d938a69ab	semiconductivity
+b0b76f16-4d88-4484-81e8-61ba83b239c4	superconductivity
+29584f77-4bbc-4540-afae-cbc9764a2660	microelectronics
+36a49a69-5753-425f-9c0b-90449260b201	electromagnetism
+b815a806-57fc-4646-8e3f-38bb81b5d33b	optoelectronics
+dfdf9f37-abb1-4ea8-90d5-b757433d0ccb	ultrasound
+ddec251f-0c47-44a4-b95d-9d4bf11a093e	particle physics
+b404e41f-008e-4efb-a980-1009ad2c32e2	string theory
+e6360dda-8e17-4d8b-94ae-0f62f439f39a	quantum field theory
+e09e98aa-d55f-4d90-a60e-29da9b299ad8	quantum optics
+0650224c-0f98-4b97-a6ac-f6cf00b0b636	mineralogy
+2777834c-929f-4b5c-ab4b-f516e308f659	geomorphology
+e54c41e3-a9a2-41a5-a978-b1de010811fc	sedimentology
+59f6b691-53b4-4ee6-9bc2-d428584ec8b2	seismology
+dd5c735b-4fef-4288-8e17-e543e63bf031	volcanology
+aa030197-1dda-4fdc-9e79-520fb5ea6624	petrology
+15dd89d5-ee26-45b6-93b3-3d9b8fe7401a	geochronology
+4fe6cea9-6919-4151-bb60-ed9591edd1d9	lithology
+caef7888-78d0-473b-b3dc-97d8e9c65073	climatology
+f2a75729-1f21-4b2d-8c7d-bc7af02e71f7	meteorology
+97337473-372b-4662-9d60-a25384e348d6	paleoecology
+0b064a78-a2af-4fc9-b417-0982bdab9d69	biostratigraphy
+1844c39c-060b-4eae-b6b3-a9b7a266f61b	paleoclimatology
+a773aaf3-3c90-4cc4-bfa3-7cb6d80fc77b	palynology
+46b0065f-4c0a-49f3-8d30-95594bec23b4	sustainability sciences
+8de66ca0-d07a-4f3d-b41f-02f6fe6a19fc	pollution
+5adfbef0-fb48-4e28-b8f5-256e1dfcb326	ozone depletion
+dcd2916d-935f-446d-a42c-069ee43f3c51	ocean chemistry
+1cd66672-bc7f-48ee-b60e-332bcb886d09	physical oceanography
+14dc3edd-a6a7-4e26-9f74-146a47282833	cosmochemistry
+1771166d-eb6d-47fc-8d0b-ecfd001efbbc	organic geochemistry
+cdb31644-8d2d-4ac7-a421-162f01281f8f	isotope geochemistry
+98f5f863-7cbf-46a0-84e0-cb319895e0ae	biogeochemistry
+a1a79293-1df8-43c9-af05-ed63bdfda720	cartography
+32373d5c-3a9a-4ed1-a6c9-3dc6227b57cb	coastal geography
+c65e2864-db03-462c-a181-cf1e18b2b6b5	glaciology
+ae68c142-4643-4df3-bc77-b2c15cce63de	natural disasters
+64677c83-d296-43b3-b4a1-a6e79ce71488	limnology
+e35d2e39-9fef-4747-84a2-c493c4bf722f	ecohydrology
+ee9d7616-203d-4997-b287-975e9b807329	drainage basins
+04589be3-96d0-4963-b753-cf690b001501	hydroinformatics
+8d84097d-1017-4b85-a259-5e2d476a3575	hydrometeorology
+1c9679d2-8bf2-436e-bae7-d7b99b82dff1	hydrogeology
+4ca6f709-c1f7-4544-86e0-6a3aecc210b8	isotope hydrology
+f64f8e80-e70e-45a8-a6fa-2f36f6da162b	soil management
+5b7a4490-820b-4d26-b467-f23c24cda347	pedology
+8d8401ba-b60d-45b0-b5b8-aa9ac816df6a	land-based treatment
+71d5af4e-15df-4c68-8e73-5ee66a929b94	edaphology
+e1a7b007-273f-47fa-a40b-4c9388ad5562	aliphatic compounds
+650a36ed-80be-418e-a0e0-5ba439924552	ketones
+a6b564d0-8e0b-4b99-ac20-f26ddc218aa2	heterocyclic compounds
+cc4a0820-3515-43e3-98c7-57b3a0e906e2	organic reactions
+aa432210-f5a0-45cf-b913-f202d3b5a3fe	organohalogen compounds
+d0ffb7f2-8938-41c5-b1a1-edc9bd17b591	hydrocarbons
+638f1eab-f9e2-49df-8aae-f6c1211d7ed7	organic acids
+ef07c1e2-132e-4ce1-9eab-f4fa3b7f9827	volatile organic compounds
+91280519-d70b-4a3c-a538-c2e315efb0f0	aromatic compounds
+d5306c94-2609-4e5c-9531-1961c42f5a7e	alcohols
+8652ea02-86fe-4fbe-9feb-baba1931157e	amines
+d7e5599e-3253-4a8a-9139-a8de1f4586ba	aldehydes
+388b11f2-ea9a-4730-b933-ff74934568b4	thermochemistry
+6016144d-477e-4e89-b543-0e8f6c488cc6	photochemistry
+7aca9814-d7a5-43b2-8521-0fa53e8bd36a	quantum chemistry
+4964c84a-7f43-4b2f-a434-f4af9a4cfde3	quantitative analysis
+22aa7f46-de22-440d-8864-ff867878f11f	mass spectrometry
+7a2af875-ffe4-46ae-b139-d3404cc678d9	calorimetry
+8e821abf-25b0-440a-9e58-744cb280cc84	volumetric analysis
+cc6de2a1-430d-4320-8bd8-2e4e27487bd6	bioelectrochemistry
+cf686916-c5f7-4244-adf9-3ff82e5310a3	electrolysis
+2322520f-4e32-45e3-8f8b-bedc5ab4ba9b	electric batteries
+ff90b6be-370f-4b0c-a92a-ddf159df1b88	electrophoresis
+6fe1af5e-d328-4d17-b159-693801337af8	radiochemistry
+6fb24b32-86c2-46d3-9839-22fb9cda8e62	radiation chemistry
+11f4c8f8-79dc-4127-a732-40c359a5531f	alkali metals
+f4a411db-8dd1-4d7f-8c74-7b0d631819bd	alkaline earth metals
+9e5be1eb-bf25-4136-a4e5-2c68aa7cd80a	organometallic chemistry
+a563319c-3538-4705-bbaa-67ca37f23b89	transition metals
+b03c2195-7e74-4bd6-b82c-24e83ee95e99	bioinorganic chemistry
+3a8c866d-87bf-4346-a5d1-92080b124fd4	metalloids
+e9da6561-23b9-48ac-9377-b68b13393e77	inorganic compounds
+f21870a6-250b-4994-9286-20927dd77423	noble gases
+86190b53-4083-46f9-8452-10c00e215585	post-transition metals
+ee1cb577-b723-4c7c-9cd0-a449b071266f	halogens
+24478866-193f-45c9-ad6f-dc4586609d57	polyurethane
+ded0e17b-d5a4-40f6-a84e-96b6e41d18bb	photocatalysis
+7cd69a0c-8019-45e3-ae30-e133db6cb2ff	biocatalysis
+a9c9dccb-6e6f-404c-937c-18d7fe4e245d	electrocatalysis
+8cf6591b-082a-4b5d-9178-912736414c80	network security
+46f52482-d4bc-4d44-9924-0bd242e3bcc4	data protection
+97f141ac-4dce-4acc-87dc-77eb18e4beb9	cryptography
+9e04f941-5c16-4aef-ae26-8f1db53f40eb	malicious software
+8e8a7336-2c9b-4375-b8f6-171576f2dc06	access control
+119b0e70-ed46-44ae-97e9-fe00411af08c	data exchange
+a851ea76-73e9-4c50-bb22-82e9c9de3db0	data mining
+00ec24cf-bc96-4a3f-9cf9-c0715e98354c	business intelligence
+c846c02a-d89d-4919-9ce3-694915dd589b	big data
+6de6dbeb-f200-40fc-b01c-09b01d153180	natural language processing
+995f4448-d135-4ba0-925f-e7afa18a0d0e	data processing
+527ab165-56f2-4020-8975-e7cd3f21d01d	machine learning
+0e418e64-f616-451c-8c10-9b149724b841	computational creativity
+179b5ccd-b066-4a3d-a60f-5d8dae645788	heuristic programming
+c5e44bb5-1d79-44a9-8787-24d0cd1cf7fe	generative artificial intelligence
+eff67eba-9af6-484f-9455-996c6e0e3e2e	frugal artificial intelligence
+c3f7741c-652b-44cc-9062-491fc41aed2f	computer vision
+cdeba421-3731-4be8-a49d-6616fb3a1c85	pattern recognition
+24c2ff40-3728-4774-bc00-363bab563178	computational intelligence
+effbda5e-4bd7-4256-b0ff-73a5934f0936	edge artificial intelligence
+f066fc3b-3bbb-4137-8b49-b13f8f664dc7	expert systems
+123e5118-1586-4a45-b4da-34583bd74940	ontology
+a0e8e102-e50a-4883-a021-733345a8f1b1	software development
+f025f4c6-13d7-4aed-a7c5-e9b465f72a50	software applications
+bd465a67-08a6-4341-b833-aee6c5545f95	internet access
+8614019b-15ab-41f3-99cb-d1234e9a33bc	internet protocols
+d3fbe1aa-2e8b-4049-9894-a9980be71600	transport layer
+63ebbf89-7534-4fce-a934-862ec77a822a	web development
+b7e5f868-f011-45eb-9cc5-44d46f415a80	world wide web
+b160ef85-1d08-4f45-9d3a-dbc21cd196d0	internet of things
+981a4eb6-f63a-4360-953d-efe0ec861672	semantic web
+69a9e932-c180-4c31-90b1-1c0ffec0001b	multiphysics
+00401515-e61c-4f33-bcb0-33ff40c6aa20	relational databases
+8acd4863-b16d-4a45-b4b6-88daf8dbd43d	non-relational databases
+f3177515-65f8-41f1-b387-f5aebebcf17a	heredity
+ded62481-ecc5-48e0-8d6c-8b99b5845053	nucleotides
+b3a90d84-518a-4adb-b613-0e63f7582cba	genomes
+fdfd4748-0385-46d7-8500-a59e8caa38a4	chromosomes
+4f0cd12b-f068-4303-8b72-8d714f36f6a9	DNA
+64c1ba50-4451-4845-ba27-b81b01583d18	genetic selection
+9e3cada3-2cd1-4c90-b8c2-0cb98a892a97	epigenetics
+2665d058-2dd2-4856-a34e-7a449952fada	mutation
+7fd58960-5853-409b-bb50-fa1654f7bc3c	RNA
+f2b83c17-acee-484f-bf99-d4769070e54e	evolutionary ecology
+81f1f477-aa96-427a-adf9-7742a429899a	ecosystems
+f9cbbc93-f86f-465f-b76a-834dd5d433fe	invasive species
+223ea72b-9148-477b-84e1-513ec9d93c49	landscape ecology
+ed046ab9-3b55-4ff6-85bf-0212bc4ddbda	microbiomes
+3d2eea7a-35ae-44ec-81df-83e3238de646	virology
+bce55415-258e-403c-b797-1e0ba2e3f5c4	mycology
+b3bb49a1-354e-4f51-ab3d-09dfa0e3cc0c	bacteriology
+9a512825-2fe5-4596-a0af-a157d819517b	protozoology
+248e39b2-ff43-455f-8b47-514afe14b595	phycology
+00bf0451-768a-448d-855b-8f45a401b488	mammalogy
+3ff77f4e-20d9-4c0d-a50f-61415b404fae	ornithology
+86246709-0490-46c0-99f6-4afe7d8b461d	entomology
+05eef62e-ff73-4063-a93d-b5ca75112e12	ichthyology
+cc14ea80-2d50-4e49-b4b1-b7cc6b5bfb75	invertebrate zoology
+1bcb8843-403e-4eaa-83e9-98a09e091f18	metabolomes
+4fcab395-f3b5-41c6-a260-6acd51de4741	biomolecules
+4bb38ebc-c3c6-471f-9691-7f671c8842a2	cell metabolism
+064cf349-7c62-4025-8874-b84a6a642a12	cell polarity
+15701609-4c65-462a-b230-d362816906ed	cell signaling
+c1ffa3c7-54c0-49e7-a617-718a62e6261c	ethology
+a62d17ff-3fdb-4b69-a137-b13fb8899582	behavioural ecology
+e157f837-ea12-40c3-be80-cc7e5e91ea07	structural biology
+7e2ed2d0-d1fe-4e92-8a75-e2363e589b89	molecular neuroscience
+df7b86b0-f489-4cac-9466-22ce145839b2	molecular genetics
+dbdf902c-f6b0-4349-8428-128343d4c4fd	molecular evolution
+d93d7f19-7965-430b-8d9e-80c0e4d57a9d	functional morphology
+51a8c684-33c9-4e85-86e9-95f1e7b50f1c	comparative morphology
+927ac971-50a5-462b-8857-8b6aa708c917	computational neuroscience
+28391a47-6709-4ab7-9add-43f8c6b7d698	cognitive neuroscience
+5f7e9d3a-3493-4cb9-8436-1e8b8ce3087a	dendrology
+9bee140a-a951-4706-a5d2-d2a0822e10a1	arithmetics
+4988e02f-0b78-40f3-a53b-2b67a4aae5aa	topology
+40c5c393-e96d-47a2-b057-e823cfc1fa07	mathematical analysis
+31d6cf37-e99e-4711-8d37-16e950d2aeb3	algebra
+33efa520-dc3d-4898-905e-1c0016d1d6eb	geometry
+99f792a4-fb82-4f84-98df-ff76d9f98f0e	discrete mathematics
+9d9d0dd9-5fe1-4c9b-bef2-e93184ead881	statistics and probability
+f646b1b6-0774-41fd-afb3-570c9832ed05	dynamical systems
+2e05d5b1-76b2-48c9-90a5-6844940b91ae	mathematical model
+8239a8d6-6ec9-416a-84ee-d1e55a0c194e	game theory
+2ba1c7ad-2532-4cd7-8c5c-60f090a8700a	mathematical physics
+a010f01c-4bd9-4bca-b568-0c1357034db9	numerical analysis
+910aa765-51f4-4018-a308-c5bfd844eced	industrial crops
+1a43fd07-63bc-4b62-aee4-71b3a9f91ccc	sustainable agriculture
+b0a5e340-eff7-4c23-8db2-e82fb8b8e930	horticulture
+8b55ce18-c92c-4191-8411-9a4f88cba105	grains and oilseeds
+80742b2c-612e-4f18-a2e8-83bcdaa32ab2	agronomy
+ac35f057-d98c-4af1-a3b6-202365b685f5	agroecology
+2682c803-9280-486c-a919-5457c95475f2	silviculture
+6a039bcc-11d6-4132-888b-3fd25127bb42	animal husbandry
+6283539e-373a-4c38-8bab-6510f9ee479c	livestock cloning
+39c4c0d8-230f-4212-8bb4-a090f6ea095e	plant cloning
+6eb34fa9-e534-437c-a6c1-2051b6740bb9	epidemiology
+49bd5122-c5d7-4ca4-b7fb-e5c6f3ded62d	occupational health
+9ca92e56-2da1-4d52-a0dc-384fee40d4ba	RNA viruses
+ec37d18c-7447-40c3-aa37-51384d0b3584	DNA viruses
+3f74c7bb-2443-4074-a653-6689d73cc55e	malaria
+f9e4f6a4-2322-405e-9d4f-98d688b21523	eHealth
+b117f586-d557-4a28-af1d-38fe1756bcd8	family planning
+c5a94d22-6942-4b5d-a935-c2affe0b13c3	sexual health
+3db974b3-3197-453e-bf1f-208dcfc7e3e2	obesity
+97a2bddc-7341-4a5d-95c3-b378ea8115b0	drug discovery
+21f9da14-3656-47f3-8b52-c7f916e31e65	drug resistance
+6fe0f83b-5fc4-4bf8-8fa6-3f035eb0768e	pharmacokinetics
+f52713c1-c09a-4bab-bf96-be85005c3233	pharmaceutical drugs
+7c6bb03c-2bb4-49e5-a4a7-4059d062f52c	drug safety
+baa5b9e6-dd91-40e0-a23c-334a843163f3	adverse drug reactions
+89254312-aa1d-4215-9c20-f7ae4f9936f5	homeostasis
+bcce2db4-9d84-4023-8563-8cfe8c094a79	cytology
+64992e3b-ceb3-482e-af46-3b8507dbda60	pathophysiology
+79935d19-dc93-4211-b42c-af3c4df12290	immunotherapy
+e0ae867b-271e-4803-87e4-0ad02ceaa0fe	autoimmune diseases
+75f729e6-2d55-4b2e-9780-85002f7eaa47	immunisation
+31289d4e-a909-40ee-be7b-109398466268	dementia
+06991033-2b55-479b-be18-da92f56c0eea	stroke
+45995f37-1362-414e-970f-7fcca98b779c	muscular dystrophies
+641139ad-60e2-4a06-85c6-39b16919dc9f	parkinson
+2c5ae411-acac-405c-aa67-8940ff439ae3	epilepsy
+36ec67f3-8a94-4b35-84cb-4fe718a99eec	multiple sclerosis
+e68d8856-0a97-4b9a-8bb5-5322d8fad2cf	amyotrophic lateral sclerosis
+22d7f866-475e-4665-b173-d6e7b4a1260f	fetal medicine
+9b1ede6e-993a-494b-a695-155ae8a40ad5	childbirth
+56cf33c2-b331-4eac-9663-ab0557d20b1c	postnatal care
+3d1728d6-e584-452b-9784-69afcbde53cf	periodontics
+f4b43889-2563-4b75-bf8d-eff41cd43622	dental implantology
+1e8240f2-c719-422e-aaa7-dc53a545df81	orthodontics
+2d6d8b14-174f-465e-b9bb-d60436b60b29	graft versus host disease
+c1ac52eb-5dd5-442f-902c-c608d99c9314	paediatric cardiology
+7d36985f-2880-4ae4-91e8-082c08876f9b	cardiovascular diseases
+38815ee2-9bc9-4b76-a62b-be5a1bf832b6	diabetes
+c934fb19-5ecf-434f-bb0b-9d2afb0c9bca	retinopathy
+80f44c1c-1abb-4460-a546-f345aba48b4c	glaucoma
+a5b2c327-bc16-438a-9733-038c2a11f544	strabismus
+2a0db33b-5d6e-4549-bd58-76c4c067f6e2	tuberculosis
+c26105fa-2559-4130-a0a0-0b403e638c15	asthma
+0098835d-37c8-414a-b147-d8d3d11aa64b	renal dialysis
+533e6923-ce7b-4b03-856c-af4478a48c00	kidney diseases
+bc2485e6-15a1-48bb-ac0b-17aa35fd1555	vascular diseases
+8f2096a9-b9c3-4d09-96eb-65c94dbfa770	cervical cancer
+13725a4a-8f04-4bbd-97bf-7d8f952aca38	head and neck cancer
+6c982cd7-7f9c-4cde-8a3e-b40a226bc313	liver cancer
+63de85eb-0374-4e72-9e0b-9d74cff0b3a9	bladder cancer
+76b8bb97-5fc8-4ad0-b2c0-a14e100ca10f	pancreatic cancer
+8231b087-2b26-40fd-a239-d42c8f62f678	skin cancer
+6ddc211a-d224-4b46-9d2e-88746dc36ef7	colorectal cancer
+437c1f4d-96f4-4721-9194-455037fa37fa	leukemia
+b8c70f77-deaa-4f3c-926c-f2fb369ba878	prostate cancer
+36ec31ad-2714-489d-b8b4-5053fa4b4297	breast cancer
+d7d4fde5-4c94-491b-b655-f40ea194f8bf	lung cancer
+843a5e98-b9bc-4997-9f88-0ca20b92dc76	surgical specialties
+186e9994-7c1c-44c1-a1e9-ff90e8593184	robotic surgery
+2a2defa4-7b1d-4f73-89ea-208543d26d2b	surgical procedures
+37b7ef11-9920-4f87-b743-83a49c4aee86	inflammatory bowel disease
+0a1f65d3-ff59-400c-9411-589f14b7d5f1	posttraumatic stress disorder
+0306abc2-9dc2-4c34-a8b1-8d6c3674d5ea	sleep disorders
+7dcdb675-5d9d-4e9f-8e43-f712c24eff70	obsessive-compulsive disorder
+07908adb-b5e2-45ff-bc5a-84f0061ee96d	schizophrenia
+0212589d-84da-40f5-a8a4-384909a60e39	anxiety disorders
+c11b78af-7d13-49d2-82d1-eefcd44f2ee4	nuclear medicine
+373e31b2-e888-499b-809f-80c86daeff77	drug allergy
+963b6046-fbf4-4d13-920c-de3cdf4aec8c	food allergy
+f39a5a59-d030-4697-aa22-29fa23291434	reproductive medicine
+60f1cfbf-a341-4f77-b74d-8742f867c0ae	gene therapy
+0cb1d432-f934-49dc-bab4-22b6ce4b1327	bioartificial liver
+930e5ede-15a3-42f9-82e2-500b248f0443	artificial pancreas
+be3a32f7-56cb-4d5e-b406-dbb18a258fae	artificial bone
+f979a05c-d548-460a-a775-cc96d75b6585	breast implants
+bda93eee-eaf5-4657-ba47-e8d1560f878d	stem cells
+76615299-c145-4bcb-b2ac-89afca063f76	organic amorphous solids
+7a438edf-2d2c-4681-8657-9f4b1c1547d5	molecular amorphous solids
+41df2551-e670-4398-a74a-dd5c58476f70	inorganic amorphous solids
+1a7b2a3b-0606-418f-b6e0-5f72df7a3f4b	amorphous semiconductors
+c065daf0-95ca-4845-8ab3-3234a3959b31	amorphous metals
+1ea60a58-ebcd-4bc3-9c90-136f9ad68d16	biocomposites
+d8bd4a7a-de17-43a9-bfb1-1b94244d2b14	carbon fibers
+b27923b2-a81a-4452-9f83-d36560862927	glass fibers
+6537f2e2-82fd-43a9-97b4-90b2d7be2d7c	port and harbor engineering
+793e0287-abe0-4776-a2ae-bbe02278e5f9	highway engineering
+8f03620d-c94b-44d7-9778-a2f7bd325414	railroad engineering
+4775cf31-fe0d-45e5-b90a-8b5e78014b64	airport engineering
+def14567-b1dc-4d54-b49b-3e3c59193839	earthquake engineering
+d93ad0fc-d33c-4327-8525-6e40f0ffeb65	hydraulic engineering
+06109c22-82cc-4ba3-a0cd-22e516f18f66	structural health monitoring
+d09f4eed-6861-497a-8c31-2451de4198cb	irrigation
+143d188d-70b4-456a-acde-7ecff3584dc7	urban drainage
+823fc6a3-11f6-4d98-a220-0ea8db1ea48d	ocean engineering
+d159888a-76bb-4998-816d-6dabfe5df913	coastal and estuarine hydraulics
+a039a9e8-4380-4e34-8ee5-b54465ca8fe6	water supply systems
+ece8d70d-2311-4d6d-ae12-473fc5c09a5d	sustainable architecture
+bf1ab80a-e421-453b-8a26-efffe882b004	smart cities
+1198b23a-f82f-4189-8778-d9a742430a0f	telecommunications
+639d0234-14fd-43b2-b590-543b94c95aa2	sensors
+4f88813e-8fbc-424d-bf2f-316c50684e7c	analogue electronics
+0cd8fe36-dfc3-43cd-882a-5dade629fe25	computer hardware
+f688c719-b99d-4140-874b-574380f66398	robotics
+c18ce2ec-e8f5-4574-9fb7-5399b425410c	signal processing
+d086d147-50e3-443d-b8a1-4a610f9fccdd	digital electronics
+7b79e4a2-5d2a-453f-b277-dda80eccf0d0	control engineering
+1d567f6c-e6c1-4742-8d45-dad617ef0dfd	control systems
+e7264d76-d85b-474f-a0c4-a4cf98f198df	power engineering
+afeba4e5-b96e-43ed-b7c5-7c2b33546394	piezoelectrics
+17b7bbad-4972-4fe7-aa3c-cbd21809f0bb	electric energy
+b82f7514-33ec-4fea-a73b-25c689268165	ecological restoration
+ed8b88dc-3bab-41f7-88d5-d61486fa19a5	climatic change mitigation
+e1513400-d6cf-44d5-b0dd-e3f2f8a38e95	nature-based solutions
+c3f2d6d8-316f-4fe7-b8b2-fd6eec8d3fdd	habitat conservation
+d64a69de-a6a8-4a85-b696-afe9807ae481	green infrastructure
+6e01384f-e19e-4295-a656-a59ec98c5231	climate change adaptation
+22ea0d5d-4358-4568-8c42-c728869ba3b9	renewable energy
+5c266dc9-1682-4717-848b-9628ec8274f4	liquid fuels
+75c3d647-f4fe-4906-abfb-62aa052724b7	fossil energy
+7dc05f81-dc62-4d77-af5d-8283b58fa184	energy conversion
+c1a06cd6-be85-4b13-ac12-83c09230db88	fuel cells
+8a35026c-af71-4e24-8d3b-688d2365635c	biomass energy
+2ecb7a30-7d1b-47b0-98b6-979ff4f8d90d	nuclear energy
+6772a809-fa3f-49b6-b82f-d2e82a96e44d	synthetic fuels
+8053ae82-f945-405e-948b-6c4f09348722	waste treatment processes
+003461b1-d367-4c84-b5e4-ab5e4943437d	land management
+c68c731d-91e2-4421-9ac9-87decef3c6ae	water management
+ffc3e032-af19-4cba-885d-737f1f777d73	rare earths
+90308d03-64b1-42e3-867b-db8a5024bdb7	wastewater treatment processes
+7830c46f-4ad5-4c75-93fa-76d843e39fb9	drinking water treatment processes
+f08d8dbc-70a6-4d8c-8f83-62e58a17bf2d	food safety
+2a8a395e-1907-4b74-8611-a2435bb6d7a7	food packaging
+f6951c79-0493-427a-a82f-0cba8f550dce	nuclear waste management
+c320c0d3-5476-4161-a920-1c1e6b13263b	organ on a chip
+279af454-ddf3-4bc0-a084-5aa24550780b	lab on a chip
+633b43c5-b5f9-41c9-984a-8fcc99f924b2	molecular engineering
+6b4f284b-6a4b-466d-a600-812ac17321e6	bioplastics
+857b60d8-4b5a-41ef-9bd8-9c1e62815ab3	biofuels
+c935ff67-db21-4ea5-a2f5-6438712bd3ba	fermentation
+5ae7bd70-d708-4d9c-b090-083a42d44632	naval engineering
+f4cb5fb7-3942-47b0-855c-3d9fca817513	automotive engineering
+b400cbdb-9e22-43cf-8933-0e034a0a5871	aerospace engineering
+562b69f2-7c20-4708-a137-55a458bca7cd	heat engineering
+519ffb0d-3c16-4f20-a628-579ed57942d8	lubrication
+f26d918d-0024-4d97-ae6f-f8be85182f95	additive manufacturing
+e4181c57-5f93-46ed-91b9-9e3d1249f407	subtractive manufacturing
+b0acefb3-6602-42b2-a6dc-28f3629c31ae	product engineering
+ecd015dd-d7df-45fe-99c2-c9a51f95206a	two-dimensional nanostructures
+91ce660c-d914-4d49-9ed2-612de54e6196	nanocrystals
+9bd2c99d-daf4-492e-9dad-5ac18bd42c3a	bulk nanostructured materials
+909aa237-d251-4262-81c2-fb5e21365f90	distillation
+188c4e44-9851-4a16-a960-85423574f287	desalination
+3f64adaf-451f-4c57-806c-1174ed834c6b	phytoremediation
+be2e326e-0fdd-46e2-a12b-626fab8cf103	bioreactors
+7b002931-b33d-4f72-87db-4ae7db02e938	bioleaching
+e97c7554-f2ef-4370-b7e5-8e60874c6a2d	compost
+06ffa531-7258-46e4-ad8e-746bc1a552e1	computed tomography
+4149c404-cb51-4f7c-93f2-cc346e8c9c98	magnetic resonance imaging
+d4f985c0-361e-49bd-af0f-9c7e6d95585c	x-ray radiography
+e49a82ce-eac2-4f85-ba01-b88e673b4a2c	laboratory samples analysis
+052af83f-414d-403b-ba9c-e08d8151bac8	diagnostic technologies
+ba7388fc-bbe6-4020-b086-8dd2a520541c	crisis management
+e0088e73-285e-426b-845f-25928936aced	taxation
+c9728fbc-c15b-4a5f-b343-a85c76601a3c	public services
+4596682b-a138-4bb2-9414-6c9f9056401b	environmental governance
+d75a4a3e-f257-4778-a3d5-8122cf3185f9	gender equality
+d3f0af2d-147b-46d1-a9fa-ba7e664a4b09	women’s studies
+e7b9a22b-8915-4a56-a5e4-b2670cf2fd6f	social inequalities
+48e57e4d-5e3d-4311-b7e0-1b44f5c7d2a0	unemployment
+b3f50d81-920b-4d14-b61c-6a82c3981743	corruption
+9bda1c22-12be-4dbc-a02f-5f6a052488dd	automation
+44ff5565-9342-4222-8270-64c574ed0180	fertility
+ef2102df-213d-46f1-9114-4c8d5c3ec7c7	census
+4f546680-d48b-4c0d-9c81-9870b0a16c32	human migrations
+12a21821-c00b-40f4-b3aa-6703dcc43a90	mortality
+c86017cb-7116-4ef6-8961-2ca63e96a048	science and technology studies
+5ccf6af3-d065-49da-bef3-9cd7f50c15c6	cultural anthropology
+f67fcfdd-4265-4d1a-b065-17aa2492180c	physical anthropology
+3371b6e1-8aba-4121-b87f-eae0262ce5b4	ethnology
+44dfe719-40b0-4d63-a0b1-8602905b26f4	social anthropology
+cf763962-65d9-44ae-beb5-1bdcb7782839	innovation management
+a37029a2-f8ab-4d2a-a121-0f4a3f3a9ce6	employment
+a7845a83-9aa1-44f7-b6a1-4c7912daed0f	entrepreneurship
+f6134721-35b9-4146-9908-3384940a1dc7	business models
+26f65f92-419e-4cd5-be23-bdfc1085204b	commerce
+a7b788e7-77f8-466a-863a-03e8ab625184	health economics
+110fd131-cade-4ced-af28-a67791353e54	production economics
+d0c600e4-4c54-45fb-a9c5-493a9467274b	monetary and finances
+9c45a69b-705d-491a-80db-45a0a0c2bc20	macroeconomics
+17439090-a52c-4460-99ac-84f5454af69f	sustainable economy
+1f4d4813-3250-49ec-acb8-58c274e95afc	econometrics
+70c05ebc-69dd-434b-a898-a9b8d6b3bbc6	political economy
+9c69afe0-f2e5-4ac8-9aba-590b0e1387f7	microeconomics
+ed0b84bf-f7c8-4ceb-afc3-8e9542590505	bioeconomy
+ef5a7186-be0b-490c-850f-3b94fbe329e1	navigation systems
+b5b82682-09a9-4cfd-a768-0d1b08e455ce	sustainable transport
+3383c074-01fd-495a-b6ab-66db4d63d3c7	electric vehicles
+981841ac-a1e0-494f-b14e-2fbdf5db764a	transport planning
+db439a5d-5a72-4293-a52d-5629f34c4698	freight transport
+342a248a-2ce3-4496-98ba-8a250cd05c2f	public transport
+5592e1b1-7626-4d34-8884-131279754e4a	social aspects of transport
+a708050b-3b9b-47bb-86cb-2737aa0e0cf4	human rights law
+ace9a277-0a73-4d3c-8728-3b0279a4b069	human rights violations
+da44150d-4cff-45ba-8a81-12023a679ac3	international protection of human rights
+7f6f9d2d-c94a-4d5e-bfd2-76dbd4df61e0	regional human rights
+d10d2908-8f22-4ff5-ae9e-a421a66de2f0	democracy
+eee4c3b8-f7ac-4b04-b8d1-efaf29cd5922	e-governance
+76b84d0b-8236-4620-bff8-b3d6713eeef7	bureaucracy
+c4a6d777-1ac8-4d94-b30c-b1a8dbfd95e0	civil society
+9c1581ad-e871-4ab8-ac20-da03fa03d202	public policies
+0bd504f3-6633-49aa-973b-cbed464fb259	foreign policy
+81b1229d-6702-4bd1-af1a-4b41e7ea26aa	riots
+3d4bb92f-d3cb-4991-a0ce-91d200f4ffad	armed conflicts
+f356d41a-8770-4478-a884-1b2630e696a9	terrorism
+052e3c82-191a-4cdd-8547-a6e2400d8b99	revolutions
+74cf912c-1727-4d3f-8d17-13f821a61783	elections
+29f35f44-ea1a-4595-afae-735d0455cd55	mental processes
+4572e164-3bd5-4af2-837b-6b617fc3a7b1	psychoanalysis
+045a61fe-3682-4fbb-b03c-92227e64bbf0	inquiry based learning
+a4be32e3-ea22-449c-8a8f-60138c997798	active learning
+fc6fade5-a32d-484a-b439-6a49971f1596	development theories
+bb5cfed3-cce1-4fe2-a4be-f2faa7337660	social developments
+1e67c9c9-9aa8-49a2-9fdb-7c6d4f6a27fe	development economics
+2d6ffa80-5b22-4fa4-8633-7108a656d7ab	literary genres
+8e55d01a-cb14-47ae-ac44-4522adf47258	literary theory
+354e2996-f491-4fde-8b15-19bb7542cd72	history of literature
+5dd6d1cd-a750-48bf-8b3f-11e2fb8ed277	phonology
+944b6ec9-f4b6-4261-b6a5-cbbaf96a19d7	phonetics
+c0a82d49-78a7-4d4a-9d04-db0bb984a6ba	sign language
+7f1915ca-1b47-4a79-8765-f4f332c70d67	contemporary history
+96a1cc90-1742-4ae9-ab8e-346215b99e4d	ancient history
+1961db3b-4f6b-43b7-b1b3-aaffffaf1c6f	modern history
+7570d850-8c2e-4d28-876a-3dafdb3a1e3d	medieval history
+fade9595-da99-4b29-b19d-3012ed63c51d	prehistory
+1766f012-e5bd-4def-850c-ca9f86341f61	ethnoarchaeology
+b5dc450e-8b42-4353-91fb-0321d78ce0e7	bioarchaeology
+ff6d7f08-d7e1-4e6a-8732-78846eb70563	underwater archaeology
+0b7ef923-ea48-47bd-a5f1-2c5b18f53d20	archaeometry
+1a59a9e6-9057-4316-a657-e1af02941d8b	cinematography
+ebd697fb-51fd-479e-bbb8-11512081039c	radio and television
+7ea71f6f-fc2d-4dcc-a1a3-5b324895dcc7	dramaturgy
+dd1e4264-3e3e-4b01-951e-27064d561456	ethnomusicology
+9523c8f0-e142-40fe-9ced-571469d279ae	popular music studies
+17849784-ab0a-4622-9678-19c11f64c0d2	history of philosophy
+a3229292-9723-4148-802c-478f0bce0b06	philosophy of language
+a5377468-cbc4-4a5a-952e-c926524bf498	metaphysics
+2644fa0b-71fa-4676-b033-1ee21ddf6cf7	political philosophy
+a15ee526-3068-4a63-a064-eced44be0dc8	epistemology
+c6fde28f-cfee-4e5a-abf7-94259a77cf47	islam
+d36f5888-69ae-43f4-b91a-8e9a92645f2e	christianity
+7dc51b0d-9ef7-4813-97d8-eb1c5c88286c	eastern religions
+7d323c4c-2cbf-464f-ab49-3525b0d37d9b	judaism
+6b3cc21c-15c1-46e2-acbd-7a79c5087136	ethical principles
+5a60af95-d2da-4703-845c-30966147de58	ethical theories
+4d28a639-cc74-44b5-bb42-adb66664c192	public libraries
+0627c833-88fb-4bbd-86b4-1eb20529fb17	digital humanities
+5b42bcd0-ed4d-4991-af0b-70b7465237aa	knowledge organization
+bb4b7d56-0657-40f0-a445-d65be648f439	scanning tunneling microscopy
+83e5b6ce-71db-4adb-a366-e7b587841d77	confocal microscopy
+0b516ce2-ea6c-4ae4-b742-a8a3623e8c81	super resolution microscopy
+81c628f1-5365-4517-ae99-a6bdcc65ba24	electron microscopy
+0ad73f36-1d96-4f3a-9e9c-721382a2ff1f	fluorescence lifetime imaging
+623da52d-1079-4ebc-bfe9-3072181d2808	absorption spectroscopy
+bcd9f234-d312-44a6-8162-f2422a079b6d	emission spectroscopy
+97641f33-3eb3-42c3-b407-62bf12ea435c	pulsed lasers
+d88ed947-a321-491c-9a27-3ab1f87fecde	ultraviolet lasers
+e7aa2ef0-5593-4e92-9c31-1d6dd03c4743	ultrafast lasers
+02fb94bf-d412-425c-8f85-f9b9d5068268	planets
+ec42c1af-69f5-4d98-ad25-529315c5ffe0	planetary geology
+9a10dcd1-7374-4c9d-ae6b-58514fb4d9bf	comets
+0f8ac241-4880-48e2-a33e-90a852485606	celestial mechanics
+174096ac-5f6f-4ce7-a4bb-675c8e06fc83	natural satellites
+c48deefc-fed3-4f33-b820-0fcbcc1caa69	meteors
+4cf432e6-b08b-41ed-b2b1-b18a4be23fc8	meteorites
+ad1496a3-284c-47e4-a3e3-4c8ff1e33214	asteroids
+1ea75d5f-7e91-4786-8314-0a330e6e5b55	big bang
+d571b72b-ab13-4b0a-93ee-3648be4fef7e	galaxy evolution
+0726953b-c47e-4530-803f-7813a0d8cbb8	neutron stars
+1502e29e-286e-427b-8ccd-7716c8c5c26b	white dwarfs
+ea386eb7-36de-4820-931f-ee2c873df030	supernova
+754b076c-1de8-4a80-bacc-4c138ea3cc93	asteroseismology
+2d35ad56-8878-4c11-a09d-8246ac5dea99	x-ray astronomy
+0c6b84cc-3887-4838-b7a3-4c799c1bee52	radio astronomy
+cbcdfb1b-ffce-4e89-ab76-6b55a7ab92ad	infrared astronomy
+cd9d6c59-4bf8-45cc-8a9c-8e465d2e526d	optical astronomy
+91fd36c0-639e-4a44-9dd6-056ebce415db	gamma-ray astronomy
+8641f278-288c-4f41-981a-6b2aa305fef1	gravitational waves
+3542e9d6-0f45-4205-99b4-24d2fe0d0c83	black holes
+74836c15-ffba-4c45-acb1-49a8c4b14f9f	dark matter
+6bfdc366-a5da-4ae0-8882-2fe67713f7e0	solar astronomy
+4e048a35-4aa2-4bc0-9d83-5ca43f21bf17	solar physics
+63844c95-4241-4571-9904-bd2045238baa	molecular spintronics
+28136854-f59d-46ad-9b4f-cdded6b5a247	photons
+744ccb87-b5ad-4fe4-b591-e7166547d861	neutrinos
+db54bec8-9f65-4fe5-a8ba-b043e5640a4b	w bosons
+b9f9c29f-8728-4f62-b69d-d671b76dba67	gluons
+179fda69-4962-433b-8b92-9261768e79ed	fermions
+62957fed-7e70-419b-b37c-2d84e56d1ec2	particle accelerator
+e83e8743-7c9e-4541-b224-66eb811f2505	quarks
+926e3183-0e06-4847-b02f-cd4f7e2d9ad6	leptons
+065f3ec8-0a76-4d0e-802f-94386c548c7a	z bosons
+483253a4-6001-4040-8f87-ca432a607497	higgs bosons
+25c33f15-8e57-4382-b4ce-67cd19710a5d	fodder
+636e3522-1ee8-40e5-bb54-517b556edc50	greenhouse horticulture
+22838313-b78b-47ec-b868-9028e48adb3f	vegetable growing
+24afab4c-2db7-4e8e-a816-bb1914e35abd	urban horticulture
+d697db59-b9cc-484d-b456-1cc5c43e2a17	viticulture
+b5b27faf-a0af-4911-9268-f1e6738f0fb4	fruit growing
+3cfe854e-4602-4cef-b292-b95b62cc9439	floriculture
+1cf45c83-9ed1-40f7-9bf4-8db30b504c1d	arboriculture
+6da5976a-2aae-483c-92e0-1ece066c7151	oilseeds
+56802e0d-f86e-47f9-9418-c9b35c3e4046	cereals
+e3f2bc90-0287-4162-82d6-b9c991c6513b	legumes
+23764a76-2c59-4320-9cc2-06a6325ee4ae	plant protection
+607e20c2-2a26-4113-ac15-b0bbca25a5de	plant breeding
+d20088d3-fbe0-4a35-b4f8-3b9249447002	root crops
+2c25a171-70ce-4460-85c3-bb928ac13ccd	coppicing
+8d4d41ab-8df4-472d-a11c-d1c4f76cf7c1	exposomes
+be79546c-fbf0-4d5a-9f58-c1a4940220f4	zoonosis
+9f98f6c1-5e95-4a12-83b5-20d05899af2f	epidemics prevention
+3836ddb3-7771-4178-8c0c-f7f5d54f66d0	modeling of diseases spread
+9894fffd-0c69-4cf6-a641-773609c23acd	pandemics
+04031aa6-3d4a-4265-8571-0f34dd07fd76	influenza
+93ce6799-5e30-4f28-ba78-c64eb2518a5a	coronaviruses
+a8af30a7-a072-4fc2-9f86-785847580a8f	hepatitis C
+1fbf2d03-d98a-4cf7-89a7-a72f96519c18	ebola
+3e5e7f13-544d-4969-ad99-6ae6e410bbc2	HIV
+09a71723-9801-4f1d-82da-324d219a4cdb	hepatitis B
+391c6d9f-9472-4ce3-b7bf-8be268890959	crystallography
+d925e630-54d5-47ec-b75f-e19e8caa8321	speleology
+df0e48f3-3e23-47ff-93f3-26b87ae929dc	microseisms
+82f334ac-32da-4b4b-a80c-8e1da60aba9b	plate tectonics
+ebd8e792-52d4-4672-b7a5-b43a23330c69	igneous petrology
+506c04ef-2bd1-464e-8017-db30eb140abc	sedimentary petrology
+22429439-1f3e-4436-95f6-d8a51d2841f5	metamorphic petrology
+8b521d68-67a3-484e-b8da-4bdf10504177	petrography
+9979b1c4-8ef2-4734-b48e-48816c07bae2	climatic zones
+e4f1674a-c71f-4cad-b99b-5461ed81d0a6	climatic changes
+593cb318-4074-443e-b121-d6a613df997b	dendrochronology
+dd511204-9264-4b2d-94ac-69482a1c630d	dendroclimatology
+289f3526-d61f-4050-affc-0e8c007ac4ea	atmospheric pressure
+09ad2d72-7da8-48dc-ae31-0b6b15bc1dc6	atmospheric circulation
+e92b8f60-d91e-4d7f-81e7-37f9a13d1870	solar radiation
+e141dbfe-d93c-48ed-8b57-46104de0c564	biosphera
+44e74c12-5d9f-450a-9d64-95bab42c1434	troposphere
+edd215c6-0ed9-4c86-8cb0-4f6504deb9f7	geographic information systems
+9a97233b-9f0a-4644-9eb8-11ca048bca67	glacial geology
+648e0249-8dd4-493a-8af5-efa21769a8f7	seismic loading
+06dcbaff-8c1b-4063-be98-4915afa32a58	base isolation
+f2f76d31-e245-4a1c-91a3-f3933471f9d3	sustainable building
+7540f754-dbf8-4d6a-bbd2-2d70184870db	north atlantic oscillation
+4a54085a-ff4f-4b91-b572-472262d210d5	el niño
+c103d494-74ee-4654-ad31-ab2ff29f6ffc	atmospheric turbulence
+eeb1b63a-179f-46c7-a683-28cfb6a6880e	electroporation
+d9f6800b-e09b-4410-9175-89124455e692	fixed wireless network
+4a677632-5b41-485a-8bf1-d9aae4c2da15	mobile network
+08c42eeb-abe1-44ee-bf30-a29f39897f40	telecommunications networks
+58469b0c-4ae0-4667-a734-2a7b0778e3f5	4G
+43a8b6f2-6232-46b8-b75e-15767430e3a4	5G
+cc4c298e-7c41-46b4-ac6c-6a2b71d476c5	data networks
+0d96e774-3021-4d1d-a870-2d36b9392f4a	optical networks
+7dc77768-bb18-4565-b7da-9d0de3cbbe63	mobile phones
+d913bd42-e79c-46a7-8714-14f2a6a0d82f	radio technology
+aa115772-abcd-4903-8750-31e7739e733e	fiber-optic network
+eeb88fa8-7b5a-440f-a3c9-add16c6b5cd2	mobile radio
+8d83b645-355f-4cf1-abf3-ce4cd3172c34	radio frequency
+c9c42113-e376-4c76-a43a-a2643f8d3673	LiFi
+abadc19a-13ab-4bc6-951b-8f12226b3e8b	cognitive radio
+343f616b-a5b8-40fb-b6b8-21acc8f89b16	radar
+36774969-7fa8-4bdf-a077-995b74a1c6aa	WiFi
+87ff3577-527a-4a40-9c76-2f9d3075e2ba	satellite radio
+c23291c8-1ff7-4311-9a03-c04e0047d1f4	bluetooth
+e6820ed0-50d3-4c97-a717-e11c87768410	microwave technology
+07a730ab-de3a-40bd-b8a6-03b325a7d50d	smart sensors
+d171635a-b853-4c91-85bc-3b7cb9a21a78	optical sensors
+49fe836e-8ea5-4748-b108-a9c8a8fabf46	biosensors
+1de32ce8-df3d-4ba6-b298-eb425e87c67b	quantum computers
+190c7945-b95c-42bb-b9de-961ac1c69cf0	computer processors
+c2a8caf5-4ee8-43ff-a3cd-bae7430e4e18	supercomputers
+8e10be55-2f93-43b7-8e09-9f0dec37591c	swarm robotics
+88588cd0-1a03-43f2-bcc1-53bb24ebf5f7	soft robotics
+6ec77859-f069-4eb2-9d70-3021ba5b325a	cognitive robots
+f85a93ab-d8ab-4911-ab43-d65970ffed0c	autonomous robots
+548cce3c-5211-46c4-a716-47af7eb50521	compressed sensing
+8e811b59-5880-4418-91f3-e85ebed90a3e	home automation
+db2570f8-5d0b-4a29-ae44-63edd72aa253	electric power distribution
+1583cad3-15fd-4040-ac6a-0a0e51923e8a	electric power transmission
+31e98cd3-2946-46d9-bc91-34b3e4b0728a	electric power generation
+e9c2a3e8-feaf-461a-a6ea-9fce15e57dab	hydroelectricity
+a77a1e7c-3056-4bdc-9678-3f02c4512f9c	solar energy
+f58015a8-2f96-4d60-ab00-5b1be92f2b80	hybrid energy
+4b5513b7-450c-4919-a145-7d16f5cd2cdc	hydrogen energy
+707a943d-209a-417c-aab2-f71d82acf5f5	wind energy
+3631ba39-93ae-4cb4-9b27-d4160065af77	geothermal energy
+3ed53afc-0fa6-49e8-be2d-215044c9a85a	coal
+a1843234-5874-4879-b082-a052a25d9dbd	petroleum
+54ffbab2-92ff-49a8-8dc4-02c5a8b99d3c	natural gas
+f23d8000-aab7-4a39-b8da-0271e43f736d	remanufacturing
+17e1c13a-0c3d-45ed-ac46-30fa3e7e2bf5	recycling
+6e57a330-1d52-4b05-bcbe-9b180e89c1fb	seismic risk management
+0ddc0516-dd57-458a-9c1f-c1523dcce3bc	flood risk management
+46fb9b5a-8493-4b52-86a4-43b7ba7d2387	age inequality
+d7211835-274b-43bc-9917-59caa1768b8f	racial inequality
+ba914e3a-d949-4377-9dec-172842c43011	gender inequality
+d4b2e61b-1c32-4239-a9fe-5ec35e2855e9	folklore
+4c711209-5434-4c40-9a9c-ac42ca338ea5	paleoanthropology
+dbe8c8c7-29d5-428b-8210-05bf4d427497	deep learning
+cbe8013b-7afd-4aa7-9fa8-6eb932965f0a	reinforcement learning
+a33bb877-2385-45b7-bcd3-e83d372448fb	transfer learning
+c785fbd6-7242-4926-8c84-d6f82b14cb75	supervised learning
+1076b605-d9f3-4961-8dbe-dc9abc72b42b	unsupervised learning
+c0a6a797-90c8-491e-b096-97d77cfbe561	semisupervised learning
+537a6e3e-cb77-49f8-b946-e4ed9bee9954	facial recognition
+a52ebc52-96e4-473c-9856-c510be5e797f	motion analysis
+ea09ce79-b78c-45dd-8fb1-767de5ad3162	image recognition
+03ba2800-ce81-400c-b0b4-c9d84c9f9976	object detection
+e73474ef-aedf-47c4-8266-bb9e9dec2fc2	virtual reality
+821a60d5-d21e-428d-bb57-3ce5e59cd3cf	system software
+4b85aedb-f755-4e39-9c09-e387cc6ce3e1	simulation software
+9de072f5-bfd6-488a-a281-c146729b9c84	video games
+60478dbb-fdbb-45aa-9285-4e03d6ff25ae	web accessibility
+4c414391-687c-4bbb-82a3-6e648af87349	science fiction
+78a8da5a-99ca-4426-a884-33eaf080953d	essays
+8441d6a8-aaf2-419f-b3a2-2b7babbeb83c	literary criticism
+4711beeb-e331-419a-b1cb-78e9b6d357d7	polyhydroxyalkanoates
+b4bcc1d3-fbba-44eb-a379-fffc207c179f	polylactic acid
+e7e10b1f-0497-4793-8585-53ea781ba12a	multidrug resistance
+54ca0648-4321-4706-912c-46955e303049	antibiotic resistance
+575bee5a-7bf6-490b-a5cf-8980c5e3ac2f	antivirals
+2ad97719-f178-4451-8311-022eb5a96b91	antibiotics
+6425744b-69aa-491c-b0f3-92adb3351498	vaccines
+dc6454bd-b806-4e0c-b15e-788698abd425	alzheimer
+36cae4a3-78ba-4100-9c02-6db61a4efd30	duchenne muscular dystrophy
+14401fcb-cc47-4553-8d26-95ad6f007695	e-commerce
+7fc03ed1-b5f8-4d5d-bdcc-fe49b56b378d	economic impact of epidemics
+5b6b8b81-e659-42c1-8dd5-a0ac1d8e17a1	productivity
+950b88c1-e09c-4b5d-92e0-d84433dd6025	sea vessels
+d9a69a4e-b313-47ea-9cfc-16957a7da9be	drive by wire
+786ff653-724c-4af7-9439-b14dd781f950	autonomous vehicles
+7e051231-1daa-4eb0-b042-8d49a81f8b7e	aeronautical engineering
+2643fcd4-b9dd-4fc3-9afc-d96632d62fb9	satellite technology
+0085a6d1-0b32-479f-a560-0cbf6cffee9b	astronautical engineering
+02695258-7117-47a3-8b32-bbf861dae234	aircraft
+b7749be3-3af5-4003-bc5a-30741b5c3527	spacecraft
+d8d813db-664d-41a3-8bef-2252b1a9822c	rotorcraft
+45cdcd87-2aea-4a65-b7bb-22b7206e7e44	viral genomes
+f6cd74a1-6db8-4bd9-b70a-7add5f2df787	eukaryotic genomes
+4b891a94-f4da-4d15-902f-6e2ca9569c41	prokaryotic genomes
+d1fe9030-a346-44b2-a4c0-3e6c502032b2	epigenomes
+58ec2250-a276-4b26-9674-84df0df606d4	virus mutation
+d47a4158-66d1-4045-9f1f-d2b31a16aff3	transcriptomes
+1dc067cd-e750-44f5-9a8a-67ed4b788457	coastal ecosystems
+5d9297ad-d8cd-437c-9411-1b9c291bca9e	freshwater ecosystems
+44d3f45e-99c6-4654-b9ea-3ac2c00b86c2	viromes
+706e0d96-e5ce-4166-bcb8-d5ca77f22470	ethnomycology
+8e50b858-218b-4bee-afd8-cf24ff4ca366	mycobiomes
+3b916916-c808-4417-ad5c-95d5b65f6705	ethnolichenology
+2f5da334-9d6c-41d1-83f8-18938ee49733	bacteriomes
+a93183bf-2621-41ff-9af8-82e355a7e11c	primatology
+e603973e-202a-49ac-a509-e236e7ead922	cetology
+575e7468-462c-494d-b870-1f1a670c862e	apidology
+d1de68cf-37fc-491f-a975-81b33d88c2b9	lipids
+516375dc-b795-4a7f-982f-bbbf8b46c93f	proteins
+3ef34e0f-0576-4510-927c-f345727888f8	nucleic acids
+5e92102f-26c6-459a-a578-22b2b8979fb2	carbohydrates
+28f03023-a14f-4bab-8f1a-7d1f93bf208d	biological interactions
+7f86cf31-2001-4f17-8941-3318bb68bc21	marine energy
+d0163112-fbeb-4703-ace0-d149776bb77f	photovoltaic
+2576d01f-d758-4d39-b767-66335ade4e0b	solar thermal
+1c5d248d-15f9-4e68-8a4b-30278475103a	concentrated solar power
+6d8bb2ee-2867-4fef-82f5-6a1ab5b8715d	drones
+7a4cfc91-225d-4267-99ae-53df3841536d	silicene
+db293df2-83b1-46fe-b4f1-c5ffb03191e9	graphene
+28d7156b-f2c0-4e72-b6a2-72480832ada4	tidal energy
+818e3157-3df3-448d-80af-c7822c9a58f6	wave power
+837b7606-3ce0-492b-95e5-926e4881ae40	animal feed
+96b1f2b4-f48e-4810-91fb-851a1e767ea7	prime numbers
+2abd89cb-a0cb-4c22-b593-dc183fbfccf1	L-functions
+7a837013-4653-4354-83e8-c2ede00f83d5	logarithmic functions
+333a993a-58a5-407c-8926-e9c26418b6a7	computational topology
+3ebb12b8-e06f-4d47-9ca6-1ac7acf2ecdf	knot theory
+61dd01fe-a8b3-4a44-b26a-a848f7efdad8	symplectic topology
+b616486e-44f8-4ef4-ad26-57c068f5c5c8	algebraic topology
+b25243d7-b179-49b6-a033-d1199f677a90	functional analysis
+fad48e49-fad0-43df-8328-87dd8d61618c	differential equations
+45ebd79f-52a5-4dd9-bd75-da51a7f904d2	fourier analysis
+14443ed3-6210-4ab1-bf33-af9ae80aa4ee	complex analysis
+e70766ba-ef8c-4a4c-b67b-ed761bf314a2	functional equations
+59436ba9-3ba9-4176-9bbd-909db66c227d	linear algebra
+78983308-fa10-44fd-a6c7-c58efb27c3dd	commutative algebra
+76841f1d-cc14-4032-a4cc-c634fb543541	algebraic geometry
+ea52495a-6353-47ee-ba16-796f9567471c	mathematical logic
+4c262914-2d10-491c-a687-11291b292dd9	combinatorics
+ee33cdd7-c3d0-4c34-834b-2567d09a56cc	graph theory
+87ade355-510a-46da-b08d-461fca2ae7d2	bayesian statistics
+592bef65-e071-4ff7-97cc-f5fb2e404df0	conformal field theory
+b509b0f6-6fa5-4190-8d33-9e70deb84eaf	cardiac arrhythmia
+549a600d-44f8-4282-bd15-c3d119a5b951	arteriosclerosis
+04bae929-c29b-4abe-a923-85bf61235dcd	diabetic nephropathy
+bc15cbfd-4805-4dbb-b8c5-3ec3acfbe64b	cerebrovascular diseases
+276b8c99-a318-48df-aa31-1f9f3e0ba910	melanoma
+76fb6b9f-1dc7-4da2-a8b6-bfb0e345e4c2	basal cells
+47e9b92e-bdb2-44f2-b0a1-d8086380a3b6	squamous cell carcinoma
+2d483a4d-d0b7-4c90-b174-fb06663d8e7e	enzymes
+4a603b88-120c-4883-baa7-bd214a0038e1	proteomics
+8dd0458f-4867-4138-92b1-9e5fb2c36249	protein folding
+1f2f2335-7066-4862-b84f-06af69ad689a	satellite navigation system
+25520bdc-f0ad-46d2-8ff9-f21bb50d2ce6	global navigation satellite system
+c582fc6b-76d9-455b-b457-34e226d48f04	inertial navigation system
+714756a2-c536-45e1-9157-6260f038f7d2	intelligent transport systems
+1b9c930f-4eb9-41cb-b7c7-9ac1b8e3b31e	air traffic management
+0fdc9c2b-f474-411f-be90-cd7a9bb7fce9	reverse osmosis
+1fedc564-4926-4c79-9384-c1e675f7a138	electrodialysis
+7a76dd1e-8d1b-425f-8603-69da0818c305	giant planets
+236847fb-c866-457d-94ea-689ad103223c	exoplanetology
+35157113-6422-4421-9c90-25b4b2834bce	operator algebra
+a5553f24-f643-4dea-99b3-e1a6e8a869ff	partial differential equations
+345f2706-c765-41b5-b347-ea98d3901472	national state of emergency
+e650a829-2773-4e7d-98dc-1a1d0b415df1	human trafficking
+7f1fbbec-e51d-4333-abf7-5fedce5a69b0	political violence
+520b95a0-2583-4cb4-88ab-4f886fc2e0e2	sexual violence
+4924e464-4d3b-43cf-83b5-a3582f8b9b0a	ice giants
+a77e9ec8-7f65-4307-9030-80be41333538	gas giants
+934ce75d-7b9c-43b2-ad73-8b46d1dcbdd3	super-Earths
+104cfd93-5bc8-40a5-b878-bb46ad83f856	civil society organisations
+48c3435f-a944-4338-a194-715b51b110cd	pandemic risks
+85df19e8-0cc1-4210-9e6c-858b1d7734fc	device drivers
+71ddd635-c338-462a-808e-9b53569e4c5e	operating systems
+cae50c91-4b35-41f6-a011-f187d2691ae0	contemporary philosophy
+1740da38-f2ca-4378-add0-0c6ab3cf3492	ancient philosophy
+814febcf-c079-4a9a-a15d-6fa689bc46f7	modern philosophy
+42401eb1-95bc-4ae0-b91f-453748889ac6	medieval philosophy
+cc029e63-2b82-4ba5-9c26-c82d9ac56fa8	teleology
+e9aef32c-36e1-4c49-8942-407ceb9cac15	muslim culture
+334ce84b-1f29-469a-ad65-fd601b04c856	islamic schools
+1c5521e0-e444-471c-8817-902f8e426b0b	muslim societies
+6c1a6cca-3074-40f7-97df-aad123eb693e	history of islam
+962806d2-e48f-424a-bc79-0e2496980d89	nongovernmental organizations
+df8c6f43-32b3-44f4-a863-f0ac77994f7a	combined heat and power
+db307f1d-3fce-48d1-9a9e-cb2cf5b8e106	vegetative propagation
+4369c5f2-2619-43ca-9cac-bed980e1004e	continuous glucose monitors
+0b631aca-6a6b-41ec-af74-3b4a53864a6c	post-colonial theories
+7d9dcf33-50b7-44b8-97f1-175f63270ba5	global development studies
+a8ab2866-23cd-4a94-ba12-696773f3db7a	globalization
