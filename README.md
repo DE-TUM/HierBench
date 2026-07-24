@@ -1,16 +1,16 @@
 <h1 align="center">
-  HiBench
+  HiKGE
 </h1>
 
 <p align="center">
-    <b>HiBench</b> is a benchmark and framework for <b>hierarchical link prediction</b>. It extends the
+    <b>HiKGE</b> is a benchmark and framework for <b>hierarchical link prediction</b>. It extends the
     <a href="https://github.com/pykeen/pykeen">PyKEEN</a> knowledge-graph-embedding library with
     hierarchical datasets, dataset analytics, hyperbolic baseline models, hierarchy-specific
     evaluation tasks, and hierarchy-aware metrics.
 </p>
 
 <p align="center">
-  <a href="#whats-in-hibench">What's in HiBench</a> •
+  <a href="#whats-in-hikge">What's in HiKGE</a> •
   <a href="#installation">Installation</a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#hierarchical-datasets">Datasets</a> •
@@ -19,13 +19,13 @@
   <a href="#reproducing-the-experiments">Reproducing the Experiments</a>
 </p>
 
-## What's in HiBench
+## What's in HiKGE
 
 <p align="center">
-  <img src="figures/pykeen_overview.png" alt="Overview: PyKEEN components in grey and HiBench's hierarchy-specific contributions in blue, across datasets, preprocessing, learning, and evaluation" width="900">
+  <img src="figures/pykeen_overview.png" alt="Overview: PyKEEN components in grey and HiKGE's hierarchy-specific contributions in blue, across datasets, preprocessing, learning, and evaluation" width="900">
 </p>
 
-This README documents only what HiBench adds on top of PyKEEN. In addition to the core PyKEEN
+This README documents only what HiKGE adds on top of PyKEEN. In addition to the core PyKEEN
 functionality, this repository provides:
 
 - **Hyperbolic baselines** — `PoincareE`, `LorentzE`, and `HyperbolicCones`
@@ -91,7 +91,7 @@ The import name is `pykeen`, so existing PyKEEN code runs unchanged.
 
 ## Quickstart
 
-HiBench's headline task is **transitive ancestor–descendant prediction**: a model is trained on the
+HiKGE's headline task is **transitive ancestor–descendant prediction**: a model is trained on the
 direct hierarchy edges (transitive reduction) and evaluated on the held-out transitive closure — how
 well it recovers ancestor–descendant pairs it never saw. The pipeline handles the closure split,
 training, and hierarchy-aware evaluation:
@@ -123,7 +123,7 @@ across runs and machines.
 
 ## Hierarchical Datasets
 
-HiBench adds six taxonomies from distinct domains. Each ships as a raw hierarchy plus a
+HiKGE adds six taxonomies from distinct domains. Each ships as a raw hierarchy plus a
 `*Transitive0Percent` variant carrying a **frozen ancestor–descendant closure split** (training holds
 the direct edges, validation/test hold their share of the non-direct transitive closure), so no split
 derivation happens at load time.
@@ -151,7 +151,7 @@ the fraction of the transitive closure added to training (0% = direct edges only
 
 ### Dataset Analytics
 
-For every dataset (including newly added ones), HiBench computes a set of analytics over the
+For every dataset (including newly added ones), HiKGE computes a set of analytics over the
 hierarchical subgraph via `pykeen.datasets.extended_graph_analysis`: number of nodes, hierarchy
 edges, hierarchy roots and leaves, the node **depth** δ(v) (distance from the nearest root) and
 **branch-out** d⁺(v) (out-degree of internal nodes) with their mean and maximum, and the J¹ **balance
@@ -163,7 +163,7 @@ appear as a tail and the **leaves** those that never appear as a head:
 $$R = \{v \in V \mid d^-(v) = 0\}, \qquad L = \{v \in V \mid d^+(v) = 0\}$$
 
 The node **depth** $\delta(v)$ is the shortest-path distance to the nearest root (roots at depth 0);
-HiBench reports its minimum, mean, and maximum over all nodes:
+HiKGE reports its minimum, mean, and maximum over all nodes:
 
 $$\delta(v) = \min_{r \in R} d(r, v), \qquad
 \text{depth}_{\min/\text{avg}/\max} = \min_{v \in V} \delta(v),\ \frac{1}{|V|}\sum_{v \in V} \delta(v),\ \max_{v \in V} \delta(v)$$
@@ -197,7 +197,7 @@ print("balance (J¹):", analysis.balance)
 
 ## Models
 
-HiBench adds three hyperbolic baseline models for hierarchical representation learning. RotatE is
+HiKGE adds three hyperbolic baseline models for hierarchical representation learning. RotatE is
 used as the non-hierarchical (Euclidean) reference baseline in the experiments.
 
 | Name            | Class                             | Manifold                          | Citation                                                        |
@@ -213,7 +213,7 @@ The corresponding representations (`pykeen.nn.PoincareEmbedding`, `pykeen.nn.Lor
 
 ## Evaluation Tasks
 
-HiBench adds hierarchy-specific evaluation tasks on top of standard link prediction:
+HiKGE adds hierarchy-specific evaluation tasks on top of standard link prediction:
 
 - **Transitive ancestor–descendant prediction** —
   `pykeen.pipeline.transitive_ancestor_descendant_prediction_pipeline`. Train on the transitive
@@ -228,7 +228,7 @@ Hierarchy-aware negative samplers back this task: `pykeen.sampling.HierarchyNega
 
 ## Hierarchy-aware Metrics
 
-HiBench adds LCA-based hierarchical classification metrics via
+HiKGE adds LCA-based hierarchical classification metrics via
 `pykeen.evaluation.LCAClassificationEvaluator`. These give partial credit for predictions that land
 *near* the true node in the hierarchy — a sibling of the correct descendant scores higher than a
 distant sub-tree — by augmenting the true and predicted node sets with the paths to their lowest
@@ -259,4 +259,4 @@ Per-run metrics are written to
 aggregated cross-run table to `.../<run_stamp>/summary.csv`. Key settings (embedding dimension,
 epochs, seed, negatives, alpha grid) are the constants at the top of the script.
 
-HiBench is built on top of [PyKEEN](https://github.com/pykeen/pykeen).
+HiKGE is built on top of [PyKEEN](https://github.com/pykeen/pykeen).
