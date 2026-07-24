@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import pytest
 import torch
 
@@ -173,6 +175,18 @@ def test_max_hierarchy_depth_star() -> None:
     assert ExtendedGraphAnalysis(_star_dataset()).max_hierarchy_depth == 1
 
 
+def test_node_depth_chain() -> None:
+    """Chain 0→1→2→3: node_depth returns 0,1,2,3."""
+    ha = ExtendedGraphAnalysis(_chain_dataset())
+    assert [ha.node_depth(n) for n in range(4)] == [0, 1, 2, 3]
+
+
+def test_node_depth_cycle() -> None:
+    """Rootless 4-cycle: every node gets depth 0."""
+    ha = ExtendedGraphAnalysis(_cycle4_dataset())
+    assert all(ha.node_depth(n) == 0 for n in range(4))
+
+
 def test_levels_alias_chain() -> None:
     """Levels is an alias for max_hierarchy_depth."""
     ha = ExtendedGraphAnalysis(_chain_dataset())
@@ -268,6 +282,23 @@ def test_balance_symmetric_beats_caterpillar() -> None:
     # Caterpillar: 0→{1,2}, 2→{3,4}, 4→{5,6} (leaves 1,3,5,6).
     caterpillar = _make_dataset([[0, 0, 1], [0, 0, 2], [2, 0, 3], [2, 0, 4], [4, 0, 5], [4, 0, 6]], num_entities=7)
     assert ExtendedGraphAnalysis(balanced).balance > ExtendedGraphAnalysis(caterpillar).balance
+
+
+def test_tree_metrics_warn_on_cycle() -> None:
+    """leaf_depth_variance and balance warn when the graph is not a DAG."""
+    with pytest.warns(UserWarning, match="not a DAG"):
+        _ = ExtendedGraphAnalysis(_cycle4_dataset()).leaf_depth_variance
+    with pytest.warns(UserWarning, match="not a DAG"):
+        _ = ExtendedGraphAnalysis(_cycle4_dataset()).balance
+
+
+def test_tree_metrics_no_warning_on_dag() -> None:
+    """No warning is emitted when the graph is a DAG."""
+    ha = ExtendedGraphAnalysis(_star_dataset())
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        _ = ha.leaf_depth_variance
+        _ = ha.balance
 
 
 # ---------------------------------------------------------------------------

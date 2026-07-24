@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import functools
 import math
+import warnings
 from collections import deque
 from typing import TYPE_CHECKING, Literal
 
@@ -396,6 +397,13 @@ class ExtendedGraphAnalysis:
         :returns: Variance of leaf depths V >= 0.0. Returns 0.0 for fewer than
             two leaves.
         """
+        if not self.is_dag:
+            warnings.warn(
+                "leaf_depth_variance is a tree-balance index; the graph has a cycle "
+                "(not a DAG), so leaf depths are ill-defined and the value may not be "
+                "meaningful.",
+                stacklevel=2,
+            )
         depths = self._node_depths
         leaf_depths = [depths[leaf] for leaf in self.leaf_nodes]
         n = len(leaf_depths)
@@ -438,6 +446,13 @@ class ExtendedGraphAnalysis:
         :returns: J¹ in ``[0, 1]``. Returns 0.0 for a graph with no internal nodes
             (empty, single-node, or fully linear).
         """
+        if not self.is_dag:
+            warnings.warn(
+                "balance is a tree-balance index; the graph has a cycle (not a DAG), "
+                "so the notion of leaf depth is ill-defined and the value may not be "
+                "meaningful.",
+                stacklevel=2,
+            )
         graph = self._digraph
         leaves = self.leaf_nodes
         # n_i: distinct leaves reachable from each node. Each leaf contributes 1 to
@@ -636,6 +651,29 @@ class ExtendedGraphAnalysis:
     def out_degree(self, node_id: int) -> int:
         """Out-degree d_out(v) for a single vertex (Zloch et al. 2019)."""
         return int(self._multigraph.out_degree(node_id))
+
+    def node_depth(self, node_id: int) -> int:
+        r"""Shortest-path depth of a single vertex from its nearest root node.
+
+        .. math:: \delta(v) = \min_{r \in R} d(r, v)
+
+        where :math:`R` is the set of root nodes (see :attr:`root_nodes`) and
+        :math:`d(r, v)` the directed shortest-path distance. Roots have depth 0;
+        a node under several roots takes the shallower one. Computed by a single
+        multi-source traversal from all roots (:attr:`_node_depths`), so cycles
+        never inflate it. Isolated or cycle-only nodes (unreachable from any
+        root) are assigned depth 0.
+
+        The mean and max of this quantity over all nodes are
+        :attr:`avg_hierarchy_depth` and :attr:`max_hierarchy_depth`.
+
+        :param node_id: The entity ID to query.
+
+        :returns: Shortest-path depth >= 0.
+
+        :raises KeyError: If ``node_id`` is not a valid entity ID.
+        """
+        return self._node_depths[node_id]
 
     @property
     def max_degree(self) -> int:
